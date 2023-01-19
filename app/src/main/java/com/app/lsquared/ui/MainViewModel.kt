@@ -14,7 +14,10 @@ import retrofit2.*
 import com.androidnetworking.error.ANError
 import com.androidnetworking.AndroidNetworking
 import com.androidnetworking.common.Priority
+import com.androidnetworking.interfaces.DownloadListener
+import com.androidnetworking.interfaces.DownloadProgressListener
 import com.androidnetworking.interfaces.StringRequestListener
+import com.app.lsquared.model.Downloadable
 import com.app.lsquared.utils.*
 import java.io.File
 import com.test.RetrofitClient
@@ -86,7 +89,10 @@ class MainViewModel : ViewModel() {
     // 2 fetch content data
     fun fetchContentData(){
         if(internet){
-            var url = Constant.BASE_URL+"lsquared-hub/feed/json/${device_id}.json";
+            var url =  if(Constant.BASE_FILE_URL.equals("https://hub.lsquared.com/"))
+                Constant.BASE_URL+"feed/json/${device_id}.json"
+            else Constant.BASE_FILE_URL+"feed/json/${device_id}.json"
+
             Log.d("TAG", "fetchContentData: $url")
             viewModelScope.launch(Dispatchers.IO) {
                 ApiInterface.create().fetchPlayingContent(url)
@@ -184,7 +190,7 @@ class MainViewModel : ViewModel() {
     // 5 submit screen shot
     fun submitScreenShot(body: JSONObject){
         if(internet && is_device_registered){
-            Log.d("device_screenshot_body-",body.toString())
+            Log.d("TAG","submitScreenShot - ${body.toString()}")
             viewModelScope.launch(Dispatchers.IO) {
                     AndroidNetworking.post(Constant.BASE_URL+"api/v1/feed/deviceSaveScreenshotBase64")
                         .addJSONObjectBody(body) // posting json
@@ -257,6 +263,118 @@ class MainViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    // widget api calling
+    private val quote_data = MutableLiveData<ApiResponse>()
+    val quote_api_result : LiveData<ApiResponse> get() = quote_data
+
+    fun getQuoteText(id :String,frame_pos :Int) {
+        var url = Constant.API_WIDGET_QUOTE+"$id?format=json"
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            quote_data.postValue(ApiResponse(Status.SUCCESS,res,"success",frame_pos))
+                        }else{
+                            var error = response?.errorBody()!!.toString()
+                            quote_data.postValue(ApiResponse(Status.ERROR,null,"error",frame_pos))
+                        }
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        quote_data.postValue(ApiResponse(Status.ERROR,null,"error",frame_pos))
+                    }
+                })
+        }
+    }
+
+
+    private val _rss_data = MutableLiveData<ApiResponse>()
+    val rss_api_result : LiveData<ApiResponse> get() = _rss_data
+
+    fun getNews(url: String, pos: Int){
+        Log.d("TAG", "fetchxmlData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+
+            AndroidNetworking.get(url)
+                .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                .setTag("test")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsString(object : StringRequestListener {
+                    override fun onResponse(response: String?) {
+                        Log.d("device_info_success-",response.toString())
+                        _rss_data.postValue(ApiResponse(Status.SUCCESS,response,"success",pos))
+                    }
+                    override fun onError(anError: ANError?) {
+                        Log.d("device_info_failed-",anError.toString())
+                        _rss_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+    private val text_data = MutableLiveData<ApiResponse>()
+    val text_api_result : LiveData<ApiResponse> get() = text_data
+
+    fun getText(id: String, pos: Int) {
+        var url = Constant.API_WIDGET_TEXT+"$id?format=json"
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            Log.d("TAG", "text api onResponse: $res")
+                            text_data.postValue(ApiResponse(Status.SUCCESS,res,"success",pos))
+                        }else{
+                            var error = response?.errorBody()!!.toString()
+                            text_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                        }
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        text_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+
+    // file downloading
+    private val _downloadfile_data = MutableLiveData<ApiResponse>()
+    val download_file_result : LiveData<ApiResponse> get() = _downloadfile_data
+
+    fun downloadFile(downloadable: Downloadable) {
+
+        var url = if(downloadable.type.equals(Constant.CONTENT_THUMB)) downloadable.src else Constant.BASE_FILE_URL + downloadable.src
+        var fileName = downloadable.name
+        Log.d("TAG", " : $fileName")
+//        AndroidNetworking.download("https://us.lsquared.com/lsquared-hub/cl/videos/processed/1602585267.1767-mailbox-and-other-services.mp4", DataManager.getDirectory(), fileName)
+        AndroidNetworking.download(url, DataManager.getDirectory(), fileName)
+            .setTag("downloadTest")
+            .setOkHttpClient(RetrofitClient.getOkhttpClient())
+            .setPriority(Priority.MEDIUM)
+            .build()
+            .setDownloadProgressListener(object : DownloadProgressListener {
+                override fun onProgress(bytesDownloaded: Long, totalBytes: Long) {
+                    // do anything with progress
+                    Log.d("TAG", "onProgress: $totalBytes/ $bytesDownloaded")
+                }
+            })
+            .startDownload(object : DownloadListener {
+                override fun onDownloadComplete() {
+                    // do anything after completion
+                    Log.d("TAG", "onSuccess: $fileName")
+                    _downloadfile_data.postValue(ApiResponse(Status.SUCCESS,"","success"))
+                }
+                override fun onError(error: ANError?) {
+                    // handle error
+                    Log.d("TAG", "onError: ${error.toString()}")
+                    _downloadfile_data.postValue(ApiResponse(Status.ERROR,"",error.toString()))
+                }
+            })
     }
 
 }

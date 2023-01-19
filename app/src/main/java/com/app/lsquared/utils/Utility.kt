@@ -89,23 +89,6 @@ class Utility {
             return false
         }
 
-        // check storage permission
-        fun checkStoragePermission(ctx: Context) : Boolean{
-            val pm: PackageManager = ctx.getPackageManager()
-            val hasPerm = pm.checkPermission(permission.WRITE_EXTERNAL_STORAGE,ctx.getPackageName())
-            if (hasPerm == PackageManager.PERMISSION_GRANTED) {
-                    return true
-            }else{
-                ActivityCompat.requestPermissions(ctx as Activity,
-                    arrayOf(permission.READ_PHONE_STATE,permission.WRITE_EXTERNAL_STORAGE),
-                    STORAGE_PERMISSION_CODE)
-//                ActivityCompat.requestPermissions(
-//                    ctx as Activity,
-//                    arrayOf(permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
-                return false
-            }
-        }
-
 
         fun getDetailsText() : SpannableStringBuilder{
             val builder = SpannableStringBuilder()
@@ -234,6 +217,21 @@ class Utility {
             // "RECREATE" THE NEW BITMAP
             return Bitmap.createBitmap(bmp, 0, 0, width, height, matrix, false)
         }
+
+        // for new codebase
+        // check all permission granted
+        fun checkPermissionGranted(ctx: Context) : Boolean{
+            val pm: PackageManager = ctx.getPackageManager()
+            val hasPerm = pm.checkPermission(permission.WRITE_EXTERNAL_STORAGE,ctx.getPackageName())
+            val hasPerm1 = pm.checkPermission(permission.READ_PHONE_STATE,ctx.getPackageName())
+            if (hasPerm == PackageManager.PERMISSION_GRANTED) {
+                if (hasPerm1 == PackageManager.PERMISSION_GRANTED) {
+                    return true
+                }
+            }
+            return false
+        }
+
 
     }
 

@@ -56,7 +56,7 @@ data class Device (
 //	@SerializedName("top") val top : Int,
 //	@SerializedName("blankScreen") val blankScreen : Boolean,
 //	@SerializedName("blank") val blank : Int,
-//	@SerializedName("wcoditime") val wcoditime : Int,
+	@SerializedName("wcoditime") val wcoditime : Int,
 //	@SerializedName("wcodpwd") val wcodpwd : Int,
 //	@SerializedName("playback") val playback : String,
 //	@SerializedName("changeDisplayMode") val changeDisplayMode : Boolean,

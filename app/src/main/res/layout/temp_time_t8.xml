@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:background="@color/black"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_height="match_parent">
+
+
+    <TextView
+        android:id="@+id/tv_timetemp_day"
+        android:textColor="@color/white"
+        android:text="Thursday"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:textSize="60dp"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        android:id="@+id/tv_timetemp_month"
+        android:textColor="@color/white"
+        android:text="September"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:textSize="60dp"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        android:id="@+id/tv_timetemp_date"
+        android:textColor="@color/white"
+        android:text="02"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:textSize="60dp"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        android:id="@+id/tv_timetemp_time"
+        android:textColor="@color/white"
+        android:text="02:20 PM"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:textSize="60dp"
+        android:layout_height="wrap_content"/>
+
+
+
+</LinearLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:background="@color/black"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_height="match_parent">
+
+
+    <TextView
+        android:singleLine="true"
+        android:id="@+id/tv_timetemp6_month"
+        android:textColor="@color/white"
+        android:text="February 4"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:textSize="70dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+
+
+</LinearLayout>

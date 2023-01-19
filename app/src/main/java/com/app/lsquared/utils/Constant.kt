@@ -1,31 +1,18 @@
 package com.app.lsquared.utils
 
-import android.os.Environment
-import java.io.File
-
 class Constant {
-
-    // release key  and pass - Lsquared
-
-    // vivo - cd7598568b48f67
-    // realme - 899077be05e0bc19
-    // honour - 6d3ccf7cadabff68
-    // samsung testing - 8f888a7c1385f848
-    // mahesh sir device- c0de742442c77ccc
-
-    // ankit mob - d06d4e782d67ca3f
-    // emu-android17 - 7f256e818ca50e01
-
 
     companion object{
 
             // development environment
 //        const val BASE_URL = "https://rc.lsquared.com/"
 //        const val BASE_FILE_URL = BASE_URL+"rc-lsquared-hub/"
+//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
         // US production environment
         const val BASE_URL = "https://us.lsquared.com/"
         const val BASE_FILE_URL = BASE_URL+"lsquared-hub/"
+        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
         // HUB production environment
 //        const val BASE_URL = "https://hub.lsquared.com/"
@@ -39,14 +26,78 @@ class Constant {
         const val REFRESH_FROM_CHANGE_INTERNET = "refresh_from_change_internet"
         const val REFRESH_FROM_BACKGROUND = "refresh_from_background"
 
-        // content type
 
+        // downloadable thumb
+        const val CONTENT_THUMB = "thumb"
+        // content type
         const val CONTENT_IMAGE = "image"
         const val CONTENT_VECTOR = "vector"
         const val CONTENT_POWERPOINT = "powerpoint"
         const val CONTENT_WORD = "word"
         const val CONTENT_VIDEO = "video"
         const val CONTENT_WEB = "webPage"
+//        widgets
+        const val CONTENT_WIDGET_GOOGLE = "googleSlide"
+        const val CONTENT_WIDGET_POWER = "powerbi" // power bi
+        const val CONTENT_WIDGET_TRAFFIC = "traffic"
+        const val CONTENT_WIDGET_VIMEO = "vimeo"
+        const val CONTENT_WIDGET_YOUTUBE = "youtube"
+        const val CONTENT_WIDGET_DATE_TIME = "date-time"
+        const val CONTENT_WIDGET_WEATHER = "weather"
+        const val CONTENT_WIDGET_NEWS = "news"
+        const val CONTENT_WIDGET_STOCKS = "stock"
+        const val CONTENT_WIDGET_TEXT = "crawlingText"
+        const val CONTENT_WIDGET_QUOTES = "quote"
+        const val CONTENT_WIDGET_QRCODE = "qrCode"
+
+        const val BASE_URL_YOUTUBE = "https://www.youtube.com/embed/"
+        const val BASE_URL_VIMEO = "https://player.vimeo.com/video/"
+
+        // news tyte
+        const val CONTENT_WIDGET_NEWS_LIST = "normal"
+        const val CONTENT_WIDGET_NEWS_CRAWL = "crawl"
+
+        // date time templates
+
+        const val TEMPLATE_TIME_T1 = "t1"
+        const val TEMPLATE_TIME_T2 = "t2"
+        const val TEMPLATE_TIME_T3 = "t3"
+        const val TEMPLATE_TIME_T4 = "t4"
+        const val TEMPLATE_TIME_T5 = "t5"
+        const val TEMPLATE_TIME_T6 = "t6"
+        const val TEMPLATE_TIME_T7 = "t7"
+        const val TEMPLATE_TIME_T8 = "t8"
+
+        // weather template
+        const val TEMPLATE_WEATHER_CURRENT_DATE = 0
+        const val TEMPLATE_WEATHER_FIVE_DAY = 1
+        const val TEMPLATE_WEATHER_FOUR_DAY = 2
+        const val TEMPLATE_WEATHER_ORIENTATION_VERTICAL = "v"
+        const val TEMPLATE_WEATHER_ORIENTATION_HORIZONTAL = "h"
+
+
+        // text type
+        const val TEXT_CROWLING = "c"
+        const val TEXT_STATIC = "s"
+
+
+        // FOR New Activity
+        // APIS
+        const val API_DEVICE_VERSION = BASE_URL+"api/v1/feed/deviceversion/"
+        const val API_CONTENT = BASE_FILE_URL+"feed/json/"
+        const val API_SUBMIT_INFO = BASE_URL+"api/v1/feed/setDeviceInfo"
+
+        const val API_WIDGET_TEXT = BASE_URL+"api/v1/feed/crawlingtext/"
+        const val API_WIDGET_WEATHER = BASE_URL+"api/v1/feed/azureweather/"
+        const val API_WIDGET_QUOTE = BASE_URL+"api/v1/feed/quotes/"
+        const val API_WIDGET_BEING_NEWS = BASE_URL+"api/v1/feed/bingnews/"
+
+        // calling from
+        const val CALLING_MAIN = "main"
+        const val CALLING_COD = "cod"
+
+
+
     }
 
 }

@@ -3,7 +3,9 @@ package com.app.lsquared.utils
 import android.app.Application
 import android.content.Context
 import androidx.multidex.MultiDex
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class MyApplication : Application() {
 
     init {
@@ -16,6 +18,11 @@ class MyApplication : Application() {
         fun applicationContext() : Context {
             return instance!!.applicationContext
         }
+
+        fun getInstance(): MyApplication{
+            return instance!!
+        }
+
     }
 
 
@@ -23,4 +30,14 @@ class MyApplication : Application() {
         super.attachBaseContext(base)
         MultiDex.install(this)
     }
+
+    override fun onCreate() {
+        super.onCreate()
+    }
+
+    init {
+        instance = this
+    }
+
+
 }

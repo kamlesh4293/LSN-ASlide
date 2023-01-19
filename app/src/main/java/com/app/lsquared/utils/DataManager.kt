@@ -37,6 +37,8 @@ class DataManager {
 
 
         fun fileIsExist(downloadable: Downloadable):Boolean{
+//            var filename = downloadable.name?.replace("1602585267.1767-mailbox-and-other-services.mp4","1602585267.1767-mailbox-and-other-services123.mp4")
+//            var path = getDirectory()+File.separator+filename
             var path = getDirectory()+File.separator+downloadable.name
             val file = File(path)
             return file.exists()

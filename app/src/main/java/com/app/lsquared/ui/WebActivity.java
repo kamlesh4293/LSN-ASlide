@@ -2,8 +2,10 @@ package com.app.lsquared.ui;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import com.app.lsquared.databinding.ActivityWebBinding;
 
@@ -11,6 +13,7 @@ public class WebActivity extends AppCompatActivity {
 
     ActivityWebBinding binding;
 
+    @SuppressLint("ResourceType")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -18,13 +21,14 @@ public class WebActivity extends AppCompatActivity {
         binding = ActivityWebBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-//        binding.webView.setWebChromeClient(new WebChromeClient());
+        RelativeLayout rl = new RelativeLayout(this);
 
+        FrameLayout frameLayout = new FrameLayout(this);
+        frameLayout.setId(1);
+        rl.addView(frameLayout);
 
-        binding.webView.setWebViewClient(new WebViewClient());
-
-        binding.webView.getSettings().setJavaScriptEnabled(true);
-        binding.webView.loadUrl("https://constant-media.biodigital.com/");
+//        binding.webRelativeLayout.addView(rl);
+//        getSupportFragmentManager().beginTransaction().add(frameLayout.getId(), new FragmentNews()).commit();
 
     }
 }

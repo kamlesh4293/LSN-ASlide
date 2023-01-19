@@ -30,5 +30,6 @@ data class Frame (
 	@SerializedName("tr") val tr : String,
 	@SerializedName("st") val st : String,
 	@SerializedName("et") val et : String,
-	@SerializedName("item") val item : List<Item>
+	@SerializedName("item") val item : List<Item>,
+	var position : Int = 0
 )

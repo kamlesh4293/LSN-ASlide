@@ -25,10 +25,20 @@ interface ApiInterface {
 
 
     companion object {
+
         fun create() : ApiInterface {
             val retrofit = Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(Constant.BASE_URL)
+                .client(RetrofitClient.getOkhttpClient())
+                .build()
+            return retrofit.create(ApiInterface::class.java)
+        }
+
+        fun createRss() : ApiInterface {
+            val retrofit = Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl("")
                 .client(RetrofitClient.getOkhttpClient())
                 .build()
             return retrofit.create(ApiInterface::class.java)

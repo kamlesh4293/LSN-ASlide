@@ -22,6 +22,8 @@ import android.util.Log
 import java.lang.StringBuilder
 import android.net.wifi.WifiManager
 import android.text.format.Formatter
+import com.app.lsquared.BuildConfig
+import org.json.JSONObject
 
 class DeviceInfo {
 
@@ -156,6 +158,37 @@ class DeviceInfo {
                 return ip_address
             }
         }
+
+        // for new codebase
+        fun deviceInfoData(ctx: Activity): JSONObject {
+            val rootObject = JSONObject()
+            rootObject.put("mac", getDeviceId(ctx))
+            rootObject.put("app", BuildConfig.VERSION_NAME)
+            rootObject.put("watcher","")
+            rootObject.put("os",7)
+            rootObject.put("client",7)
+            rootObject.put("res", getDeviceResolution(ctx))
+            rootObject.put("computerName", getDeviceName())
+            rootObject.put("local_addr", getLocalIpAddress())
+            rootObject.put("appStart","")
+
+            // info object
+            val infoObject = JSONObject()
+            infoObject.put("DiskTotal", getTotalDiscSize())
+            infoObject.put("DiskUsed", getUsedDiscSize())
+            infoObject.put("MemoryTotal", getTotalRAMSize(ctx))
+            infoObject.put("MemoryUsed", getUsedRAMSize(ctx))
+            infoObject.put("AndroidVersion", getDeviceVersion())
+            infoObject.put("ModelSerialNumber", getSerial())
+            infoObject.put("ModelName", getModelName())
+            infoObject.put("ConnecteionType", getConnectedNetworkType(ctx))
+            infoObject.put("WiFi-MAC", getWifiMacAddress(ctx))
+            infoObject.put("AppType","HD Steth")
+
+            rootObject.put("info",infoObject)
+            return rootObject
+        }
+
 
 
     }

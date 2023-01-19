@@ -2,16 +2,11 @@ package com.app.lsquared.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import android.util.Log
 import com.app.lsquared.model.ResponseJsonData
 import com.google.gson.Gson
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.util.*
-import android.R.string
-
-
 
 
 class MySharePrefernce(ctx: Context) {
@@ -25,6 +20,7 @@ class MySharePrefernce(ctx: Context) {
 
         const val KEY_CONTENT_REFRESH = "data_refresh"
         const val KEY_SCREENSHOT_INTERVAL = "screen_shot_interval"
+        const val KEY_COD_IDEAL_TIME = "cod_ideal_time"
         const val KEY_REFRESH_INTERNET = "refresh_internet"
         const val KEY_REPORT_DATA = "report_data"
     }
@@ -62,12 +58,12 @@ class MySharePrefernce(ctx: Context) {
 
 
     // json data
-    fun putJsonData(data : String){
+    fun setContentData(data : String){
         editor?.putString(KEY_JSON_DATA,data)
         editor?.commit()
     }
 
-    fun getJsonData():String{
+    fun getContentData():String{
         return pref?.getString(KEY_JSON_DATA,"")!!
     }
 
@@ -153,7 +149,7 @@ class MySharePrefernce(ctx: Context) {
             var data_obj = Gson().fromJson(response, ResponseJsonData::class.java)
             if(data_obj.device[0] != null){
                 putVersionFromContentAPI(data_obj.device[0].version)
-                putJsonData(response)
+                setContentData(response)
             }
         }
     }

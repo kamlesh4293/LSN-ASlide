@@ -9,6 +9,7 @@ data class Layout (
 	@SerializedName("w") val w : Int,
 	@SerializedName("h") val h : Int,
 	@SerializedName("bg") val bg : String,
+	@SerializedName("cod"   ) var cod   : ArrayList<Cod>   = arrayListOf(),
 	@SerializedName("frame") val frame : List<Frame>,
 	@SerializedName("inactive") val inactive : List<Frame>
 
