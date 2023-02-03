@@ -48,6 +48,9 @@ class CODHoriContentAdapter(var list: MutableList<Content>,
                     itemBinding.tvCodhoriTime.visibility = View.VISIBLE
                     itemBinding.ivCodhoriVidType.visibility = View.VISIBLE
                     itemBinding.tvCodhoriTime.text = DateTimeUtil.secondsToMinutes(item.duration!!)
+                }else {
+                    itemBinding.tvCodhoriTime.visibility = View.GONE
+                    itemBinding.ivCodhoriVidType.visibility = View.GONE
                 }
             }
             if(item.type.equals(Constant.CONTENT_WIDGET_YOUTUBE)|| item.type.equals(Constant.CONTENT_WIDGET_VIMEO)){
@@ -58,12 +61,15 @@ class CODHoriContentAdapter(var list: MutableList<Content>,
                 if(item.type.equals(Constant.CONTENT_WIDGET_YOUTUBE)) itemBinding.ivCodhoriVidType.setImageResource(R.drawable.youtube)
                 if(item.type.equals(Constant.CONTENT_WIDGET_VIMEO)) itemBinding.ivCodhoriVidType.setImageResource(R.drawable.vimeo)
             }
-            if(item.type.equals(Constant.CONTENT_WEB)||item.type.equals(Constant.CONTENT_WIDGET_GOOGLE)){
+            if(item.type.equals(Constant.CONTENT_WEB)||item.type.equals(Constant.CONTENT_WIDGET_GOOGLE))
                 itemBinding.ivCodItem.setImageResource(R.drawable.thumb_web)
-            }
-            if(item.type.equals(Constant.CONTENT_WIDGET_POWER)){
+            if(item.type.equals(Constant.CONTENT_WIDGET_POWER))
                 itemBinding.ivCodItem.setImageResource(R.drawable.powerbi)
-            }
+            if(item.type.equals(Constant.CONTENT_WIDGET_IFRAME))
+                itemBinding.ivCodItem.setImageResource(R.drawable.iframe)
+            if(item.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM))
+                itemBinding.ivCodItem.setImageResource(R.drawable.livestream)
+
         }
     }
 

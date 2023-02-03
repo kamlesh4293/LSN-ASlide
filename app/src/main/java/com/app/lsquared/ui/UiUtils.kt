@@ -2,6 +2,7 @@ package com.app.lsquared.ui
 
 import android.graphics.Color
 import android.graphics.drawable.Drawable
+import android.util.Log
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -13,6 +14,23 @@ import top.defaults.drawabletoolbox.DrawableBuilder
 class UiUtils {
 
     companion object{
+
+        fun getColorWithOpacity(color: String,color_opacity: String):String{
+            var opacity = "#00"
+            if(color_opacity.equals("0.1")) opacity = "#1A"
+            if(color_opacity.equals("0.2")) opacity = "#33"
+            if(color_opacity.equals("0.3")) opacity = "#4D"
+            if(color_opacity.equals("0.4")) opacity = "#66"
+            if(color_opacity.equals("0.5")) opacity = "#80"
+            if(color_opacity.equals("0.6")) opacity = "#99"
+            if(color_opacity.equals("0.7")) opacity = "#B3"
+            if(color_opacity.equals("0.8")) opacity = "#CC"
+            if(color_opacity.equals("0.9")) opacity = "#E6"
+            if(color_opacity.equals("1")) opacity = "#FF"
+            var color_code = color.replace("#","")
+            Log.d("TAG", "getColorWithOpacity: $opacity$color_code")
+            return "$opacity$color_code"
+        }
 
         fun getRoundedFilled(color: String): Drawable {
             return DrawableBuilder()

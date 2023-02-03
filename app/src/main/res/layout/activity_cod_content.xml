@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_cod_content"
+    android:background="@color/cod_selected_color"
     android:layout_height="match_parent">
 
     <RelativeLayout
@@ -17,11 +18,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <com.google.android.exoplayer2.ui.SimpleExoPlayerView
+    <com.google.android.exoplayer2.ui.StyledPlayerView
         android:id="@+id/idExoPlayerView"
         android:visibility="gone"
-        app:rewind_increment="10000"
-        app:fastforward_increment="10000"
+        app:surface_type="texture_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

@@ -3,6 +3,7 @@ package com.app.lsquared.utils
 import android.util.Log
 import com.app.lsquared.model.Downloadable
 import java.io.File
+import java.io.FileWriter
 
 class DataManager {
 
@@ -12,6 +13,7 @@ class DataManager {
         val APP_DIRECTORY =  "LSquared"
         val APP_SDSTETH_DIRECTORY =  "HDSteth"
         val APP_SCREEN_DIRECTORY =  APP_DIRECTORY+"/Screen"
+        val APP_REPORT_DIRECTORY =  APP_DIRECTORY+"/Report"
 
         fun getDirectory():String?{
 //            val root = Environment.getExternalStorageDirectory().toString()
@@ -52,20 +54,53 @@ class DataManager {
 
         fun getAllDirectoryFiles() : Array<File>{
             val path = getDirectory()
-            Log.d("DM Files", "Path: $path")
             val directory = File(path)
             val files = directory.listFiles()
-            Log.d("DM Files", "Size: " + files.size)
             return files
         }
 
         fun getListDownloadable (downloadable: List<Downloadable>?) : MutableList<String>{
             var list = mutableListOf<String>()
             if(downloadable!=null && downloadable.size>0){
-                for (i in 0..downloadable.size-1)list.add(downloadable[i].name)
+                for (i in 0..downloadable.size-1){
+                    list.add(downloadable[i].name)
+                }
             }
             return list
         }
+
+        fun getReportDirectory():String?{
+            var file = MyApplication.applicationContext().getExternalFilesDir(APP_REPORT_DIRECTORY)
+            return file?.absolutePath
+        }
+
+        fun getReportFileList():Array<File> {
+            var file = MyApplication.applicationContext().getExternalFilesDir(APP_REPORT_DIRECTORY)
+            return file?.listFiles()!!
+        }
+
+
+
+        // create file for saved data
+        fun createReportFile(pref: MySharePrefernce?) {
+            var data = pref?.getStoreReportdata()
+            if(!data.equals("")){
+                Log.d("TAG", "ReportFile: data $data")
+                var filename = System.currentTimeMillis().toString()+".csv"
+                try {
+                    val gpxfile = File(getReportDirectory(), filename)
+                    val writer = FileWriter(gpxfile)
+                    writer.append(data.toString().trim())
+                    writer.flush()
+                    writer.close()
+                    pref?.clearReportdata()
+                } catch (e: Exception) {
+                }
+            }else{
+                Log.d("TAG", "ReportFile: No data For create File")
+            }
+        }
+
 
     }
 

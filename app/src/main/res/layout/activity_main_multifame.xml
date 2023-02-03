@@ -22,14 +22,6 @@
             </RelativeLayout>
 
             <RelativeLayout
-                android:background="@color/white"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-            </RelativeLayout>
-
-
-            <RelativeLayout
                 android:id="@+id/rl_background"
                 android:orientation="horizontal"
                 android:background="@color/bg_color"
@@ -94,43 +86,9 @@
                     android:padding="10dp"
                     android:src="@drawable/logo" />
 
-                <RelativeLayout
-                    android:visibility="gone"
-                    android:id="@+id/rl_downloading"
-                    android:layout_marginBottom="10dp"
-                    android:layout_width="45dp"
-                    android:layout_height="45dp"
-                    android:layout_alignParentRight="true"
-                    android:layout_alignParentBottom="true"
-                    android:layout_gravity="bottom"
-                    android:padding="5dp">
-
-                    <ProgressBar
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_alignParentRight="true"
-                        android:layout_alignParentBottom="true"
-                        android:layout_gravity="bottom"
-                        android:outlineAmbientShadowColor="@color/white"
-                        android:indeterminateTint="@color/white"
-                        android:src="@drawable/ic_download" />
-
-                    <TextView
-                        android:id="@+id/tv_downloading_no"
-                        android:gravity="center"
-                        android:text="25"
-                        android:textSize="12dp"
-                        android:textColor="@color/white"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"/>
-
-
-                </RelativeLayout>
 
 
             </RelativeLayout>
-
-
 
             <RelativeLayout
                 android:id="@+id/root_layout"
@@ -139,33 +97,54 @@
 
             </RelativeLayout>
 
-
-
         </RelativeLayout>
 
-        <LinearLayout
-            android:id="@+id/ll_main_cod"
-            android:visibility="gone"
-            android:gravity="center"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+    <ImageView
+        android:visibility="gone"
+        android:id="@+id/iv_no_internet"
+        android:layout_marginBottom="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/no_internet"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
+        android:padding="5dp"/>
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/bt_cod"
-                android:text="C.O.D."
-                android:background="@color/color_grey"
+        <RelativeLayout
+            android:visibility="gone"
+            android:id="@+id/rl_downloading"
+            android:layout_marginBottom="10dp"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="bottom"
+            android:padding="5dp">
+
+
+            <TextView
+                android:visibility="gone"
+                android:id="@+id/tv_downloading_no"
+                android:gravity="center"
+                android:text="25"
+                android:textSize="12dp"
+                android:textColor="@color/white"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <ImageView
+                android:id="@+id/iv_downloading"
+                android:gravity="center"
+                android:text="25"
+                android:textSize="12dp"
+                android:textColor="@color/white"
+                android:src="@drawable/ic_download"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
 
-        </LinearLayout>
-
-        <ImageView
-            android:visibility="gone"
-            android:id="@+id/screenshot"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-
+        </RelativeLayout>
 
 
 

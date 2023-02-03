@@ -11,7 +11,9 @@ import android.view.SurfaceView
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.app.lsquared.R
 import com.bumptech.glide.Glide
+import com.google.android.exoplayer2.ui.StyledPlayerView
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -32,6 +34,37 @@ class ImageUtil {
 
         // relative layout
         fun screenshot(view: RelativeLayout, filename: String): File? {
+            if(view==null) return null
+            val date = Date()
+            val format = DateFormat.format("yyyy-MM-dd_hh:mm:ss", date)
+            try {
+                val dirpath = DataManager.getScreenShotDirectory()
+                val file = File(dirpath)
+                if (!file.exists()) {
+                    val mkdir = file.mkdir()
+                }
+                val path = "$dirpath/$filename-$format.jpeg"
+                view.isDrawingCacheEnabled = true
+                val bitmap = Bitmap.createBitmap(view.drawingCache)
+                view.isDrawingCacheEnabled = false
+                val imageurl = File(path)
+                val outputStream = FileOutputStream(imageurl)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+                outputStream.flush()
+                outputStream.close()
+                return imageurl
+            } catch (io: FileNotFoundException) {
+                io.printStackTrace()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }catch (e: NullPointerException) {
+                e.printStackTrace()
+            }
+            return null
+        }
+
+        // relative layout
+        fun screenshot(view: StyledPlayerView, filename: String): File? {
             if(view==null) return null
             val date = Date()
             val format = DateFormat.format("yyyy-MM-dd_hh:mm:ss", date)
@@ -96,31 +129,27 @@ class ImageUtil {
                 .into(imageView)
         }
 
-        fun usePixelCopy(videoView: SurfaceView, callback: (Bitmap?) -> Unit) {
-            val bitmap: Bitmap = Bitmap.createBitmap(
-                videoView.width,
-                videoView.height,
-                Bitmap.Config.ARGB_8888
-            );
-            try {
-                // Create a handler thread to offload the processing of the image.
-                val handlerThread = HandlerThread("PixelCopier");
-                handlerThread.start();
-                PixelCopy.request(
-                    videoView, bitmap,
-                    PixelCopy.OnPixelCopyFinishedListener { copyResult ->
-                        if (copyResult == PixelCopy.SUCCESS) {
-                            callback(bitmap)
-                        }
-                        handlerThread.quitSafely();
-                    },
-                    Handler(handlerThread.looper)
-                )
-            } catch (e: IllegalArgumentException) {
-                callback(null)
-                // PixelCopy may throw IllegalArgumentException, make sure to handle it
-                e.printStackTrace()
-            }
+        fun loadImageWithoutBaseURL(context:Context,url:String,imageView: ImageView){
+            Glide.with(context)
+                .load(Constant.BASE_FILE_URL+url)
+                .into(imageView)
+        }
+
+        fun loadLocalImage(fileName:String,imageView: ImageView){
+            val options = BitmapFactory.Options()
+            options.inSampleSize = 1
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
+            options.inJustDecodeBounds = false
+
+            val path = DataManager.getDirectory()+ File.separator+fileName
+            imageView.setImageBitmap(BitmapFactory.decodeFile(path,options))
+        }
+
+
+        fun loadGifImage(context:Context,imageView: ImageView){
+            Glide.with(context).asGif()
+                .load(R.raw.download)
+                .into(imageView)
         }
 
     }

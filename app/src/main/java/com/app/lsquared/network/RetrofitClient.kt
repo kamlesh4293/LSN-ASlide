@@ -34,7 +34,7 @@ object RetrofitClient {
 
     fun getOkhttpClient(): OkHttpClient{
         var mHttpLoggingInterceptor = HttpLoggingInterceptor()
-            .setLevel(HttpLoggingInterceptor.Level.BODY)
+            .setLevel(HttpLoggingInterceptor.Level.BASIC)
 
         val tlsSocketFactory = TLSSocketFactory()
 

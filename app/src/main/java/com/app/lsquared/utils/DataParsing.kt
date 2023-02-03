@@ -4,9 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.util.Log
-import android.widget.*
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import com.app.lsquared.model.*
 import com.app.lsquared.model.widget.RssItem
+import com.app.lsquared.ui.UiUtils
 import com.google.gson.Gson
 import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser
@@ -87,6 +90,16 @@ class DataParsing() {
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
                 if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
+
+                    if (data_obj.device[0].screenshotUploadInterval != 0){
+                        var ss_interval = if(data_obj.device[0].screenshotUploadInterval!=0)data_obj.device[0].screenshotUploadInterval else 300
+                        prefernce?.putIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL,ss_interval)
+                    }
+                    if (data_obj.device[0].wcoditime != 0){
+                        var cod_ideal_time = if(data_obj.device[0].wcoditime!=null)data_obj.device[0].wcoditime else 0
+                        prefernce?.putIntData(MySharePrefernce.KEY_COD_IDEAL_TIME,cod_ideal_time)
+                    }
+
                     return true
                 }
             }
@@ -151,6 +164,41 @@ class DataParsing() {
             }
             return list
         }
+
+        // check download content
+        fun getDownloableFileName(prefernce: MySharePrefernce?): List<String>{
+            var list = mutableListOf<String>()
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
+                    for(i in 0..data_obj.downloadable.size-1){
+                        Log.d("TAG", "getDownloableList: $i - ${data_obj.downloadable[i].name}")
+                        if(!DataManager.fileIsExist(data_obj.downloadable[i])){
+                            Log.d("TAG", "getDownloableList: not exist $i - ${data_obj.downloadable[i].name}")
+                            list.add(data_obj.downloadable[i].name)
+                        }
+                    }
+                }
+            }
+            return list
+        }
+
+        // check download content
+        fun getDownloableFileNameList(prefernce: MySharePrefernce?): List<String>{
+            var list = mutableListOf<String>()
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
+                    for(i in 0..data_obj.downloadable.size-1){
+                        list.add(data_obj.downloadable[i].name)
+                    }
+                }
+            }
+            return list
+        }
+
 
         fun getColor(item: Item): String {
             var setting_obj = JSONObject(item.settings)
@@ -226,15 +274,33 @@ class DataParsing() {
         }
 
 
-        fun getFrame(ctx: Context,frame: Frame,position: Int):RelativeLayout{
-            var relative_frame = RelativeLayout(ctx)
+        fun getLayoutFrame(ctx: Context,frame: Frame,position: Int):LinearLayout{
+            var relative_frame = LinearLayout(ctx)
             relative_frame.id = position+10
-            val params = RelativeLayout.LayoutParams(frame.w,frame.h)
+            val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)
+
             relative_frame.layoutParams = params
             relative_frame.x = frame.x.toFloat()
             relative_frame.y = frame.y.toFloat()
+
+            if(frame.align.equals(Constant.ALIGN_TOP_LEFT)) relative_frame.gravity = Gravity.TOP or Gravity.LEFT
+            if(frame.align.equals(Constant.ALIGN_TOP_CENTER)) relative_frame.gravity = Gravity.TOP or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_TOP_RIGHT)) relative_frame.gravity = Gravity.TOP or Gravity.RIGHT
+
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_LEFT)) relative_frame.gravity = Gravity.LEFT or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_CENTER)) relative_frame.gravity = Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_RIGHT)) relative_frame.gravity = Gravity.RIGHT or Gravity.CENTER
+
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_LEFT)) relative_frame.gravity = Gravity.BOTTOM or Gravity.LEFT
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_CENTER)) relative_frame.gravity = Gravity.BOTTOM or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_RIGHT)) relative_frame.gravity = Gravity.BOTTOM or Gravity.RIGHT
+
+
             if(frame.bg.equals(""))relative_frame.setBackgroundColor(Color.TRANSPARENT)
-            else relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
+            else{
+//                relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
+                relative_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
+            }
             return relative_frame
         }
 
@@ -245,18 +311,23 @@ class DataParsing() {
             var data = prefernce?.getContentData()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).cod!=null &&
-                    data_obj.layout.get(0).cod.size>0 && data_obj.layout.get(0).cod.get(0).item!=null
-                    && data_obj.layout.get(0).cod.get(0).item.size >0 ){
-                    // cod items check scedule activatation
-                    var items = data_obj.layout.get(0).cod.get(0).item
-                    for(item in items){
-                        if (item.active==1) return true
+                try {
+                    if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).cod != null ){
+                        return true
                     }
+                }catch (ex:Exception) {
                     return false
                 }
             }
             return false
+        }
+
+        fun getDataObject(prefernce: MySharePrefernce?): ResponseJsonData? {
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                return  Gson().fromJson(data, ResponseJsonData::class.java)
+            }
+            return null
         }
 
         // get cod categories
@@ -264,13 +335,14 @@ class DataParsing() {
             var data = prefernce?.getContentData()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout.get(0).cod.get(0).item != null
-                    && data_obj.layout.get(0).cod.get(0).item.size > 0  ){
-                    return data_obj.layout.get(0).cod.get(0).item
+                if (data_obj.layout.get(0).cod != null &&data_obj.layout.get(0).cod!!.get(0).item != null
+                    && data_obj.layout.get(0).cod!!.get(0).item.size > 0  ){
+                    return data_obj.layout.get(0).cod!!.get(0).item
                 }
             }
             return ArrayList<CodItem>()
         }
+
 
         // filter category
         fun getFilterdContent(content: ArrayList<Content>, filter_type: String)

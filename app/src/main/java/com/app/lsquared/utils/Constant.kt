@@ -49,6 +49,9 @@ class Constant {
         const val CONTENT_WIDGET_TEXT = "crawlingText"
         const val CONTENT_WIDGET_QUOTES = "quote"
         const val CONTENT_WIDGET_QRCODE = "qrCode"
+        const val CONTENT_WIDGET_IFRAME = "webWidget"
+        const val CONTENT_WIDGET_LIVESTREAM = "livestream"
+        const val CONTENT_WIDGET_COD = "contentOnDemandBtn"
 
         const val BASE_URL_YOUTUBE = "https://www.youtube.com/embed/"
         const val BASE_URL_VIMEO = "https://player.vimeo.com/video/"
@@ -96,7 +99,16 @@ class Constant {
         const val CALLING_MAIN = "main"
         const val CALLING_COD = "cod"
 
-
+        // frame content alignment
+        const val ALIGN_TOP_LEFT ="t-l"
+        const val ALIGN_TOP_CENTER ="t-c"
+        const val ALIGN_TOP_RIGHT ="t-r"
+        const val ALIGN_MIDDLE_LEFT ="m-l"
+        const val ALIGN_MIDDLE_CENTER ="m-c"
+        const val ALIGN_MIDDLE_RIGHT ="m-r"
+        const val ALIGN_BOTTOM_LEFT ="b-l"
+        const val ALIGN_BOTTOM_CENTER ="b-c"
+        const val ALIGN_BOTTOM_RIGHT ="b-r"
 
     }
 

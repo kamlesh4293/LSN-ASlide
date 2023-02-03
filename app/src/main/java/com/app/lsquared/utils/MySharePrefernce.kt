@@ -23,6 +23,8 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_COD_IDEAL_TIME = "cod_ideal_time"
         const val KEY_REFRESH_INTERNET = "refresh_internet"
         const val KEY_REPORT_DATA = "report_data"
+        const val KEY_DEVICE_REGISTERED = "device_registered"
+
     }
 
     var pref: SharedPreferences? = null
@@ -33,10 +35,21 @@ class MySharePrefernce(ctx: Context) {
         editor = pref?.edit()
     }
 
-    // put string data
+    // put int data
     fun putIntData(key:String,value : Int){
         editor?.putInt(key,value)
         editor?.commit()
+    }
+
+    // put string data
+    fun putStringData(key:String,value : String){
+        editor?.putString(key,value)
+        editor?.commit()
+    }
+
+    // get string data
+    fun getStringData(key:String):String{
+        return pref?.getString(key,"")!!
     }
 
     // get string data
@@ -98,19 +111,19 @@ class MySharePrefernce(ctx: Context) {
     }
 
     // submit report
+    // Store report in Local Data
     fun storeReportdata(new_data :String){
-
-        Log.d("TAG", "storeReportdata: ${new_data.toString()}")
         var stored_data = pref?.getString(KEY_REPORT_DATA,"")
-        if(stored_data.equals(""))editor?.putString(KEY_REPORT_DATA,new_data)
+        if(stored_data.equals(""))
+            editor?.putString(KEY_REPORT_DATA,new_data)
         else {
-            var string_builder = StringBuilder()
-            string_builder.append(stored_data)
+            var string_builder = StringBuilder(stored_data)
             string_builder.append(new_data)
             editor?.putString(KEY_REPORT_DATA,string_builder.toString())
         }
-            editor?.commit()
+        editor?.commit()
     }
+
 
     // get report data
     fun getStoreReportdata() : String{
@@ -153,5 +166,39 @@ class MySharePrefernce(ctx: Context) {
             }
         }
     }
+
+    // craete report for widgtes
+    fun createReport(id:String,duration:Double,start_time:String){
+        var report = StringBuilder()
+        val parts = id.split("-").toTypedArray()          // widget id
+        val date = SimpleDateFormat("yyyy-MM-dd")
+        val time = SimpleDateFormat("hh:mm:ss")   // End Time
+        val todayDate = Date()
+        val thisDate: String = date.format(todayDate)
+        val endTime: String = time.format(todayDate)
+        report.append("${parts[2]},")               // id
+        report.append("${duration.toInt()}000,")    // content duration
+        report.append(start_time)
+        report.append("$thisDate")           // date
+        report.append("T$endTime,")          // end time
+        report.append("${parts[0]},")        // widget id
+        report.append("${parts[1]}\n")       // content id
+        Log.d("TAG", "createReport: new line - ${report.toString()}")
+        storeReportdata(report.toString())
+    }
+
+    fun getStartTime():String{
+        var report = StringBuilder()
+        val date = SimpleDateFormat("yyyy-MM-dd")
+        val time = SimpleDateFormat("hh:mm:ss")   // End Time
+        val todayDate = Date()
+        val thisDate: String = date.format(todayDate)
+        val endTime: String = time.format(todayDate)
+        report.append("$thisDate")           // date
+        report.append("T$endTime,")         // end time
+        return report.toString()
+    }
+
+
 
 }

@@ -8,12 +8,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
-import android.text.format.DateFormat
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
@@ -34,46 +32,44 @@ import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.network.NetworkConnectivity
 import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
-import com.app.lsquared.ui.activity.CODActivity
 import com.app.lsquared.ui.adapter.BeingNewsAdapter
 import com.app.lsquared.ui.adapter.NewsAdapter
 import com.app.lsquared.ui.widgets.*
 import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAll
 import com.app.lsquared.utils.*
+import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.youtube.player.YouTubeInitializationResult
+import com.google.android.youtube.player.YouTubePlayer
+import com.google.android.youtube.player.YouTubePlayerFragment
 import com.google.gson.Gson
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
-@AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
 
-    var TAG = "MainActivity";
+class MainActivity : AppCompatActivity(){
+
+    var TAG = "MainActivity"
 
     // view list
     var layout_list : MutableList<NewLayoutView> = mutableListOf()
 
     var multiframe_items: MutableList<MutableList<Item>> = mutableListOf()
     var items: MutableList<Item> = mutableListOf()
-
+    var youtube_item : Item? = null
 
     var current_size_list : MutableList<Int> = mutableListOf()
-    var device_id = ""
 
     // downloading count
     var downloading = 0
 
     var play_activate = false
 
-
     // share prefernce
-    var pref: MySharePrefernce? = null
-
+    lateinit var pref: MySharePrefernce
 
     // dialog
     var dialog: Dialog? = null
@@ -85,27 +81,44 @@ class MainActivity : AppCompatActivity() {
     // live data
     lateinit var connectionLiveData: NetworkConnectivity
 
-    // for register device
-    var handler: Handler = Handler()
-    var runnable: Runnable? = null
-
-    // for temperature
-    var temp_handler: Handler = Handler()
-    var temp_runnable: Runnable? = null
-
-    // for screenshot
-    var screenshot_handler: Handler = Handler()
-    var screenshot_runnable: Runnable? = null
-
-    var from_internet = false
-    var from_background = false
-
     var temp = 0
 
-    var downloable_file : List<Downloadable>? = null
-    var delete_enabled = false
-    var ctx : Context? = null
+    lateinit var ctx : Context
 
+    lateinit var checkVersionHandler: Handler
+    lateinit var screenshot_handler: Handler
+    lateinit var temp_handler: Handler
+    lateinit var report_handler: Handler
+
+    private val versionTask = object : Runnable {
+        override fun run() {
+            checkDeviceVersion()
+            checkVersionHandler.postDelayed(this, viewModel.delay.toLong())
+        }
+    }
+
+    private val ssTask = object : Runnable {
+        override fun run() {
+            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+            if(file!=null)
+                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx),Utility.getFileToByte(file?.absolutePath)))
+            screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
+        }
+    }
+
+    private val tempTask = object : Runnable {
+        override fun run() {
+            viewModel.updateTempratureData(temp.toString())
+            temp_handler.postDelayed(this, viewModel.temp_delay.toLong())
+        }
+    }
+
+    private val reportTask = object : Runnable {
+        override fun run() {
+            viewModel.submitRecords(DeviceInfo.getDeviceId(ctx))
+            report_handler.postDelayed(this, viewModel.report_delay.toLong())
+        }
+    }
 
     private val broadcastreceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -113,91 +126,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        from_background = false
         ctx = this
         initXml()
         initObserver()
-        checkDeviceVersion()
         // broadcast reciver for temp
-        var intentfilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val intentfilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         registerReceiver(broadcastreceiver,intentfilter)
+
+        checkVersionHandler = Handler(Looper.getMainLooper())
+        screenshot_handler = Handler(Looper.getMainLooper())
+        temp_handler = Handler(Looper.getMainLooper())
+        report_handler = Handler(Looper.getMainLooper())
+
     }
 
     override fun onStop() {
         super.onStop()
-        from_background = true
     }
 
     override fun onResume() {
         super.onResume()
-        Handler().postDelayed({ from_internet = true }, 2000)
-        if(from_background){
-            refreshPage(Constant.REFRESH_FROM_BACKGROUND)
-        }
-
-        // is device registered
-        handler.postDelayed(Runnable {
-            handler.postDelayed(runnable!!, viewModel.delay.toLong())
-            checkDeviceVersion()
-        }.also { runnable = it }, viewModel.delay.toLong())
-
-        // temp handler
-        temp_handler.postDelayed(Runnable {
-            temp_handler.postDelayed(temp_runnable!!, viewModel.temp_delay.toLong())
-            viewModel.updateTempratureData(temp.toString())
-        }.also { temp_runnable = it }, viewModel.temp_delay.toLong())
-
-
-        // screen shot
-        screenshot_handler.postDelayed(Runnable {
-            screenshot_handler.postDelayed(
-                screenshot_runnable!!,
-                viewModel.screen_delay * 1000.toLong()
-            )
-            var file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
-            if(file!=null)
-                viewModel.submitScreenShot(Utility.getScreenshotJson(device_id,Utility.getFileToByte(file?.absolutePath)))
-        }.also { screenshot_runnable = it }, viewModel.screen_delay * 1000.toLong())
-
+        checkVersionHandler.post(versionTask)
+        screenshot_handler.post(ssTask)
+        temp_handler.post(tempTask)
+        report_handler.post(reportTask)
         changeContent()
     }
-
-    protected fun screenshot(view: RelativeLayout, filename: String): File? {
-        if(view==null) return null
-        val date = Date()
-        // Here we are initialising the format of our image name
-        val format = DateFormat.format("yyyy-MM-dd_hh:mm:ss", date)
-        try {
-            // Initialising the directory of storage
-//            val dirpath = Environment.getExternalStorageDirectory().toString() + ""
-            val dirpath = DataManager.getScreenShotDirectory()
-            val file = File(dirpath)
-            if (!file.exists()) {
-                val mkdir = file.mkdir()
-            }
-            // File name
-            val path = "$dirpath/$filename-$format.jpeg"
-            view.isDrawingCacheEnabled = true
-            val bitmap = Bitmap.createBitmap(view.drawingCache)
-            view.isDrawingCacheEnabled = false
-            val imageurl = File(path)
-            val outputStream = FileOutputStream(imageurl)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            return imageurl
-        } catch (io: FileNotFoundException) {
-            io.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        return null
-    }
-
 
     private fun initXml() {
         // remove status bar
@@ -213,10 +170,12 @@ class MainActivity : AppCompatActivity() {
         window.decorView.systemUiVisibility = flags
         // screen always on mode
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         binding = ActivityMainMultifameBinding.inflate(layoutInflater)
+
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
         setContentView(binding.root)
+        pref = MySharePrefernce(ctx)
         Utility.checkAllPermissionGranted(this)
         @RequiresApi(Build.VERSION_CODES.R)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -231,54 +190,45 @@ class MainActivity : AppCompatActivity() {
         AndroidNetworking.initialize(getApplicationContext())
         // live data initiate
         connectionLiveData = NetworkConnectivity(application)
-        device_id = DeviceInfo.getDeviceId(this)
 
         viewModel.internet = isConnected
-        viewModel.device_id = device_id
-
-
-        // share preference
-        pref = MySharePrefernce(this)
-        // set screenshot interval
+        viewModel.device_id = DeviceInfo.getDeviceId(ctx)
 
 
         if (pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!! != 0)
             viewModel.screen_delay = pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!!
 
-        binding.btCod.setOnClickListener {
-            removeData()
-            startActivity(Intent(this,CODActivity::class.java))
-        }
     }
 
 
     private fun initObserver() {
 
         // internet observer
+        binding.ivNoInternet.visibility = if(!isConnected) View.VISIBLE else View.GONE
         connectionLiveData.observe(this, Observer { isInternet ->
             viewModel.internet = isInternet
-            if (!isInternet) showSnackBar(R.string.no_internet)
-            if(from_internet) {
-                refreshPage(Constant.REFRESH_FROM_CHANGE_INTERNET)
-            }
+            binding.ivNoInternet.visibility = if(!isInternet) View.VISIBLE else View.GONE
         })
 
 
         // device registred observer
         viewModel.device_register_api_result.observe(this, Observer { response ->
+            Log.d(TAG, "initObserver: observ register api")
             if (response.status == Status.SUCCESS) {
                 var device_obj = Gson().fromJson(response.data, ResponseCheckDeviceData::class.java)
                 if (device_obj.desc.equals("device not found")) {
-                    refreshPage(Constant.REFRESH_FROM_NODEVICE)
+                    deviceNotRegistered()
                 } else {
+                    pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,true)
                     viewModel.is_device_registered = true
-//                    viewModel.submitRecords(device_id,pref?.getStoreReportdata()!!,pref)
                     pref?.putVersionFromDeviceAPI(device_obj.desc.toInt())
                     hideDialog()
                     var device_version = pref?.getVersionOfDeviceAPI()
                     var content_version = pref?.getVersionOfConytentAPI()
                     if (device_version != content_version) {
                         viewModel.fetchContentData()
+                    }else{
+                        if(downloading==0) viewModel.deleteFiles(DataParsing.getDownloableFileNameList(pref!!))
                     }
                 }
             } else viewModel.is_device_registered = false
@@ -296,7 +246,7 @@ class MainActivity : AppCompatActivity() {
                     pref?.setLocalStorage(response.data!!)
                     changeContent()
                 } catch (ex: Exception) {
-                    refreshPage(Constant.REFRESH_FROM_WAITING)
+
                 }
             }
         })
@@ -410,46 +360,47 @@ class MainActivity : AppCompatActivity() {
 
     private fun changeContent() {
 
-        Log.d(TAG, "changeContent: time - ${DateTimeUtil.getTimeSeconds()}")
+        if(!pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) {
+            showNotRegisterDialog()
+            return
+        }
 
         var list = DataParsing.getDownloableList(pref)
         if(list.size>0 && isConnected){
             downloading = 1
             binding.rlDownloading.visibility = View.VISIBLE
-            binding.tvDownloadingNo.text = "${list.size}"
             viewModel.downloadFile(list[0])
+            ImageUtil.loadGifImage(this,binding.ivDownloading)
         }else{
             binding.rlDownloading.visibility = View.GONE
             downloading = 0
             removeData()
-            var is_layout = DataParsing.isLayoutAvailable(pref)
             var is_frames = DataParsing.isFrameAvailable(pref)
-            var is_cod = DataParsing.isCodAvailable(pref)
-
-            // frame available
-            if(is_layout && is_frames) contentPlaying()
-            // cod available
-            binding.llMainCod.visibility = if(is_cod) View.VISIBLE else View.GONE
-            // frame not available & cod available
-//            if(is_cod && !is_frames) binding.llMainCod.setBackgroundColor(resources.getColor(R.color.white))
-
+            if(is_frames) contentPlaying() else loadWaiting()
         }
     }
 
-
-    private fun removeData() {
+    fun removeData() {
         play_activate = false
         binding.rootLayout.visibility = View.GONE
-        layout_list = mutableListOf()
         binding.rootLayout.removeAllViews()
         items = mutableListOf()
         multiframe_items = mutableListOf()
         current_size_list = mutableListOf()
         if(layout_list!=null && layout_list.size>0){
-            for(i in 0..layout_list.size){
+            for(i in 0..layout_list.size-1){
+                if(layout_list[i].exoPlayer?.player!=null && layout_list[i].exoPlayer?.player!!.isPlaying){
+                    layout_list[i].exoPlayer?.player?.stop()
+                }
                 if(layout_list[i].job != null) layout_list[i].job?.cancel()
             }
         }
+        layout_list = mutableListOf()
+    }
+
+    @JvmName("getDownloading1")
+    public fun getDownloading(): Int {
+      return downloading
     }
 
     private fun contentPlaying() {
@@ -457,11 +408,14 @@ class MainActivity : AppCompatActivity() {
         var is_frames = DataParsing.isFrameAvailable(pref)
         if(is_frames){
             var all_frames = DataParsing.getFilterdFrames(pref)
-            for (i in 0..all_frames!!.size - 1) {
-                // create frame with bg
-                var frame = DataParsing.getFrame(ctx!!,all_frames.get(i),i)
+            for (i in 0..all_frames!!.size-1) {
+                // create availble frames with bg
+                var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i)
+                var videoView = VideoView(this)
+                var exoPlayer  = StyledPlayerView(ctx)
+
                 // add frame in layout list
-                layout_list.add(NewLayoutView(frame,"",null,null))    // add frame in list
+                layout_list.add(NewLayoutView(frame,videoView,exoPlayer,false,"",null,null))    // add frame in list
                 binding.rootLayout.addView(frame)   // attach frame in root
                 binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
@@ -486,7 +440,6 @@ class MainActivity : AppCompatActivity() {
             }
             startPlayingContent()
         }
-
     }
 
 
@@ -574,6 +527,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun validateItem(item: Item, position: Int) {
 
+
         val path = DataManager.getDirectory()+File.separator+ item.fileName
         if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
             if(!File(path).exists()){
@@ -600,6 +554,9 @@ class MainActivity : AppCompatActivity() {
             item.type == Constant.CONTENT_WIDGET_VIMEO ||
             item.type == Constant.CONTENT_WIDGET_NEWS ||
             item.type == Constant.CONTENT_WIDGET_TEXT ||
+            item.type == Constant.CONTENT_WIDGET_COD ||
+            item.type == Constant.CONTENT_WIDGET_IFRAME ||
+            item.type == Constant.CONTENT_WIDGET_LIVESTREAM ||
 //            item.type == Constant.CONTENT_WIDGET_WEATHER ||
             item.type == Constant.CONTENT_WIDGET_QRCODE
         ) setWidget(position,item)
@@ -607,12 +564,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun setWidget(pos: Int, item: Item){
 
+        var start_time = pref?.getStartTime()
+
         play_activate = true
         binding.rlBackground.visibility = View.GONE
         var layout = layout_list[pos].relative_layout
+        var video = layout_list[pos].videoView
+        var exoPlayer = layout_list[pos].exoPlayer
         layout?.visibility = View.VISIBLE
         var widget_type = item.type
 
+        if(!play_activate || !pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) return
         layout_list[pos].active_widget = widget_type
 
         // image
@@ -631,11 +593,16 @@ class MainActivity : AppCompatActivity() {
         // video
         if(widget_type.equals(Constant.CONTENT_VIDEO)){
             layout?.removeAllViews()
-            layout?.addView(WidgetVideo.getWidgetVideo(this,item.frame_w,item.frame_h,item.fileName,item.sound,Constant.CALLING_MAIN))
+            layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,item.frame_w,item.frame_h,item.fileName,item.sound,Constant.CALLING_MAIN))
         }
         // webview
         if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
             setWebViewWithReload(pos,item)
+        }
+        // iFrame
+        if(widget_type == Constant.CONTENT_WIDGET_IFRAME){
+            layout?.removeAllViews()
+            layout?.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!))
         }
         // youtube
         if(widget_type == Constant.CONTENT_WIDGET_YOUTUBE) {
@@ -677,29 +644,46 @@ class MainActivity : AppCompatActivity() {
             else
                 viewModel.getNews(item.src,pos)
         }
-
+        // live streaming
+        if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
+            layout?.removeAllViews()
+            if(item?.dType.equals("yt"))
+                layout?.addView(YouTubeWidget.getYouTubeWidget(this,item),item.frame_w,item.frame_h)
+            else
+                layout?.addView(WidgetExoPlayer.getExoPLayer(this,item,exoPlayer),item.frame_w,item.frame_h)
+        }
+        // COD BUTTON
+        if(widget_type == Constant.CONTENT_WIDGET_COD){
+            layout?.removeAllViews()
+            var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
+            layout?.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
+            layout?.addView(WidgetCodButton.getWidgetCodButton(this,item))
+        }
         // weather
 //        if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
 //            setWatherFragment(pos,item)
 
+        if(multiframe_items[pos].size>1){
             var job = CoroutineScope(Dispatchers.IO).launch {
                 delay(TimeUnit.SECONDS.toMillis(item.duration.toLong()))
                 withContext(Dispatchers.Main) {
+                    if(exoPlayer.player != null && exoPlayer.player!!.isPlaying) exoPlayer.player?.stop()
                     if(play_activate){
-                        pref?.createReport(item.id,item.duration)
+                        pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
                         nextPlay(pos)
                     }
                 }
             }
-
-        if(layout_list[pos].job == null){
-            layout_list[pos].job = job
-        }else{
-            layout_list[pos].job?.cancel()
-            if(layout_list[pos].rotate_job != null)layout_list[pos].rotate_job?.cancel()
-            layout_list[pos].job = job
+            if(layout_list[pos].job == null){
+                layout_list[pos].job = job
+            }else{
+                layout_list[pos].job?.cancel()
+                if(layout_list[pos].rotate_job != null)layout_list[pos].rotate_job?.cancel()
+                layout_list[pos].job = job
+            }
         }
+
     }
 
     // web view with reloading
@@ -803,20 +787,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        from_internet = false
-        handler.removeCallbacks(runnable!!)
-        temp_handler.removeCallbacks(temp_runnable!!)
-        screenshot_handler.removeCallbacks(screenshot_runnable!!)
+        play_activate = false
+
+        checkVersionHandler.removeCallbacks(versionTask)
+        screenshot_handler.removeCallbacks(ssTask)
+        temp_handler.removeCallbacks(tempTask)
+        report_handler.removeCallbacks(reportTask)
     }
 
     private fun checkDeviceVersion() {
         if(packageManager.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,getPackageName())==PackageManager.PERMISSION_GRANTED)
             if(packageManager.checkPermission(Manifest.permission.READ_PHONE_STATE,getPackageName())==PackageManager.PERMISSION_GRANTED){
-                if(delete_enabled && downloading==0) viewModel.deleteFiles(DataManager.getListDownloadable(downloable_file))
                 if(isConnected)
                     if(downloading==0){
                         freeMemory()
-                        viewModel.isDeviceRegistered()
+                        viewModel.isDeviceRegistered(this)
                     }
             }
     }
@@ -835,7 +820,7 @@ class MainActivity : AppCompatActivity() {
             dialog?.requestWindowFeature(Window.FEATURE_NO_TITLE)
             dialog?.setCancelable(false)
             dialog?.setContentView(R.layout.dialog_not_register)
-            dialog?.findViewById<TextView>(R.id.tv_dialog_deviceid)?.text = device_id
+            dialog?.findViewById<TextView>(R.id.tv_dialog_deviceid)?.text = DeviceInfo.getDeviceId(ctx)
             dialog?.findViewById<TextView>(R.id.text_dia_desc)?.text =
                 if (diagonalInches >= 6.5) "This media player is not registered to the L Squared Hub." // 6.5inch device or bigger
                 else "This media player is not registered to the \nL Squared Hub."
@@ -901,13 +886,14 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun refreshPage(from: String) {
-        if(from.equals(Constant.REFRESH_FROM_NODEVICE) && dialog==null){
-            play_activate = false
-            removeData()
-            binding.rlBackground.visibility = View.VISIBLE
-            showNotRegisterDialog()
-        }
+    fun deviceNotRegistered() {
+        Log.d(TAG, "deviceNotRegistered: success")
+        play_activate = false
+        removeData()
+        binding.rlBackground.visibility = View.VISIBLE
+        pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,false)
+        showNotRegisterDialog()
+        viewModel.deleteFiles(null)
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

@@ -57,7 +57,8 @@ android {
 dependencies {
     def lifecycle_version = "2.1.0"
     def room_version = "2.2.3"
-    def exo_version = "2.4.0"
+    def exo_version = "2.15.1"
+    def vimeo_version = "3.12.0"
 
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.google.android.material:material:1.6.1'
@@ -113,15 +114,25 @@ dependencies {
 
     // dependency for exoplayer
 
-    implementation "com.google.android.exoplayer:exoplayer:r$exo_version"
-    implementation "com.google.android.exoplayer:exoplayer-core:r$exo_version"
-    implementation "com.google.android.exoplayer:exoplayer-dash:r$exo_version"
-    implementation "com.google.android.exoplayer:exoplayer-hls:r$exo_version"
-    implementation "com.google.android.exoplayer:exoplayer-smoothstreaming:r$exo_version"
-    implementation "com.google.android.exoplayer:exoplayer-ui:r$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer:$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer-core:$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer-ui:$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer-dash:$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer-hls:$exo_version"
+    implementation "com.google.android.exoplayer:exoplayer-smoothstreaming:$exo_version"
+
+//    implementation "com.google.android.exoplayer:exoplayer:r$exo_version"
+//    implementation "com.google.android.exoplayer:exoplayer-core:r$exo_version"
+//    implementation "com.google.android.exoplayer:exoplayer-dash:r$exo_version"
+//    implementation "com.google.android.exoplayer:exoplayer-hls:r$exo_version"
+//    implementation "com.google.android.exoplayer:exoplayer-smoothstreaming:r$exo_version"
+//    implementation "com.google.android.exoplayer:exoplayer-ui:r$exo_version"
 
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+    implementation files('libs\\YouTubeAndroidPlayerApi.jar')
+
 
 }
 kapt {

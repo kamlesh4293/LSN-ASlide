@@ -23,8 +23,8 @@ class WidgetVideo {
 
     companion object{
 
-        fun getWidgetVideo(ctx: Context,width: Int,height: Int,fileName: String,sound: String,type:String):View{
-            var video = VideoView(ctx)
+        fun getWidgetVideo(ctx: Context,video: VideoView,width: Int,height: Int,fileName: String,sound: String,type:String):View{
+//            var video = VideoView(ctx)
             val params = RelativeLayout.LayoutParams(width,height)
             video.layoutParams = params
 
@@ -69,6 +69,23 @@ class WidgetVideo {
             })
 
             return video
+        }
+
+        fun setVideoSound(sound: String,video: VideoView){
+            if(sound.equals("no")){
+                video.pause()
+//                video.setOnPreparedListener(
+//                    MediaPlayer.OnPreparedListener {
+//                            mp -> mp.setVolume(0f, 0f)
+//                    })
+            }else{
+                video.resume()
+//                video.setOnPreparedListener(
+//                    MediaPlayer.OnPreparedListener {
+//                            mp -> mp.setVolume(100f, 100f)
+//                    })
+            }
+
         }
 
     }

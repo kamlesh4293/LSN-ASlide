@@ -25,6 +25,8 @@
             android:background="@color/black_trans"
             android:textColor="@color/white"
             android:gravity="center"
+            android:textSize="14px"
+            android:fontFamily="@font/segoeui"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
@@ -45,9 +47,11 @@
     <TextView
         android:padding="5dp"
         android:id="@+id/tv_codhori_label"
-        android:background="@color/cod_bg_color"
+        android:background="@color/cod_selected_color"
         android:textColor="@color/white"
         android:gravity="center"
+        android:fontFamily="@font/myriad_pro_condensed"
+        android:textSize="20px"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 

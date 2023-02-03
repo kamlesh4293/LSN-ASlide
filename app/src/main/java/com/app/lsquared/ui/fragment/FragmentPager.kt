@@ -23,6 +23,7 @@ class FragmentPager(var codItem: CodItem) : Fragment(){
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentCodPagerBinding.inflate(inflater,container,false)
+        binding.ivClose.setOnClickListener { (requireContext() as CODActivity).finish() }
         setupRecyclerView()
         return binding.root
     }

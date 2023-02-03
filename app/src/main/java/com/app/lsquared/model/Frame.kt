@@ -25,7 +25,7 @@ data class Frame (
 	@SerializedName("bg") val bg : String,
 	@SerializedName("align") val align : String,
 	@SerializedName("a") val a : String,
-	@SerializedName("bga") val bga : Int,
+	@SerializedName("bga") val bga : String,
 	@SerializedName("timeRange") val timeRange : String,
 	@SerializedName("tr") val tr : String,
 	@SerializedName("st") val st : String,

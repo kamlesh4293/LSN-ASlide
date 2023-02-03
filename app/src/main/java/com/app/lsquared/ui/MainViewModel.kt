@@ -1,6 +1,7 @@
 package com.app.lsquared.ui
 
 import android.app.Activity
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.*
 import com.app.lsquared.ApiInterface
@@ -16,6 +17,7 @@ import com.androidnetworking.AndroidNetworking
 import com.androidnetworking.common.Priority
 import com.androidnetworking.interfaces.DownloadListener
 import com.androidnetworking.interfaces.DownloadProgressListener
+import com.androidnetworking.interfaces.JSONObjectRequestListener
 import com.androidnetworking.interfaces.StringRequestListener
 import com.app.lsquared.model.Downloadable
 import com.app.lsquared.utils.*
@@ -34,6 +36,7 @@ class MainViewModel : ViewModel() {
     var delay = 30000
     var temp_delay = 60000
     var screen_delay = 300
+    var report_delay = 120000
 
 
     // 1. device register
@@ -58,13 +61,17 @@ class MainViewModel : ViewModel() {
 
 
     // 1 check device is registered
-    fun isDeviceRegistered() {
+    fun isDeviceRegistered(ctx:Context) {
+        var device_id = DeviceInfo.getDeviceId(ctx)
         var url = Constant.BASE_URL+"api/v1/feed/deviceversion/$device_id"
+        Log.d("TAG", "isDeviceRegistered: ")
         if(internet){
+            Log.d("TAG", "isDeviceRegistered: calling")
             viewModelScope.launch(Dispatchers.IO) {
                 ApiInterface.create().checkIsDeviceRegister(url)
                     .enqueue( object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>,response: retrofit2.Response<ResponseBody>) {
+                            Log.d("TAG", "isDeviceRegistered: onResponse")
                             if(response?.body() != null){
                                 var res = response?.body()!!.string()
                                 _device_register_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
@@ -74,8 +81,7 @@ class MainViewModel : ViewModel() {
                             }
                         }
                         override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
-                            var error = call.toString()
-                            var error_t = t.toString()
+                            Log.d("TAG", "isDeviceRegistered: onFailure")
                             _device_register_data.postValue(ApiResponse(Status.ERROR,null,"error"))
                         }
                     })
@@ -161,6 +167,7 @@ class MainViewModel : ViewModel() {
     // 4 submit temprature data
     fun updateTempratureData(temp:String){
         if(internet && is_device_registered){
+            Log.d("TAG", "updateTempratureData: start")
             viewModelScope.launch(Dispatchers.IO) {
                 val retroInstance = ApiInterface.create()
                 Log.d("Temp_api", "api/v1/feed/dt/$device_id/$temp/${Utility.getCurrentdate()}")
@@ -169,15 +176,17 @@ class MainViewModel : ViewModel() {
 
                     override fun onResponse(call: Call<ResponseBody>,response: retrofit2.Response<ResponseBody>) {
                         if(response?.body() != null){
+                            Log.d("TAG", "updateTempratureData: success")
                             var res = response?.body()!!.string()
                             _temprature_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
                         }else{
+                            Log.d("TAG", "updateTempratureData: error")
                             _temprature_data.postValue(ApiResponse(Status.ERROR,null,"error"))
                         }
                     }
 
                     override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
-                        Log.d("res_error-",t.toString())
+                        Log.d("TAG", "updateTempratureData: failed")
                         _temprature_data.postValue(ApiResponse(Status.FAILURE,null,t.toString()))
                     }
                 })
@@ -213,7 +222,37 @@ class MainViewModel : ViewModel() {
     }
 
     // 6 submit report
-    fun submitRecords(device_id: String, data: String, pref: MySharePrefernce?){
+    fun submitRecords(device_id: String){
+
+        var files  = DataManager.getReportFileList()
+        Log.d("TAG", "submitRecords: ")
+        if(internet && is_device_registered && files!=null && files.size>0){
+            Log.d("TAG", "submitRecords: uploading")
+            viewModelScope.launch(Dispatchers.IO) {
+                AndroidNetworking.upload(Constant.BASE_URL+"api/v1/feed/writePoPReport_HDSteth")
+//                    AndroidNetworking.upload(Constant.BASE_URL+"api/v1/feed/writePoPReport")
+                        .addMultipartFile("file", files[0])
+                        .addMultipartParameter("mac", device_id)
+                        .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                        .setTag("test")
+                        .setPriority(Priority.MEDIUM)
+                        .build()
+                        .setUploadProgressListener { bytesUploaded, totalBytes ->}
+                        .getAsJSONObject(object : JSONObjectRequestListener {
+                            override fun onResponse(response: JSONObject?) {
+                                files[0].delete()
+                                Log.d("TAG", "submitRecords: onResponse")
+                            }
+
+                            override fun onError(anError: ANError?) {
+                                Log.d("TAG", "submitRecords: onError - ${anError.toString()}")
+                            }
+                        })
+            }
+        }
+    }
+
+    fun submitRecordsold(device_id: String, data: String, pref: MySharePrefernce?){
         if(internet && is_device_registered && !data.equals("") && !is_devicereport_submitted){
             var body = Utility.getRecords(device_id,data)
             Log.d("record_body-",body.toString())
@@ -240,26 +279,33 @@ class MainViewModel : ViewModel() {
 
     // delete file
     fun deleteFiles(downloable_file: List<String>?) {
+        Log.d("TAG", "deleteFiles: downloadable size - ${downloable_file?.size}")
         viewModelScope.launch(Dispatchers.IO) {
+
             if(downloable_file !=null && downloable_file.size>0){
+
+                // delete only that file not there in downloadable
                 var dir_files = DataManager.getAllDirectoryFiles()
                 if(dir_files!=null &&dir_files.size>0){
                     for (i in 0..dir_files.size-1){
                         if(!downloable_file.contains(dir_files[i].name)){
                             val file = File(dir_files[i].path)
                             if(file.exists()){
+                                Log.d("TAG", "DeleteFileName - ex: ${file.name}")
                                 file.delete()
-                                Log.d("TAG", "deleteFiles: ${file.path}")
                             }
-//                            break
                         }
                     }
                 }
             }else{
+                // delete all the files
                 var dir_files = DataManager.getAllDirectoryFiles()
                 if(dir_files!=null &&dir_files.size>0){
                     val file = File(dir_files[0].path)
-                    if(file.exists())file.delete()
+                    if(file.exists()){
+                        Log.d("TAG", "DeleteFileName - all: ${file.name}")
+                        file.delete()
+                    }
                 }
             }
         }

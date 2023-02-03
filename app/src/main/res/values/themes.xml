@@ -31,6 +31,45 @@
 
     <style name="tab_text" parent="@android:style/TextAppearance.Widget.TabWidget">
         <item name="android:fontFamily">@font/myriad_pro_condensed</item>
+        <item name="textAllCaps">false</item>
         <item name="android:textAllCaps">false</item>
+        <item name="tabTextColor">@color/cod_selected_color</item>
+        <item name="tabBackground">@color/cod_bg_color</item>
+        <item name="tabSelectedTextColor">@color/white</item>
+        <item name="tabIndicatorHeight">0dp</item>
+        <item name="tabMode">scrollable</item>
+        <item name="singleLine">true</item>
+        <item name="android:layout_gravity">left</item>
+        <item name="background">@color/cod_bg_color</item>
+    </style>
+
+    <style name="MyCustomTextAppearance" parent="TextAppearance.Design.Tab">
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="customTabLayout" parent="Widget.Design.TabLayout">
+        <item name="tabTextAppearance">@style/TabTextAppearance</item>
+        <item name="tabTextColor">@color/tab_inactive_color</item>
+        <item name="tabBackground">@color/cod_bg_color</item>
+        <item name="tabSelectedTextColor">@color/white</item>
+        <item name="tabIndicatorHeight">0dp</item>
+        <item name="tabMode">scrollable</item>
+        <item name="android:layout_gravity">left</item>
+        <item name="background">@color/cod_bg_color</item>
+        <item name="tabGravity">center</item>
+        <item name="android:textSize">5dp</item>
+        <item name="android:tabWidgetStyle">@style/TabTextAppearance</item>
+    </style>
+
+    <style name="TabTextAppearance" parent="@android:style/TextAppearance.Widget.TabWidget">
+        <item name="android:textAllCaps">false</item>
+        <item name="singleLine">true</item>
+        <item name="android:textSize">32px</item>
+        <item name="fontFamily">@font/myriad_pro_bold_condensed</item>
+
+    </style>
+
+    <style name="textview_font">
+        <item name="android:fontFamily">@font/myriad_pro_condensed</item>
     </style>
 </resources>
