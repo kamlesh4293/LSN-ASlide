@@ -12,18 +12,39 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:visibility="gone"
+            android:id="@+id/iv_prev"
+            android:padding="10dp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            android:src="@drawable/ic_previous"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <ImageView
+            android:visibility="gone"
+            android:id="@+id/iv_next"
+            android:padding="10dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            android:src="@drawable/ic_next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+
+    </RelativeLayout>
+
     <WebView
         android:visibility="gone"
         android:id="@+id/wv_cod_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
-
-    <com.google.android.exoplayer2.ui.StyledPlayerView
-        android:id="@+id/idExoPlayerView"
-        android:visibility="gone"
-        app:surface_type="texture_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 
     <ImageView
         android:id="@+id/iv_cod_content_close"

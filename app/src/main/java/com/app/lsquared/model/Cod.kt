@@ -46,7 +46,7 @@ data class Cat (
     @SerializedName("label"   ) var label   : String?            = null,
     @SerializedName("content" ) var content : ArrayList<Content> = arrayListOf()
 
-)
+):java.io.Serializable
 
 data class Content(
 

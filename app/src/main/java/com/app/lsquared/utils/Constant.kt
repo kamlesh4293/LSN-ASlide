@@ -5,27 +5,29 @@ class Constant {
     companion object{
 
             // development environment
-//        const val BASE_URL = "https://rc.lsquared.com/"
-//        const val BASE_FILE_URL = BASE_URL+"rc-lsquared-hub/"
-//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+        const val BASE_URL = "https://rc.lsquared.com/"
+        const val BASE_FILE_URL = BASE_URL+"rc-lsquared-hub/"
+        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
         // US production environment
-        const val BASE_URL = "https://us.lsquared.com/"
-        const val BASE_FILE_URL = BASE_URL+"lsquared-hub/"
-        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+//        const val BASE_URL = "https://us.lsquared.com/"
+//        const val BASE_FILE_URL = BASE_URL+"lsquared-hub/"
+//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
         // HUB production environment
 //        const val BASE_URL = "https://hub.lsquared.com/"
 //        const val BASE_FILE_URL = "https://s3-us-west-2.amazonaws.com/lsquared-hub/"
+//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
+        // api
+        const val API_NEW_DEVICE_REGISTER = BASE_URL+"api/v1/feed/autoreg"
 
-        // refresh from
-        const val REFRESH_FROM_CONTENT = "refresh_from_content"
-        const val REFRESH_FROM_NODEVICE = "refresh_from_nodevice"
-        const val REFRESH_FROM_WAITING = "refresh_from_waiting"
-        const val REFRESH_FROM_CHANGE_INTERNET = "refresh_from_change_internet"
-        const val REFRESH_FROM_BACKGROUND = "refresh_from_background"
-
+        // device register response
+        const val DEVICE_REGISTERED = 22001
+//        22001 - Device updated
+//        22002 - Device with new mac already exists
+//        22003 - Device not found
+//        22004 - Invalid payload
 
         // downloadable thumb
         const val CONTENT_THUMB = "thumb"
@@ -55,6 +57,7 @@ class Constant {
 
         const val BASE_URL_YOUTUBE = "https://www.youtube.com/embed/"
         const val BASE_URL_VIMEO = "https://player.vimeo.com/video/"
+        const val VIMEO_ACCESS_TOKEN = "b45cae7771a62a78b359dd059008a632"
 
         // news tyte
         const val CONTENT_WIDGET_NEWS_LIST = "normal"
@@ -109,6 +112,10 @@ class Constant {
         const val ALIGN_BOTTOM_LEFT ="b-l"
         const val ALIGN_BOTTOM_CENTER ="b-c"
         const val ALIGN_BOTTOM_RIGHT ="b-r"
+
+        // video player type
+        const val PLAYER_COD = 1
+        const val PLAYER_SLIDE = 0
 
     }
 

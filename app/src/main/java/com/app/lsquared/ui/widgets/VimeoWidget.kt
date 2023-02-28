@@ -5,9 +5,11 @@ import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
-import com.app.lsquared.model.Item
-import com.app.lsquared.ui.MainActivity
 import com.app.lsquared.utils.Constant
+import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.vimeo.networking.Configuration
+import com.vimeo.networking.VimeoClient
 
 class VimeoWidget {
 
@@ -38,5 +40,17 @@ class VimeoWidget {
             }
             return web
         }
+
+        fun getVimeoWidget(ctx: Context,player: SimpleExoPlayer): StyledPlayerView {
+            val configBuilder =
+                Configuration.Builder(Constant.VIMEO_ACCESS_TOKEN) //Pass app access token
+                    .setCacheDirectory(ctx.cacheDir)
+            VimeoClient.initialize(configBuilder.build())
+            var exoPlayer = WidgetExoPlayer.getExoPlayerView(ctx)
+            exoPlayer.player = player
+            return exoPlayer
+        }
+
+
     }
 }

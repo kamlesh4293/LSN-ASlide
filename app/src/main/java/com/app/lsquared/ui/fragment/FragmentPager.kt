@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.app.lsquared.databinding.FragmentCodPagerBinding
+import com.app.lsquared.model.Cat
 import com.app.lsquared.model.CodItem
 import com.app.lsquared.ui.activity.CODActivity
 import com.app.lsquared.ui.activity.CodContentActivity
@@ -33,10 +34,16 @@ class FragmentPager(var codItem: CodItem) : Fragment(){
         if(codItem.cat!=null && codItem.cat.size>0){
             binding.rvCodVerical.apply {
                 layoutManager = LinearLayoutManager(context)
-                adapter = CodVerticalAdapter(codItem.cat) { item, position ->
+                var cate_list = ArrayList<Cat>()
+                for(i in 0..codItem.cat.size-1){
+                    if(codItem.cat[i].content.size>0)cate_list.add(codItem.cat[i])
+                }
+                adapter = CodVerticalAdapter(cate_list) { item,item_cat, position ->
                     (activity as CODActivity).stopCounter()
-                    startActivity(Intent(requireContext(), CodContentActivity::class.java)
-                        .putExtra(CodContentActivity.EXTRA_ITEM_DATA,item))
+                    var intent = Intent(requireContext(), CodContentActivity::class.java)
+                    intent.putExtra(CodContentActivity.EXTRA_ITEM_DATA,item)
+                    intent.putExtra(CodContentActivity.EXTRA_ITEM_DATA_ARRAY,item_cat)
+                    startActivity(intent)
                 }
             }
         }

@@ -64,7 +64,7 @@ class CODActivity : AppCompatActivity() {
         // is device registered
         handler.postDelayed(kotlinx.coroutines.Runnable {
             handler.postDelayed(runnable!!, viewModel.delay.toLong())
-            viewModel.isDeviceRegistered(this)
+            viewModel.isDeviceRegistered(this,DeviceInfo.getDeviceId(this,myPerf))
         }.also { runnable = it }, viewModel.delay.toLong())
 
 
@@ -76,7 +76,7 @@ class CODActivity : AppCompatActivity() {
             )
             var file = ImageUtil.screenshot(binding.consCodRoot, "Screen_final_" + Utility.getCurrentdate())
             viewModel.submitScreenShot(
-                Utility.getScreenshotJson(DeviceInfo.getDeviceId(this),
+                Utility.getScreenshotJson(DeviceInfo.getDeviceId(this,myPerf),
                     Utility.getFileToByte(file?.absolutePath)
                 )
             )
@@ -109,7 +109,7 @@ class CODActivity : AppCompatActivity() {
             var cod_item_list = DataParsing.getCodItems(myPerf)
             if(cod_item_list.size>0){
                 for(i in 0..cod_item_list.size-1){
-                    if(cod_item_list[i].cat!=null && cod_item_list[i].cat.size>0){
+                    if(cod_item_list[i].cat!=null && cod_item_list[i].cat.size>0 && isValidCod(cod_item_list[i])){
                         adapter.addFragment(FragmentPager(cod_item_list[i]),cod_item_list[i].name!!)
                     }
                 }
@@ -117,7 +117,10 @@ class CODActivity : AppCompatActivity() {
             binding.viewPager.adapter = adapter
             binding.tabs.setupWithViewPager(binding.viewPager)
 
-            var adapter = CodTabAdapter(cod_item_list){ item, position ->
+            var filter_list = ArrayList<CodItem> ()
+            for(coditem in cod_item_list) if(isValidCod(coditem)) filter_list.add(coditem)
+
+            var adapter = CodTabAdapter(filter_list){ item, position ->
                 binding.viewPager.currentItem = position
             }
             binding.rvTabs.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -134,7 +137,6 @@ class CODActivity : AppCompatActivity() {
                 override fun onPageSelected(position: Int) {
                     adapter.setPosition(position)
                 }
-
             })
         }else{
             binding.appBarLayout.visibility = View.GONE
@@ -144,6 +146,17 @@ class CODActivity : AppCompatActivity() {
         }
 
         binding.ivCodClose.setOnClickListener { finish() }
+    }
+
+    private fun isValidCod(codItem: CodItem): Boolean {
+        if(codItem.cat.size==0) return false
+        for (cate in codItem.cat){
+            if(cate.content.size>0){
+                return true
+                break
+            }
+        }
+        return false
     }
 
     override fun onPause() {

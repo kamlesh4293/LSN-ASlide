@@ -99,17 +99,17 @@
 
         </RelativeLayout>
 
-    <ImageView
-        android:visibility="gone"
-        android:id="@+id/iv_no_internet"
-        android:layout_marginBottom="10dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/no_internet"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:layout_gravity="bottom"
-        android:padding="5dp"/>
+        <ImageView
+            android:visibility="gone"
+            android:id="@+id/iv_no_internet"
+            android:layout_marginBottom="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/no_internet"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="bottom"
+            android:padding="5dp"/>
 
         <RelativeLayout
             android:visibility="gone"
@@ -146,6 +146,20 @@
 
         </RelativeLayout>
 
+        <TextView
+            android:visibility="gone"
+            android:layout_margin="10dp"
+            android:layout_alignParentRight="true"
+            android:id="@+id/tv_nodata"
+            android:drawableLeft="@drawable/ic_info"
+            android:drawablePadding="10dp"
+            android:background="@color/color_grey"
+            android:textColor="@color/black"
+            android:padding="10dp"
+            android:textStyle="bold"
+            android:text="No Content on Demand Scheduled."
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
 
 

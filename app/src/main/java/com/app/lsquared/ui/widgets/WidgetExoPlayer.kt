@@ -3,8 +3,10 @@ package com.app.lsquared.ui.widgets
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
+import android.widget.RelativeLayout
 import com.app.lsquared.model.Content
 import com.app.lsquared.model.Item
+import com.app.lsquared.utils.Constant
 import com.app.lsquared.utils.DataManager
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.MediaItem
@@ -20,12 +22,41 @@ class WidgetExoPlayer {
 
     companion object{
 
-        fun getExoPLayer(ctx: Context, item: Item, exoPlayer: StyledPlayerView): StyledPlayerView {
+        fun getExoPlayerView(ctx: Context): StyledPlayerView {
+            var exoPlayer = StyledPlayerView(ctx)
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT
+            )
+            exoPlayer?.layoutParams = params
+            return exoPlayer
+        }
+
+        fun getExoPlayer(ctx:Context,type:Int,sound:String): SimpleExoPlayer {
+            var player = SimpleExoPlayer.Builder(ctx).build()
+            player!!.playWhenReady = true
+            player!!.seekTo(0, 0)
+            player!!.prepare()
+            player?.play()
+            if(type==Constant.PLAYER_SLIDE) player?.repeatMode = Player.REPEAT_MODE_ONE
+            player?.volume = if (sound=="no")  0f else 100f
+            player?.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(@Player.State state: Int) {
+                    if (state == Player.STATE_ENDED) {
+                        if(type==Constant.PLAYER_COD) (ctx as Activity).finish()
+                    }
+                }
+            })
+            return player
+        }
+
+
+        fun setExoPLayer(ctx: Context, item: Item, exoPlayer: StyledPlayerView): StyledPlayerView {
             setUpPlayer(ctx,exoPlayer,item)
             return exoPlayer
         }
 
-        fun getExoPLayer(ctx: Context, item: Content, exoPlayer: StyledPlayerView): StyledPlayerView {
+        fun setExoPLayer(ctx: Context, item: Content, exoPlayer: StyledPlayerView): StyledPlayerView {
             setUpPlayer(ctx,exoPlayer,item)
             return exoPlayer
         }

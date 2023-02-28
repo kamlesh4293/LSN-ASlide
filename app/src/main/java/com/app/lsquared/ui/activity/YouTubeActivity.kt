@@ -1,7 +1,9 @@
 package com.app.lsquared.ui.activity
 
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
@@ -12,16 +14,19 @@ import android.widget.RelativeLayout
 import android.widget.Toast
 import com.app.lsquared.R
 import com.app.lsquared.model.Content
+import com.app.lsquared.utils.Constant
 import com.google.android.youtube.player.YouTubeBaseActivity
 import com.google.android.youtube.player.YouTubeInitializationResult
 import com.google.android.youtube.player.YouTubePlayer
 import com.google.android.youtube.player.YouTubePlayerView
+
 
 class YouTubeActivity : YouTubeBaseActivity(), YouTubePlayer.OnInitializedListener {
 
     private val TAG = "YoutubeActivity"
     var yourCountDownTimer: CountDownTimer? = null
     var item:Content? = null
+    var currentVolume: Int = 50
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +54,9 @@ class YouTubeActivity : YouTubeBaseActivity(), YouTubePlayer.OnInitializedListen
         findViewById<FrameLayout>(R.id.frame_youtube).addView(playerView)
         findViewById<ImageView>(R.id.iv_youtube_close).setOnClickListener { finish() }
         playerView?.initialize(getString(R.string.youtube_api_key), this)
+
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
 
     override fun onInitializationSuccess(
@@ -59,16 +67,37 @@ class YouTubeActivity : YouTubeBaseActivity(), YouTubePlayer.OnInitializedListen
 
         youTubePlayer?.setPlayerStateChangeListener(playerStateChangeListener)
         youTubePlayer?.setPlaybackEventListener(playbackEventListener)
+
+
         var video_id = getVideoId(item)
+        Log.d(TAG, "onInitializationSuccess: video_id - $video_id")
         if (!wasRestored) {
-            if(item?.params !=null && !item?.params.equals("")) youTubePlayer?.cuePlaylist(video_id)
-            else youTubePlayer?.cueVideo(video_id)
+            if(item?.params !=null && !item?.params.equals("")){
+                Log.d(TAG, "onInitializationSuccess: video with param")
+                youTubePlayer?.cuePlaylist(video_id)
+            } else {
+                Log.d(TAG, "onInitializationSuccess: video with src")
+                youTubePlayer?.cueVideo(video_id)
+            }
         }
         if(item?.params !=null && !item?.params.equals("")) youTubePlayer?.loadPlaylist(video_id)
         else youTubePlayer?.loadVideo(video_id)
+
+        if(item?.mute ==1){
+            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,0,0)
+//            volumeControlStream = AudioManager.STREAM_MUSIC
+//            val am = getSystemService(AUDIO_SERVICE) as AudioManager
+//            am?.setStreamVolume(AudioManager.ADJUST_MUTE, 0, 0)
+        }
+
     }
 
     private fun getVideoId(item: Content?): String {
+
+        if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
+            return item?.url!!.substring(item?.url!!.lastIndexOf("=")+1,item?.url!!.length)
+        }
         return if(item?.params !=null && !item?.params.equals(""))
             item?.params!!.replace("&list=","")
         else item?.src!!
@@ -138,6 +167,12 @@ class YouTubeActivity : YouTubeBaseActivity(), YouTubePlayer.OnInitializedListen
 
     fun stopCounter() {
         if (yourCountDownTimer != null) yourCountDownTimer!!.cancel()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,currentVolume,0)
     }
 
 

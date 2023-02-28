@@ -7,13 +7,17 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.app.lsquared.R
 import com.app.lsquared.databinding.ItemCodHorizontalBinding
+import com.app.lsquared.model.Cat
 import com.app.lsquared.model.Content
 import com.app.lsquared.utils.*
 import java.io.File
 
 
-class CODHoriContentAdapter(var list: MutableList<Content>,
-                            private val listener: (Content, Int) -> Unit) : RecyclerView.Adapter<CODHoriContentAdapter.ViewHolder>(){
+class CODHoriContentAdapter(
+    var list: MutableList<Content>,
+    var item_cat:Cat,
+    private val listener: (Content,Cat,Int) -> Unit
+) : RecyclerView.Adapter<CODHoriContentAdapter.ViewHolder>(){
 
     lateinit var binding: ItemCodHorizontalBinding
 
@@ -25,7 +29,7 @@ class CODHoriContentAdapter(var list: MutableList<Content>,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bindItem(list[position])
         holder.itemView.setOnClickListener {
-            listener(list[position], position)
+            listener(list[position],item_cat, position)
         }
     }
 
@@ -38,7 +42,9 @@ class CODHoriContentAdapter(var list: MutableList<Content>,
 
         fun bindItem(item: Content) {
             itemBinding.tvCodhoriLabel.text = item.label
-            if(item.type.equals(Constant.CONTENT_IMAGE)|| item.type.equals(Constant.CONTENT_VIDEO)){
+            if(item.type.equals(Constant.CONTENT_IMAGE)|| item.type.equals(Constant.CONTENT_VIDEO)
+                || item.type.equals(Constant.CONTENT_POWERPOINT)|| item.type.equals(Constant.CONTENT_WORD)
+                || item.type.equals(Constant.CONTENT_VECTOR)){
                 val path1 = DataManager.getDirectory()+ File.separator+item.fileName?.substring(0, item.fileName!!.lastIndexOf('.'))+"_thumb.jpg"
                 val path2 = DataManager.getDirectory()+ File.separator+item.fileName?.substring(0, item.fileName!!.lastIndexOf('.'))+"_thumb.png"
                 if(File(path1).exists()) itemBinding.ivCodItem.setImageBitmap(BitmapFactory.decodeFile(path1,ImageUtil.getImageOption()))

@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.media.MediaPlayer.OnCompletionListener
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.view.View
@@ -11,13 +12,11 @@ import android.widget.MediaController
 import android.widget.RelativeLayout
 import android.widget.VideoView
 import androidx.core.content.FileProvider
-import com.app.lsquared.model.Content
-import com.app.lsquared.model.Item
 import com.app.lsquared.ui.activity.CodContentActivity
 import com.app.lsquared.utils.Constant
 import com.app.lsquared.utils.DataManager
-import com.google.android.exoplayer2.ExoPlayer
 import java.io.File
+
 
 class WidgetVideo {
 
@@ -87,6 +86,20 @@ class WidgetVideo {
             }
 
         }
+
+        fun getWidgetVideoVimeo(ctx: Context, url: String):View{
+            val videoView = VideoView(ctx)
+//            val uri: Uri = Uri.parse("https://media.geeksforgeeks.org/wp-content/uploads/20201217192146/Screenrecorder-2020-12-17-19-17-36-828.mp4?_=1")
+            val uri: Uri = Uri.parse(url)
+            videoView.setVideoURI(uri)
+            val mediaController = MediaController(ctx)
+            mediaController.setAnchorView(videoView)
+            mediaController.setMediaPlayer(videoView)
+            videoView.setMediaController(mediaController)
+            videoView.start()
+            return videoView
+        }
+
 
     }
 }

@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.view.View
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -20,13 +19,14 @@ import com.app.lsquared.ui.activity.CODActivity
 import com.app.lsquared.utils.DataParsing
 import com.app.lsquared.utils.FontUtil
 import com.app.lsquared.utils.ImageUtil
+import com.app.lsquared.utils.MySharePrefernce
 import com.google.gson.Gson
 
 class WidgetCodButton {
 
     companion object{
 
-        fun getWidgetCodButton(ctx: Context, item: Item,): View {
+        fun getWidgetCodButton(ctx: Context, item: Item, pref: MySharePrefernce,): View {
             var view = (ctx as Activity).layoutInflater.inflate(R.layout.view_cod,null)
 
             var ll_main_cod = view.findViewById<LinearLayout>(R.id.ll_main_cod)
@@ -89,21 +89,21 @@ class WidgetCodButton {
                 iv_right.visibility =  View.GONE
             }
 
-            ll_main_cod.setOnClickListener { openCod(ctx) }
-//            iv_top.setOnClickListener { openCod(ctx) }
-//            iv_bottom.setOnClickListener { openCod(ctx) }
-//            iv_left.setOnClickListener { openCod(ctx) }
-//            iv_right.setOnClickListener { openCod(ctx) }
-
+            ll_main_cod.setOnClickListener { openCod(ctx,pref) }
             return view
         }
 
-        fun openCod(ctx: Activity) {
-            if((ctx as MainActivity).getDownloading()==0){
-                ctx.removeData()
-                ctx.startActivity(Intent(ctx,CODActivity::class.java))
+        fun openCod(ctx: Activity, pref: MySharePrefernce) {
+            if((ctx as MainActivity).getDownloading()>0){
+                (ctx as MainActivity).showErrorMessage("Downloading content, please wait.")
+                return
             }
-
+            if(!DataParsing.isCodItemContentAvailable(pref)){
+                (ctx as MainActivity).showErrorMessage("No on demand content available.")
+                return
+            }
+            ctx.removeData()
+            ctx.startActivity(Intent(ctx,CODActivity::class.java))
         }
 
     }

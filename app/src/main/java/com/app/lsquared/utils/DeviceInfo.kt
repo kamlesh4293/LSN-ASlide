@@ -30,7 +30,13 @@ class DeviceInfo {
     companion object{
 
         // device id
-        fun getDeviceId(ctx:Context):String{
+        fun getDeviceId(ctx:Context,prefernce: MySharePrefernce):String{
+            var id = prefernce.getStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID)
+            return Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID)
+        }
+
+        // device id
+        fun getDeviceIdFromDevice(ctx:Context):String{
             return Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID)
         }
 
@@ -49,6 +55,14 @@ class DeviceInfo {
 
             return "$width*$height"
 
+        }
+
+        fun getScreenWidth(ctx:Context):Int{
+            return (ctx as Activity).resources.displayMetrics.widthPixels
+        }
+
+        fun getScreenHeight(ctx:Context):Int{
+            return (ctx as Activity).resources.displayMetrics.heightPixels
         }
 
         // device name
@@ -158,38 +172,6 @@ class DeviceInfo {
                 return ip_address
             }
         }
-
-        // for new codebase
-        fun deviceInfoData(ctx: Activity): JSONObject {
-            val rootObject = JSONObject()
-            rootObject.put("mac", getDeviceId(ctx))
-            rootObject.put("app", BuildConfig.VERSION_NAME)
-            rootObject.put("watcher","")
-            rootObject.put("os",7)
-            rootObject.put("client",7)
-            rootObject.put("res", getDeviceResolution(ctx))
-            rootObject.put("computerName", getDeviceName())
-            rootObject.put("local_addr", getLocalIpAddress())
-            rootObject.put("appStart","")
-
-            // info object
-            val infoObject = JSONObject()
-            infoObject.put("DiskTotal", getTotalDiscSize())
-            infoObject.put("DiskUsed", getUsedDiscSize())
-            infoObject.put("MemoryTotal", getTotalRAMSize(ctx))
-            infoObject.put("MemoryUsed", getUsedRAMSize(ctx))
-            infoObject.put("AndroidVersion", getDeviceVersion())
-            infoObject.put("ModelSerialNumber", getSerial())
-            infoObject.put("ModelName", getModelName())
-            infoObject.put("ConnecteionType", getConnectedNetworkType(ctx))
-            infoObject.put("WiFi-MAC", getWifiMacAddress(ctx))
-            infoObject.put("AppType","HD Steth")
-
-            rootObject.put("info",infoObject)
-            return rootObject
-        }
-
-
 
     }
 }

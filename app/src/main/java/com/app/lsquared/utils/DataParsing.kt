@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import android.util.Log
 import android.view.Gravity
+import android.view.WindowManager.LayoutParams
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import com.app.lsquared.model.*
@@ -100,6 +101,18 @@ class DataParsing() {
                         prefernce?.putIntData(MySharePrefernce.KEY_COD_IDEAL_TIME,cod_ideal_time)
                     }
 
+                    return true
+                }
+            }
+            return false
+        }
+
+        // check frames available
+        fun isOverrideAvailable(prefernce: MySharePrefernce?): Boolean{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
                     return true
                 }
             }
@@ -263,6 +276,8 @@ class DataParsing() {
         // web view interval
         fun getWebInterval(item: Item):Int{
             var setting_obj = JSONObject(item.settings)
+            var reload_opt = setting_obj.getString("reloadOpt")
+            if(reload_opt.equals("n")) return 0
             var reload = setting_obj.getString("reload")
             return if(reload.equals("")) 0 else reload.toInt()
         }
@@ -274,34 +289,43 @@ class DataParsing() {
         }
 
 
+        fun getOverrideFrame(ctx: Context):LinearLayout{
+            var id = 10
+            var ll_frame = LinearLayout(ctx)
+            ll_frame.id = id
+            val params = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+            ll_frame.layoutParams = params
+            return ll_frame
+        }
+
         fun getLayoutFrame(ctx: Context,frame: Frame,position: Int):LinearLayout{
-            var relative_frame = LinearLayout(ctx)
-            relative_frame.id = position+10
+            var ll_frame = LinearLayout(ctx)
+            ll_frame.id = position+10
             val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)
 
-            relative_frame.layoutParams = params
-            relative_frame.x = frame.x.toFloat()
-            relative_frame.y = frame.y.toFloat()
+            ll_frame.layoutParams = params
+            ll_frame.x = frame.x.toFloat()
+            ll_frame.y = frame.y.toFloat()
 
-            if(frame.align.equals(Constant.ALIGN_TOP_LEFT)) relative_frame.gravity = Gravity.TOP or Gravity.LEFT
-            if(frame.align.equals(Constant.ALIGN_TOP_CENTER)) relative_frame.gravity = Gravity.TOP or Gravity.CENTER
-            if(frame.align.equals(Constant.ALIGN_TOP_RIGHT)) relative_frame.gravity = Gravity.TOP or Gravity.RIGHT
+            if(frame.align.equals(Constant.ALIGN_TOP_LEFT)) ll_frame.gravity = Gravity.TOP or Gravity.LEFT
+            if(frame.align.equals(Constant.ALIGN_TOP_CENTER)) ll_frame.gravity = Gravity.TOP or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_TOP_RIGHT)) ll_frame.gravity = Gravity.TOP or Gravity.RIGHT
 
-            if(frame.align.equals(Constant.ALIGN_MIDDLE_LEFT)) relative_frame.gravity = Gravity.LEFT or Gravity.CENTER
-            if(frame.align.equals(Constant.ALIGN_MIDDLE_CENTER)) relative_frame.gravity = Gravity.CENTER
-            if(frame.align.equals(Constant.ALIGN_MIDDLE_RIGHT)) relative_frame.gravity = Gravity.RIGHT or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_LEFT)) ll_frame.gravity = Gravity.LEFT or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_CENTER)) ll_frame.gravity = Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_MIDDLE_RIGHT)) ll_frame.gravity = Gravity.RIGHT or Gravity.CENTER
 
-            if(frame.align.equals(Constant.ALIGN_BOTTOM_LEFT)) relative_frame.gravity = Gravity.BOTTOM or Gravity.LEFT
-            if(frame.align.equals(Constant.ALIGN_BOTTOM_CENTER)) relative_frame.gravity = Gravity.BOTTOM or Gravity.CENTER
-            if(frame.align.equals(Constant.ALIGN_BOTTOM_RIGHT)) relative_frame.gravity = Gravity.BOTTOM or Gravity.RIGHT
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_LEFT)) ll_frame.gravity = Gravity.BOTTOM or Gravity.LEFT
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_CENTER)) ll_frame.gravity = Gravity.BOTTOM or Gravity.CENTER
+            if(frame.align.equals(Constant.ALIGN_BOTTOM_RIGHT)) ll_frame.gravity = Gravity.BOTTOM or Gravity.RIGHT
 
 
-            if(frame.bg.equals(""))relative_frame.setBackgroundColor(Color.TRANSPARENT)
+            if(frame.bg.equals(""))ll_frame.setBackgroundColor(Color.TRANSPARENT)
             else{
 //                relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
-                relative_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
+                ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
             }
-            return relative_frame
+            return ll_frame
         }
 
         // Data parsing for content on demand
@@ -342,6 +366,40 @@ class DataParsing() {
             }
             return ArrayList<CodItem>()
         }
+
+        // is cod content
+        fun isCodItemContentAvailable(prefernce: MySharePrefernce?): Boolean{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.layout.get(0).cod != null &&data_obj.layout.get(0).cod!!.get(0).item != null
+                    && data_obj.layout.get(0).cod!!.get(0).item.size > 0  ){
+
+                    var items =  data_obj.layout.get(0).cod!!.get(0).item
+                    for (item in items) {
+                        Log.d("TAG", "isCodItemContentAvailable: item - ${item.name}")
+                        if (isValidCod(item)){
+                            Log.d("TAG", "isCodItemContentAvailable: item return -true")
+                            return true
+                        }
+                    }
+                }
+            }
+            return false
+        }
+
+        private fun isValidCod(codItem: CodItem): Boolean {
+            if(codItem.cat.size==0) return false
+            for (cate in codItem.cat){
+                if(cate.content.size>0){
+                    Log.d("TAG", "isCodItemContentAvailable: cod item ${cate.label}")
+                    return true
+                    break
+                }
+            }
+            return false
+        }
+
 
 
         // filter category

@@ -2,7 +2,6 @@ package com.app.lsquared.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Dialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,11 +11,9 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.*
-import android.widget.TextView.BufferType
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -34,23 +31,26 @@ import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
 import com.app.lsquared.ui.adapter.BeingNewsAdapter
 import com.app.lsquared.ui.adapter.NewsAdapter
+import com.app.lsquared.ui.viewmodel.CodViewModel
 import com.app.lsquared.ui.widgets.*
 import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAll
 import com.app.lsquared.utils.*
+import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.youtube.player.YouTubeInitializationResult
-import com.google.android.youtube.player.YouTubePlayer
-import com.google.android.youtube.player.YouTubePlayerFragment
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import org.json.JSONObject
+import retrofit2.Retrofit
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 
-class MainActivity : AppCompatActivity(){
+@AndroidEntryPoint
+class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
 
     var TAG = "MainActivity"
 
@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity(){
 
     var multiframe_items: MutableList<MutableList<Item>> = mutableListOf()
     var items: MutableList<Item> = mutableListOf()
-    var youtube_item : Item? = null
 
     var current_size_list : MutableList<Int> = mutableListOf()
 
@@ -71,12 +70,14 @@ class MainActivity : AppCompatActivity(){
     // share prefernce
     lateinit var pref: MySharePrefernce
 
-    // dialog
-    var dialog: Dialog? = null
 
     // view  binding
     private lateinit var binding: ActivityMainMultifameBinding
     private lateinit var viewModel: MainViewModel
+    private lateinit var vimeoViewModel: CodViewModel
+
+    @Inject
+    lateinit var vimeo_retro: Retrofit
 
     // live data
     lateinit var connectionLiveData: NetworkConnectivity
@@ -90,6 +91,7 @@ class MainActivity : AppCompatActivity(){
     lateinit var temp_handler: Handler
     lateinit var report_handler: Handler
 
+
     private val versionTask = object : Runnable {
         override fun run() {
             checkDeviceVersion()
@@ -101,7 +103,7 @@ class MainActivity : AppCompatActivity(){
         override fun run() {
             val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
             if(file!=null)
-                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx),Utility.getFileToByte(file?.absolutePath)))
+                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
             screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
         }
     }
@@ -115,7 +117,7 @@ class MainActivity : AppCompatActivity(){
 
     private val reportTask = object : Runnable {
         override fun run() {
-            viewModel.submitRecords(DeviceInfo.getDeviceId(ctx))
+            viewModel.submitRecords(DeviceInfo.getDeviceId(ctx,pref))
             report_handler.postDelayed(this, viewModel.report_delay.toLong())
         }
     }
@@ -159,7 +161,7 @@ class MainActivity : AppCompatActivity(){
     private fun initXml() {
         // remove status bar
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN)
         val flags = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -173,6 +175,7 @@ class MainActivity : AppCompatActivity(){
         binding = ActivityMainMultifameBinding.inflate(layoutInflater)
 
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        vimeoViewModel = ViewModelProvider(this).get(CodViewModel::class.java)
 
         setContentView(binding.root)
         pref = MySharePrefernce(ctx)
@@ -192,14 +195,11 @@ class MainActivity : AppCompatActivity(){
         connectionLiveData = NetworkConnectivity(application)
 
         viewModel.internet = isConnected
-        viewModel.device_id = DeviceInfo.getDeviceId(ctx)
-
+        viewModel.device_id = DeviceInfo.getDeviceId(ctx,pref)
 
         if (pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!! != 0)
             viewModel.screen_delay = pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!!
-
     }
-
 
     private fun initObserver() {
 
@@ -210,6 +210,19 @@ class MainActivity : AppCompatActivity(){
             binding.ivNoInternet.visibility = if(!isInternet) View.VISIBLE else View.GONE
         })
 
+        // new device register observer
+        viewModel.reister_new_device_data_result.observe(this, Observer {
+            response ->
+            if (response.status == Status.SUCCESS) {
+                if(response.pos == Constant.DEVICE_REGISTERED){
+                    DialogView.hideDialog()
+                }else{
+                    pref.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,"")
+                    DialogView.showError(response.message)
+                }
+            }
+        })
+
 
         // device registred observer
         viewModel.device_register_api_result.observe(this, Observer { response ->
@@ -217,8 +230,12 @@ class MainActivity : AppCompatActivity(){
             if (response.status == Status.SUCCESS) {
                 var device_obj = Gson().fromJson(response.data, ResponseCheckDeviceData::class.java)
                 if (device_obj.desc.equals("device not found")) {
+                    viewModel.is_device_registered = false
+                    viewModel.is_deviceinfo_submitted = false
                     deviceNotRegistered()
                 } else {
+                    DialogView.hideKeyBoardShowing()
+
                     pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,true)
                     viewModel.is_device_registered = true
                     pref?.putVersionFromDeviceAPI(device_obj.desc.toInt())
@@ -236,7 +253,7 @@ class MainActivity : AppCompatActivity(){
             if (response.status == Status.ERROR) {
                 showSnackBar(getString(R.string.error_msg))
             }
-            viewModel.submitDeviceInfo(this)
+            viewModel.submitDeviceInfo(this,pref)
         })
 
         // content result observer
@@ -356,6 +373,16 @@ class MainActivity : AppCompatActivity(){
                 changeContent()
             }
         })
+
+        // vimeo
+        vimeoViewModel.vimeo_api_result.observe(this){ response->
+            val mediaItem = MediaItem.fromUri(response?.url!!)
+            layout_list[response.pos].relative_layout?.addView(VimeoWidget.getVimeoWidget(this,layout_list[response.pos].exoPlayer!!))
+//            binding.rlCodContent?.addView()
+            layout_list[response.pos].exoPlayer!!.setMediaItem(mediaItem)
+            layout_list[response.pos].exoPlayer?.play()
+        }
+
     }
 
     private fun changeContent() {
@@ -376,7 +403,9 @@ class MainActivity : AppCompatActivity(){
             downloading = 0
             removeData()
             var is_frames = DataParsing.isFrameAvailable(pref)
-            if(is_frames) contentPlaying() else loadWaiting()
+//            var is_override = DataParsing.isOverrideAvailable(pref)
+            if(is_frames) contentPlaying(is_frames)
+            else loadWaiting()
         }
     }
 
@@ -389,8 +418,12 @@ class MainActivity : AppCompatActivity(){
         current_size_list = mutableListOf()
         if(layout_list!=null && layout_list.size>0){
             for(i in 0..layout_list.size-1){
-                if(layout_list[i].exoPlayer?.player!=null && layout_list[i].exoPlayer?.player!!.isPlaying){
-                    layout_list[i].exoPlayer?.player?.stop()
+                if(layout_list[i].exoPlayer != null && layout_list[i].exoPlayer!!.isPlaying){
+                    layout_list[i].exoPlayer!!.release()
+                    layout_list[i].exoPlayer = null
+                }
+                if(layout_list[i].exoPlayerView?.player!=null && layout_list[i].exoPlayerView?.player!!.isPlaying){
+                    layout_list[i].exoPlayerView?.player?.stop()
                 }
                 if(layout_list[i].job != null) layout_list[i].job?.cancel()
             }
@@ -403,19 +436,52 @@ class MainActivity : AppCompatActivity(){
       return downloading
     }
 
-    private fun contentPlaying() {
+    private fun contentPlaying(is_frames: Boolean) {
 
-        var is_frames = DataParsing.isFrameAvailable(pref)
+/*
+        if(is_override){
+            // create single frame for override
+            var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i)
+            var videoView = VideoView(this)
+            var exoPlayerView  = StyledPlayerView(ctx)
+
+            // add frame in layout list
+            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null))    // add frame in list
+            binding.rootLayout.addView(frame)   // attach frame in root
+            binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+
+            // add multi-fame items
+            if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
+                var child_items: MutableList<Item> = mutableListOf()
+                var items_array = all_frames.get(i).item
+                for (j in 0..items_array.size - 1) {
+                    var item = items_array[j]
+                    item.frame_h = all_frames.get(i).h
+                    item.frame_w = all_frames.get(i).w
+                    items.add(item)
+                    items.get(items.size-1).pos = i
+                    child_items.add(item)
+                }
+                multiframe_items?.add(child_items)
+                current_size_list.add(0)
+            }else {
+                multiframe_items?.add(mutableListOf())
+                current_size_list.add(0)
+            }
+            // start playing
+            startPlayingContent()
+        }else
+*/
         if(is_frames){
             var all_frames = DataParsing.getFilterdFrames(pref)
             for (i in 0..all_frames!!.size-1) {
                 // create availble frames with bg
                 var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i)
                 var videoView = VideoView(this)
-                var exoPlayer  = StyledPlayerView(ctx)
+                var exoPlayerView  = StyledPlayerView(ctx)
 
                 // add frame in layout list
-                layout_list.add(NewLayoutView(frame,videoView,exoPlayer,false,"",null,null))    // add frame in list
+                layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null))    // add frame in list
                 binding.rootLayout.addView(frame)   // attach frame in root
                 binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
@@ -570,6 +636,7 @@ class MainActivity : AppCompatActivity(){
         binding.rlBackground.visibility = View.GONE
         var layout = layout_list[pos].relative_layout
         var video = layout_list[pos].videoView
+        var exoPlayerView = layout_list[pos].exoPlayerView
         var exoPlayer = layout_list[pos].exoPlayer
         layout?.visibility = View.VISIBLE
         var widget_type = item.type
@@ -612,7 +679,10 @@ class MainActivity : AppCompatActivity(){
         // vimeo
         if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
             layout?.removeAllViews()
-            layout?.addView(VimeoWidget.getVimeoWidget(this,item.sound,item.src),item.frame_w,item.frame_h)
+            var player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_SLIDE,item?.sound!!)
+            layout_list[pos].exoPlayer = player
+            exoPlayer = player
+            vimeoViewModel.getVimeoUrl(item.src,item,pos,vimeo_retro)
         }
         // power BI
         if(widget_type == Constant.CONTENT_WIDGET_POWER){
@@ -632,11 +702,9 @@ class MainActivity : AppCompatActivity(){
         // quotes
         if(widget_type == Constant.CONTENT_WIDGET_QUOTES)
             viewModel.getQuoteText(item.id.split("-")[2],pos)
-
         // text
         if(widget_type == Constant.CONTENT_WIDGET_TEXT)
             viewModel.getText(item.id.split("-")[2],pos)
-
         // news
         if(widget_type == Constant.CONTENT_WIDGET_NEWS){
             if(item.src.equals(""))
@@ -648,16 +716,16 @@ class MainActivity : AppCompatActivity(){
         if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
             layout?.removeAllViews()
             if(item?.dType.equals("yt"))
-                layout?.addView(YouTubeWidget.getYouTubeWidget(this,item),item.frame_w,item.frame_h)
+                layout?.addView(YouTubeWidget.getYouTubeWidgetLiveStream(this,item),item.frame_w,item.frame_h)
             else
-                layout?.addView(WidgetExoPlayer.getExoPLayer(this,item,exoPlayer),item.frame_w,item.frame_h)
+                layout?.addView(WidgetExoPlayer.setExoPLayer(this,item,exoPlayerView),item.frame_w,item.frame_h)
         }
         // COD BUTTON
         if(widget_type == Constant.CONTENT_WIDGET_COD){
             layout?.removeAllViews()
             var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
             layout?.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
-            layout?.addView(WidgetCodButton.getWidgetCodButton(this,item))
+            layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
         }
         // weather
 //        if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
@@ -667,7 +735,11 @@ class MainActivity : AppCompatActivity(){
             var job = CoroutineScope(Dispatchers.IO).launch {
                 delay(TimeUnit.SECONDS.toMillis(item.duration.toLong()))
                 withContext(Dispatchers.Main) {
-                    if(exoPlayer.player != null && exoPlayer.player!!.isPlaying) exoPlayer.player?.stop()
+//                    if(exoPlayerView.player != null && exoPlayerView.player!!.isPlaying) exoPlayerView.player?.stop()
+                    if(exoPlayer != null && exoPlayer!!.isPlaying){
+                        exoPlayer!!.release()
+                        exoPlayer = null
+                    }
                     if(play_activate){
                         pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
@@ -793,6 +865,7 @@ class MainActivity : AppCompatActivity(){
         screenshot_handler.removeCallbacks(ssTask)
         temp_handler.removeCallbacks(tempTask)
         report_handler.removeCallbacks(reportTask)
+        removeData()
     }
 
     private fun checkDeviceVersion() {
@@ -801,7 +874,7 @@ class MainActivity : AppCompatActivity(){
                 if(isConnected)
                     if(downloading==0){
                         freeMemory()
-                        viewModel.isDeviceRegistered(this)
+                        viewModel.isDeviceRegistered(this,DeviceInfo.getDeviceId(this,pref))
                     }
             }
     }
@@ -809,40 +882,14 @@ class MainActivity : AppCompatActivity(){
 
     // dialog
     fun showNotRegisterDialog() {
-        val metrics = DisplayMetrics()
-        getWindowManager().getDefaultDisplay().getMetrics(metrics)
-        val yInches = metrics.heightPixels / metrics.ydpi
-        val xInches = metrics.widthPixels / metrics.xdpi
-        val diagonalInches = Math.sqrt((xInches * xInches + yInches * yInches).toDouble())
-        loadWaiting()
-        if (dialog == null || dialog?.isShowing == false) {
-            dialog = Dialog(this)
-            dialog?.requestWindowFeature(Window.FEATURE_NO_TITLE)
-            dialog?.setCancelable(false)
-            dialog?.setContentView(R.layout.dialog_not_register)
-            dialog?.findViewById<TextView>(R.id.tv_dialog_deviceid)?.text = DeviceInfo.getDeviceId(ctx)
-            dialog?.findViewById<TextView>(R.id.text_dia_desc)?.text =
-                if (diagonalInches >= 6.5) "This media player is not registered to the L Squared Hub." // 6.5inch device or bigger
-                else "This media player is not registered to the \nL Squared Hub."
 
-            dialog?.findViewById<TextView>(R.id.tv_dialog_detail)
-                ?.setText(Utility.getDetailsText(), BufferType.SPANNABLE)
-            dialog?.show()
-            dialog?.setOnKeyListener { arg0, keyCode, event -> // TODO Auto-generated method stub
-                if (keyCode == KeyEvent.KEYCODE_BACK) {
-                    dialog?.dismiss()
-                    finish()
-                }
-                true
-            }
-        }
+        DialogView.showNotRegisterDialog(this,this,binding.mainLayout)
+        loadWaiting()
+
     }
 
     fun hideDialog() {
-        if (dialog != null && dialog?.isShowing == true) {
-            dialog?.dismiss()
-            dialog = null
-        }
+        DialogView.hideDialog()
     }
 
     // toast & snack bar
@@ -892,6 +939,7 @@ class MainActivity : AppCompatActivity(){
         removeData()
         binding.rlBackground.visibility = View.VISIBLE
         pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,false)
+        pref?.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,"")
         showNotRegisterDialog()
         viewModel.deleteFiles(null)
     }
@@ -933,6 +981,19 @@ class MainActivity : AppCompatActivity(){
         System.runFinalization()
         Runtime.getRuntime().gc()
         System.gc()
+    }
+
+    fun showErrorMessage(msg:String){
+        binding.tvNodata.visibility = View.VISIBLE
+        binding.tvNodata.setText(msg)
+        Handler(Looper.getMainLooper()).postDelayed({
+            binding.tvNodata.visibility = View.GONE
+        }, 5000)
+    }
+
+    override fun clickOnRegister(device_id: String) {
+//        pref.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,device_id)
+        viewModel.registerNewDevce(this,pref,device_id)
     }
 
 }

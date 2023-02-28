@@ -10,7 +10,7 @@ import com.app.lsquared.model.Content
 
 
 class CodVerticalAdapter(var cat_list: ArrayList<Cat>,
-                         private val listener: (Content, Int) -> Unit) : RecyclerView.Adapter<CodVerticalAdapter.ViewHolder>(){
+                         private val listener: (Content,Cat, Int) -> Unit) : RecyclerView.Adapter<CodVerticalAdapter.ViewHolder>(){
 
     lateinit var binding: ItemCodVerticalBinding
 
@@ -27,20 +27,35 @@ class CodVerticalAdapter(var cat_list: ArrayList<Cat>,
         return cat_list.size
     }
 
-    class ViewHolder(var itemBinding: ItemCodVerticalBinding,var listener: (Content, Int) -> Unit) :
+    class ViewHolder(var itemBinding: ItemCodVerticalBinding,var listener: (Content,Cat, Int) -> Unit) :
         RecyclerView.ViewHolder(itemBinding.root) {
 
         fun bindItem(item: Cat) {
             itemBinding.tvCodvertTitle.text = item.label
             itemBinding.rvCodHorizontal.apply {
                 layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-                adapter = CODHoriContentAdapter(item.content) { item, position ->
-                    listener(item, position)
+                var items = getItemGrouping(item.content)
+                adapter = CODHoriContentAdapter(items,item) { item,item_cat, position ->
+                    listener(item, item_cat,position)
                 }
             }
-
         }
+
+        fun getItemGrouping(content: ArrayList<Content>): ArrayList<Content> {
+            var list = ArrayList<Content>()
+            var label = ArrayList<String>()
+            for (cont in content){
+                if(!label.contains(cont.label)) {
+                    label.add(cont.label!!)
+                    list.add(cont)
+                }
+            }
+            return list
+        }
+
     }
+
+
 
 
 }

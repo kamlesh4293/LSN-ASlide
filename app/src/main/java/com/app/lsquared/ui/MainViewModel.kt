@@ -21,6 +21,8 @@ import com.androidnetworking.interfaces.JSONObjectRequestListener
 import com.androidnetworking.interfaces.StringRequestListener
 import com.app.lsquared.model.Downloadable
 import com.app.lsquared.utils.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import java.io.File
 import com.test.RetrofitClient
 
@@ -60,11 +62,12 @@ class MainViewModel : ViewModel() {
     val screenshot_api_result : LiveData<ApiResponse> get() = _screenshot_data
 
 
+
     // 1 check device is registered
-    fun isDeviceRegistered(ctx:Context) {
-        var device_id = DeviceInfo.getDeviceId(ctx)
+    fun isDeviceRegistered(ctx:Context,device_id:String) {
+//        var device_id = DeviceInfo.getDeviceId(ctx,)
         var url = Constant.BASE_URL+"api/v1/feed/deviceversion/$device_id"
-        Log.d("TAG", "isDeviceRegistered: ")
+        Log.d("TAG", "isDeviceRegistered: $url")
         if(internet){
             Log.d("TAG", "isDeviceRegistered: calling")
             viewModelScope.launch(Dispatchers.IO) {
@@ -123,10 +126,10 @@ class MainViewModel : ViewModel() {
     }
 
     // 3 submit device info
-    fun submitDeviceInfo(ctx:Activity){
+    fun submitDeviceInfo(ctx:Activity,pref: MySharePrefernce){
         // get device info
         var info = Utility.deviceInfoToJson(
-                DeviceInfo.getDeviceId(ctx),
+                DeviceInfo.getDeviceId(ctx, pref),
                 DeviceInfo.getDeviceResolution(ctx),
                 DeviceInfo.getDeviceName(),
                 DeviceInfo.getLocalIpAddress(),
@@ -276,6 +279,43 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+
+    // 7. post screen shot
+    private val reister_new_device_data = MutableLiveData<ApiResponse>()
+    val reister_new_device_data_result : LiveData<ApiResponse> get() = reister_new_device_data
+
+    fun registerNewDevce(ctx:Activity,pref: MySharePrefernce,device_id :String){
+        if(internet){
+            var data = JSONObject()
+//            data.put("id",DeviceInfo.getDeviceId(ctx,pref))
+            data.put("id",device_id)
+            data.put("hw",DeviceInfo.getDeviceIdFromDevice(ctx))
+            viewModelScope.launch(Dispatchers.IO) {
+                AndroidNetworking.post(Constant.API_NEW_DEVICE_REGISTER)
+                    .addJSONObjectBody(data) // posting json
+                    .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                    .setTag("test")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .getAsString(object : StringRequestListener{
+                        override fun onResponse(response: String?) {
+                            Log.d("device_info_success-",response.toString())
+                            var code = JSONObject(response!!).getInt("code")
+                            var msg = JSONObject(response!!).getString("desc")
+                            reister_new_device_data.postValue(ApiResponse(Status.SUCCESS,response,msg,code))
+                        }
+                        override fun onError(anError: ANError?) {
+                            Log.d("device_info_failed-",anError.toString())
+                            reister_new_device_data.postValue(ApiResponse(Status.FAILURE,anError.toString(),"failed",0))
+                        }
+                    })
+            }
+        }
+    }
+
+
+
 
     // delete file
     fun deleteFiles(downloable_file: List<String>?) {

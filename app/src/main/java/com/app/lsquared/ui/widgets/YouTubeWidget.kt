@@ -57,6 +57,23 @@ class YouTubeWidget {
             return web
         }
 
+        fun getYouTubeWidgetLiveStream(ctx:Context, item: Item):WebView{
+            var web = WebView(ctx)
+            web.setWebChromeClient(WebChromeClient())
+            web.getSettings().setJavaScriptEnabled(true)
+
+            web.getSettings()?.setMediaPlaybackRequiresUserGesture(false)
+            web.getSettings()?.setUserAgentString("1");//for desktop 1 or mobile 0.
+
+            var mute = "0"
+            if (item.sound=="no") mute ="1" else mute = "0"
+
+            var src = item?.url!!.substring(item?.url!!.lastIndexOf("=")+1,item?.url!!.length)
+            web.loadUrl("${Constant.BASE_URL_YOUTUBE}$src?autoplay=1&rel=0&loop=1&mute=$mute&controls=0&enablejsapi=1")
+
+            return web
+        }
+
         fun getYouTubeWidget(ctx:Context, item: Content):WebView{
             var web = WebView(ctx)
             web.setWebChromeClient(WebChromeClient())
