@@ -28,7 +28,6 @@ class WidgetVideo {
             video.layoutParams = params
 
             var myMediaMetadataRetriever = MediaMetadataRetriever()
-
             val path = DataManager.getDirectory()+ File.separator+ fileName
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
@@ -66,7 +65,6 @@ class WidgetVideo {
                 if (type.equals(Constant.CALLING_MAIN)) mp.start()
                 else (ctx as CodContentActivity).finish()
             })
-
             return video
         }
 

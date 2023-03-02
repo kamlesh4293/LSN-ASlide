@@ -50,7 +50,7 @@ import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
+class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     var TAG = "MainActivity"
 
@@ -87,10 +87,22 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
     lateinit var ctx : Context
 
     lateinit var checkVersionHandler: Handler
+    lateinit var timeScehdulerHandler: Handler
     lateinit var screenshot_handler: Handler
     lateinit var temp_handler: Handler
     lateinit var report_handler: Handler
 
+    private val timeSchedularTask = object : Runnable {
+        override fun run() {
+            var running_signature = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE)
+            var current_signature = DataParsing.getTimeSignature(pref)
+            Log.d(TAG, "run: running - $running_signature \n current - $current_signature")
+            if(!running_signature.equals("") && !current_signature.equals("") && !running_signature.equals(current_signature)){
+                changeContent()
+            }
+            timeScehdulerHandler.postDelayed(this, viewModel.customtimedelay.toLong())
+        }
+    }
 
     private val versionTask = object : Runnable {
         override fun run() {
@@ -128,6 +140,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
         }
     }
 
+
+    override fun onStart() {
+        super.onStart()
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -139,11 +157,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
         registerReceiver(broadcastreceiver,intentfilter)
 
         checkVersionHandler = Handler(Looper.getMainLooper())
+        timeScehdulerHandler = Handler(Looper.getMainLooper())
         screenshot_handler = Handler(Looper.getMainLooper())
         temp_handler = Handler(Looper.getMainLooper())
         report_handler = Handler(Looper.getMainLooper())
-
     }
+
 
     override fun onStop() {
         super.onStop()
@@ -151,6 +170,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
 
     override fun onResume() {
         super.onResume()
+        timeScehdulerHandler.post(timeSchedularTask)
         checkVersionHandler.post(versionTask)
         screenshot_handler.post(ssTask)
         temp_handler.post(tempTask)
@@ -215,7 +235,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
             response ->
             if (response.status == Status.SUCCESS) {
                 if(response.pos == Constant.DEVICE_REGISTERED){
-                    DialogView.hideDialog()
+                    DialogView.showSuccess()
+//                    showToast("Device Registered.")
                 }else{
                     pref.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,"")
                     DialogView.showError(response.message)
@@ -235,7 +256,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
                     deviceNotRegistered()
                 } else {
                     DialogView.hideKeyBoardShowing()
-
                     pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,true)
                     viewModel.is_device_registered = true
                     pref?.putVersionFromDeviceAPI(device_obj.desc.toInt())
@@ -403,8 +423,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
             downloading = 0
             removeData()
             var is_frames = DataParsing.isFrameAvailable(pref)
-//            var is_override = DataParsing.isOverrideAvailable(pref)
-            if(is_frames) contentPlaying(is_frames)
+            var is_override = DataParsing.isOverrideAvailable(pref)
+            if(is_frames || is_override) contentPlaying(is_frames,is_override)
             else loadWaiting()
         }
     }
@@ -436,30 +456,33 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
       return downloading
     }
 
-    private fun contentPlaying(is_frames: Boolean) {
+    private fun contentPlaying(is_frames: Boolean, is_override: Boolean) {
 
-/*
         if(is_override){
+            Log.d(TAG, "contentPlaying: override - true")
             // create single frame for override
-            var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i)
+            var frame = DataParsing.getOverrideFrame(ctx!!)
             var videoView = VideoView(this)
             var exoPlayerView  = StyledPlayerView(ctx)
 
             // add frame in layout list
             layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null))    // add frame in list
             binding.rootLayout.addView(frame)   // attach frame in root
-            binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+//            binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
+            var all_frames = DataParsing.getOverrideFrames(pref)
             // add multi-fame items
-            if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
+            if (all_frames?.get(0)?.item != null && all_frames.get(0).item.size > 0) {
+                Log.d(TAG, "contentPlaying: item size - ${all_frames.get(0).item.size}")
+
                 var child_items: MutableList<Item> = mutableListOf()
-                var items_array = all_frames.get(i).item
+                var items_array = all_frames.get(0).item
                 for (j in 0..items_array.size - 1) {
                     var item = items_array[j]
-                    item.frame_h = all_frames.get(i).h
-                    item.frame_w = all_frames.get(i).w
+                    item.frame_h = DeviceInfo.getScreenHeight(this)
+                    item.frame_w = DeviceInfo.getScreenWidth(this)
                     items.add(item)
-                    items.get(items.size-1).pos = i
+                    items.get(items.size-1).pos = 0
                     child_items.add(item)
                 }
                 multiframe_items?.add(child_items)
@@ -470,9 +493,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
             }
             // start playing
             startPlayingContent()
-        }else
-*/
-        if(is_frames){
+        }else if(is_frames){
             var all_frames = DataParsing.getFilterdFrames(pref)
             for (i in 0..all_frames!!.size-1) {
                 // create availble frames with bg
@@ -485,6 +506,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
                 binding.rootLayout.addView(frame)   // attach frame in root
                 binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
+                // add frame for screen capture
+                var image_frame = DataParsing.getScreenCaptureFrame(ctx!!,all_frames.get(i))
+                binding.screenRootLayout.addView(image_frame)
+
                 // add multi-fame items
                 if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
                     var child_items: MutableList<Item> = mutableListOf()
@@ -493,6 +518,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
                         var item = items_array[j]
                         item.frame_h = all_frames.get(i).h
                         item.frame_w = all_frames.get(i).w
+                        Log.d(TAG, "contentPlaying: height - ${all_frames.get(i).h} width - ${all_frames.get(i).w}")
                         items.add(item)
                         items.get(items.size-1).pos = i
                         child_items.add(item)
@@ -579,6 +605,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
 
 
     private fun startPlayingContent() {
+        Log.d(TAG, "startPlayingContent")
+
         if(multiframe_items != null && multiframe_items.size>0){
             for (i in 0..multiframe_items.size-1){
                 if(multiframe_items.get(i) != null && multiframe_items.get(i).size>0){
@@ -593,6 +621,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
 
     private fun validateItem(item: Item, position: Int) {
 
+        Log.d(TAG, "validateItem")
 
         val path = DataManager.getDirectory()+File.separator+ item.fileName
         if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
@@ -740,6 +769,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
                         exoPlayer!!.release()
                         exoPlayer = null
                     }
+                    if(exoPlayerView != null && exoPlayerView?.player != null && exoPlayerView?.player!!.isPlaying){
+                        exoPlayerView?.player!!.release()
+                        exoPlayerView?.player = null
+                    }
                     if(play_activate){
                         pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
@@ -862,6 +895,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
         play_activate = false
 
         checkVersionHandler.removeCallbacks(versionTask)
+        timeScehdulerHandler.removeCallbacks(timeSchedularTask)
         screenshot_handler.removeCallbacks(ssTask)
         temp_handler.removeCallbacks(tempTask)
         report_handler.removeCallbacks(reportTask)
@@ -992,8 +1026,19 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener{
     }
 
     override fun clickOnRegister(device_id: String) {
-//        pref.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,device_id)
         viewModel.registerNewDevce(this,pref,device_id)
+    }
+
+    var newBundy = Bundle()
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBundle("newBundy", newBundy)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        savedInstanceState.getBundle("newBundy")
     }
 
 }

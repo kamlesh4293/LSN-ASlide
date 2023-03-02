@@ -20,6 +20,7 @@ class ImageWidget {
 
 
         fun getImageWidget(ctx: Context,width: Int,height: Int,fileName: String,filesize: Int): ImageView {
+            Log.d("TAG", "getImageWidget: $width , $height, $fileName , $filesize")
             var image = ImageView(ctx)
             val params = RelativeLayout.LayoutParams(width,height)
             image.layoutParams = params

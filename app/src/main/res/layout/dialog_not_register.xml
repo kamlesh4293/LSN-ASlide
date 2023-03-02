@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
+    android:layout_width="500dp"
     android:background="@color/white"
     android:layout_height="wrap_content">
 
@@ -24,7 +24,7 @@
             android:layout_gravity="center"
             android:background="@color/dialog_color_head"
             android:padding="10dp"
-            android:text="Media Player Registration"
+            android:text="Device Registration"
             android:textColor="@color/white"
             android:textSize="16dp"
             android:textStyle="bold" />
@@ -37,12 +37,14 @@
             android:layout_gravity="center"
             android:layout_marginHorizontal="10dp"
             android:layout_marginTop="10dp"
+            android:singleLine="true"
             android:text="This media player is not registered to the \nL Squared Hub."
             android:textColor="@color/black"
-            android:textSize="14dp"
+            android:textSize="16dp"
             android:textStyle="bold" />
 
         <TextView
+            android:layout_marginTop="5dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -50,7 +52,7 @@
             android:layout_marginBottom="20dp"
             android:text="You can log into the L Squared Hub through your desktop browser and add this device using the following device ID:"
             android:textColor="@color/black"
-            android:textSize="12dp" />
+            android:textSize="15dp" />
 
         <LinearLayout
             android:id="@+id/ll_notregister_autodevice"
@@ -59,12 +61,14 @@
             android:orientation="horizontal">
 
             <TextView
+                android:textStyle="bold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@color/dialog_color_col1"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="6dp"
                 android:textColor="@color/black"
+                android:textSize="14dp"
                 android:text="Device ID : " />
 
             <TextView
@@ -82,82 +86,94 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:orientation="horizontal"
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <CheckBox
-                android:checked="false"
-                android:id="@+id/rb_main_autoregister"
-                android:text="Auto Register"
-                android:buttonTint="@color/bg_color"
-                android:layout_width="wrap_content"
-                android:layout_height="45dp"/>
-
             <LinearLayout
-                android:visibility="gone"
-                android:layout_marginHorizontal="10dp"
-                android:layout_gravity="center"
-                android:id="@+id/ll_notregister_manudevice"
+                android:id="@+id/ll_auto_register"
+                android:orientation="horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content">
 
-                <EditText
-                    android:singleLine="true"
-                    android:maxLines="1"
-                    android:imeOptions="actionDone"
-                    android:id="@+id/et_dialog_deviceid"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                <CheckBox
                     android:textColor="@color/black"
-                    android:layout_weight="1"
-                    android:background="@drawable/et_border"
-                    android:paddingHorizontal="15dp"
-                    android:paddingVertical="5dp"
-                    android:textSize="16dp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_notregisterdialog_register"
-                    android:background="@color/dialog_color_head"
-                    android:paddingHorizontal="15dp"
-                    android:gravity="center"
-                    android:text="Submit"
-                    android:textColor="@color/white"
-                    android:textStyle="bold"
+                    android:checked="false"
+                    android:id="@+id/rb_main_autoregister"
+                    android:text="Auto Registration"
+                    android:buttonTint="@color/bg_color"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"/>
+                    android:layout_height="40dp"/>
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:visibility="gone"
+                        android:layout_marginLeft="10dp"
+                        android:id="@+id/ll_notregister_manudevice"
+                        android:layout_width="match_parent"
+                        android:layout_height="45dp"
+                        android:paddingVertical="5dp"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:singleLine="true"
+                            android:maxLines="1"
+                            android:paddingLeft="10dp"
+                            android:imeOptions="actionDone"
+                            android:id="@+id/et_dialog_deviceid"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:textColor="@color/black"
+                            android:layout_weight="1"
+                            android:background="@drawable/et_border"
+                            android:textSize="16dp"
+                            android:textStyle="bold" />
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/tv_notregisterdialog_register"
+                            android:background="@color/dialog_color_head"
+                            android:gravity="center"
+                            android:text="Submit"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:layout_marginRight="10dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"/>
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:visibility="gone"
+                        android:paddingVertical="2dp"
+                        android:layout_marginLeft="10dp"
+                        android:id="@+id/tv_notregisterdialog_error"
+                        android:textColor="@color/red"
+                        android:text="Device not found"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+
+
+                </LinearLayout>
 
             </LinearLayout>
 
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_marginBottom="10dp"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="3"
-                android:layout_height="wrap_content"/>
-
             <TextView
                 android:visibility="gone"
-                android:id="@+id/tv_notregisterdialog_error"
-                android:textColor="@color/red"
-                android:text="Device not found"
-                android:layout_width="0dp"
-                android:layout_weight="7"
+                android:layout_margin="5dp"
+                android:background="@drawable/border_register_success"
+                android:padding="5dp"
+                android:id="@+id/tv_notregisterdialog_success"
+                android:textColor="@color/green"
+                android:text="Device Registered. Please wait."
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
-
-
-        </LinearLayout>
-
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/tv_dialog_detail"
@@ -168,8 +184,7 @@
             android:padding="10dp"
             android:text="For help with setup. please email support@LSquared.com or call us at 1-877-344-1548 and select option 2 for customer service."
             android:textColor="@color/black"
-            android:textSize="10dp" />
-
+            android:textSize="12dp" />
 
     </LinearLayout>
 

@@ -18,6 +18,10 @@
 
 
     <color name="red">#F44336</color>
+    <color name="green">#0f5132</color>
+    <color name="trans_green">#d1e7dd</color>
+    <color name="border_green">#badbcc</color>
+    <color name="border_green111">#0c69af</color>
 
     <color name="bg_color">#008acb</color>
     <color name="bg_color_light">#87CEFA</color>

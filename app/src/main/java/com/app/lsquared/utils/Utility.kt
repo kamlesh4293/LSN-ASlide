@@ -22,6 +22,7 @@ import java.util.*
 import java.io.*
 import android.media.MediaMetadataRetriever
 import com.app.lsquared.BuildConfig
+import com.app.lsquared.R
 import com.app.lsquared.model.Frame
 import com.app.lsquared.model.Item
 
@@ -90,12 +91,12 @@ class Utility {
         }
 
 
-        fun getDetailsText() : SpannableStringBuilder{
+        fun getDetailsText(ctx:Context) : SpannableStringBuilder{
             val builder = SpannableStringBuilder()
             val string1 = "For help with setup. please email support@LSquared.com or call us at 1-877-344-1548 and select option 2 for customer service."
             val redSpannable = SpannableString(string1)
             redSpannable.setSpan(ForegroundColorSpan(Color.BLACK), 0, string1.length, 0)
-            redSpannable.setSpan(ForegroundColorSpan(Color.BLUE), 34, 54, 0)
+            redSpannable.setSpan(ForegroundColorSpan(ctx.resources.getColor(R.color.border_green111)), 34, 54, 0)
             redSpannable.setSpan(StyleSpan(Typeface.BOLD),68,84, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             builder.append(redSpannable)
             return builder

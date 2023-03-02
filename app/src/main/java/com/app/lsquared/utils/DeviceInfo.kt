@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Point
 import android.net.ConnectivityManager
 import android.os.Build
@@ -42,19 +43,8 @@ class DeviceInfo {
 
         // Screen resolution
         fun getDeviceResolution(activity: Activity):String{
-            val display = activity.windowManager.defaultDisplay
-            val size = Point()
-            display.getSize(size)
-//            val width = size.x
-//            val height = size.y
-
-            val metrics = DisplayMetrics()
-            display.getMetrics(metrics)
-            val width = metrics.widthPixels
-            val height = metrics.heightPixels
-
-            return "$width*$height"
-
+            var x_sign = "x"
+            return "${getScreenWidth(activity)}$x_sign${getScreenHeight(activity)}"
         }
 
         fun getScreenWidth(ctx:Context):Int{
@@ -62,7 +52,25 @@ class DeviceInfo {
         }
 
         fun getScreenHeight(ctx:Context):Int{
-            return (ctx as Activity).resources.displayMetrics.heightPixels
+            var height = getNavigationBarHeight(ctx)
+            Log.d("TAG : ", " getScreenHeight: $height")
+            Log.d("TAG : ", " getScreenHeight: total ${(ctx as Activity).resources.displayMetrics.heightPixels + height}")
+            return (ctx as Activity).resources.displayMetrics.heightPixels + height
+        }
+
+        private fun getNavigationBarHeight(ctx:Context): Int {
+            val resources = ctx.resources
+            val resName = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                "navigation_bar_height"
+            } else {
+                "navigation_bar_height_landscape"
+            }
+            val id: Int = resources.getIdentifier(resName, "dimen", "android")
+            return if (id > 0) {
+                resources.getDimensionPixelSize(id)
+            } else {
+                0
+            }
         }
 
         // device name

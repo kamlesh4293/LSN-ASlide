@@ -41,6 +41,7 @@
         tools:targetApi="31">
         <activity
             android:name=".ui.activity.CODActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
@@ -48,6 +49,7 @@
         </activity>
         <activity
             android:name=".ui.activity.CodContentActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
@@ -55,12 +57,14 @@
         </activity>
         <activity
             android:name=".ui.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
+            android:configChanges="orientation|screenSize"
             android:name=".ui.activity.YouTubeActivity"
             android:exported="false">
             <meta-data

@@ -1,5 +1,7 @@
 package com.app.lsquared.utils
 
+import android.util.Log
+import com.app.lsquared.model.Frame
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,6 +66,24 @@ class DateTimeUtil {
             if(seconds.length==1)seconds = "0$seconds"
 
             return "$minutes:$seconds"
+        }
+
+        // custom time
+
+        fun createDateForCustomTime(): Date {
+            val df = SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", Locale.US)
+            val time = df.format(Date())
+            val date = df.parse(time)
+            Log.d("TAG", "craeteDateForCustomTime: $time")
+            return date
+        }
+
+        fun isValidWithTime(frame: Frame): Boolean {
+            val df = SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.US)
+            val start_time = df.parse(frame.st)
+            val end_time = df.parse(frame.et)
+            val current_time = createDateForCustomTime()
+            return if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
         }
 
 

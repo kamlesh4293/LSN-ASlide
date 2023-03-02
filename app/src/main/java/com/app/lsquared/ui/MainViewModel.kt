@@ -36,6 +36,7 @@ class MainViewModel : ViewModel() {
     var is_devicereport_submitted = false
 
     var delay = 30000
+    var customtimedelay = 60000
     var temp_delay = 60000
     var screen_delay = 300
     var report_delay = 120000
@@ -341,10 +342,12 @@ class MainViewModel : ViewModel() {
                 // delete all the files
                 var dir_files = DataManager.getAllDirectoryFiles()
                 if(dir_files!=null &&dir_files.size>0){
-                    val file = File(dir_files[0].path)
-                    if(file.exists()){
-                        Log.d("TAG", "DeleteFileName - all: ${file.name}")
-                        file.delete()
+                    for(file in dir_files){
+                        val file = File(file.path)
+                        if(file.exists()){
+                            Log.d("TAG", "DeleteFileName - all: ${file.name}")
+                            file.delete()
+                        }
                     }
                 }
             }

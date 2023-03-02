@@ -25,6 +25,7 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_REPORT_DATA = "report_data"
         const val KEY_DEVICE_REGISTERED = "device_registered"
         const val KEY_DEVICE_REGISTERED_ID = "device_id"
+        const val KEY_TIME_SIGNATURE = "time_signature"
 
     }
 

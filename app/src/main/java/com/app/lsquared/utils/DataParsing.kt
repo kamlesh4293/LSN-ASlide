@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager.LayoutParams
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import com.app.lsquared.model.*
@@ -150,10 +151,64 @@ class DataParsing() {
         // get frames
         fun getFilterdFrames(prefernce: MySharePrefernce?): List<Frame>?{
             var data = prefernce?.getContentData()
+            var time_signature = StringBuilder()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
                 if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
-                    return Utility.getFilterFrameList(data_obj.layout.get(0).frame)
+                    var frames = Utility.getFilterFrameList(data_obj.layout.get(0).frame)
+                    var list = ArrayList<String>()
+                    var list_frame = ArrayList<Frame>()
+                    for(frame in frames){
+                        if(!list.contains(frame.name)) {
+                            if(DateTimeUtil.isValidWithTime(frame)){
+                                time_signature.append(frame.sort)
+                                Log.d("TAG", "getFilterdFrames: ${frame.sort}")
+                                list.add(frame.name)
+                                list_frame.add(frame)
+                            }
+                        }
+                    }
+                    prefernce?.putStringData(MySharePrefernce.KEY_TIME_SIGNATURE,time_signature.toString())
+                    return list_frame
+//                    return Utility.getFilterFrameList(data_obj.layout.get(0).frame)
+                }
+            }
+            return null
+        }
+
+        // get time signature
+        fun getTimeSignature(prefernce: MySharePrefernce?): String{
+            var data = prefernce?.getContentData()
+            var time_signature = StringBuilder()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
+                    var frames = Utility.getFilterFrameList(data_obj.layout.get(0).frame)
+                    var list = ArrayList<String>()
+                    var list_frame = ArrayList<Frame>()
+                    for(frame in frames){
+                        if(!list.contains(frame.name)) {
+                            if(DateTimeUtil.isValidWithTime(frame)){
+                                time_signature.append(frame.sort)
+                                Log.d("TAG", "getFilterdFrames: ${frame.sort}")
+                                list.add(frame.name)
+                                list_frame.add(frame)
+                            }
+                        }
+                    }
+                    return time_signature.toString()
+                }
+            }
+            return ""
+        }
+
+        // get override frames
+        fun getOverrideFrames(prefernce: MySharePrefernce?): List<Frame>?{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
+                    return data_obj.ovr.get(0).frame
                 }
             }
             return null
@@ -326,6 +381,19 @@ class DataParsing() {
                 ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
             }
             return ll_frame
+        }
+
+        fun getScreenCaptureFrame(ctx: Context,frame: Frame):ImageView{
+            var image_frame = ImageView(ctx)
+            val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)
+
+            image_frame.layoutParams = params
+            image_frame.x = frame.x.toFloat()
+            image_frame.y = frame.y.toFloat()
+
+            if(frame.bg.equals(""))image_frame.setBackgroundColor(Color.TRANSPARENT)
+            else image_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
+            return image_frame
         }
 
         // Data parsing for content on demand

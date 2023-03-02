@@ -4,12 +4,14 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Rect
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
-import android.view.KeyEvent
 import android.view.View
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.Window
-import android.view.inputmethod.EditorInfo
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -48,12 +50,12 @@ class DialogView {
                     else "This media player is not registered to the \nL Squared Hub."
 
                 dialog?.findViewById<TextView>(R.id.tv_dialog_detail)
-                    ?.setText(Utility.getDetailsText(), TextView.BufferType.SPANNABLE)
+                    ?.setText(Utility.getDetailsText(ctx), TextView.BufferType.SPANNABLE)
                 dialog?.show()
                 var checkbox = dialog?.findViewById<CheckBox>(R.id.rb_main_autoregister)
                 var input_ll = dialog?.findViewById<LinearLayout>(R.id.ll_notregister_manudevice)
                 var input_et = dialog?.findViewById<EditText>(R.id.et_dialog_deviceid)
-                var register_bt = dialog?.findViewById<TextView>(R.id.tv_notregisterdialog_register)
+                var register_bt = dialog?.findViewById<Button>(R.id.tv_notregisterdialog_register)
                 var error_tv = dialog?.findViewById<TextView>(R.id.tv_notregisterdialog_error)
 
 
@@ -70,11 +72,10 @@ class DialogView {
 
 
                 register_bt?.setOnClickListener{
+                    register_bt?.startAnimation(getAnim())
                     if(!input_et?.text.toString().equals("")){
                         listener.clickOnRegister(input_et?.text.toString())
-                        if (inputMethodManager != null) inputMethodManager?.toggleSoftInput(
-                            InputMethodManager.RESULT_HIDDEN, 0
-                        )
+                        hideKeyBoardShowing()
                     }
                 }
 
@@ -84,6 +85,8 @@ class DialogView {
                     val screenHeight: Int = mainLayout.getRootView().getHeight()
                     val keypadHeight: Int = screenHeight - r.bottom
                     keyboard_isvisible = keypadHeight > screenHeight * 0.15
+//                    if(keyboard_isvisible) (ctx as MainActivity).showToast("keyboard visible")
+//                    else (ctx as MainActivity).showToast("keyboard hide")
                 })
 
                 checkbox?.setOnClickListener {
@@ -114,7 +117,6 @@ class DialogView {
             }
         }
 
-
 //        private fun doSomething(search: EditText,ctx: Context){
 //            search.setOnEditorActionListener(TextView.OnEditorActionListener{ _, actionId, _ ->
 //                if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -143,11 +145,34 @@ class DialogView {
                 var error_tv = dialog?.findViewById<TextView>(R.id.tv_notregisterdialog_error)
                 error_tv?.text = error_msg
                 error_tv?.visibility = View.VISIBLE
-
             }
         }
 
+        fun showSuccess() {
+            if (dialog != null && dialog?.isShowing == true) {
+                var success_tv = dialog?.findViewById<TextView>(R.id.tv_notregisterdialog_success)
+                var error_tv = dialog?.findViewById<TextView>(R.id.tv_notregisterdialog_error)
+                var ll_auto_register = dialog?.findViewById<LinearLayout>(R.id.ll_auto_register)
+                error_tv?.visibility = View.GONE
+                ll_auto_register?.visibility = View.GONE
+                success_tv?.visibility = View.VISIBLE
+                Handler(Looper.getMainLooper()).postDelayed(
+                    { hideDialog() } ,3000
+                )
+            }
+        }
+
+        fun getAnim(): Animation {
+            val anim: Animation = AlphaAnimation(0.5f, 1.0f)
+            anim.duration = 50 //You can manage the blinking time with this parameter
+            anim.startOffset = 200
+            anim.repeatMode = Animation.REVERSE
+            return anim
+        }
+
     }
+
+
 }
 
 interface NotRegisterDalogListener{
