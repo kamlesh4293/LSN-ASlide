@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import android.os.*
@@ -31,6 +32,7 @@ import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
 import com.app.lsquared.ui.adapter.BeingNewsAdapter
 import com.app.lsquared.ui.adapter.NewsAdapter
+import com.app.lsquared.ui.device.WaterMarkWidget
 import com.app.lsquared.ui.viewmodel.CodViewModel
 import com.app.lsquared.ui.widgets.*
 import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAll
@@ -140,11 +142,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         }
     }
 
-
     override fun onStart() {
         super.onStart()
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -354,13 +354,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     // listview
                     if(!item.src.equals("")){
                         val inputStream: InputStream = response.data!!.byteInputStream()
+                        val inputStream2: InputStream = response.data!!.byteInputStream()
                         var list = DataParsing.parse(inputStream)
-                        setAllNewsListRotation(pos,list,item)
-//                        if(list!=null && list.size>0){
-//                            layout_list[pos].relative_layout?.removeAllViews()
-//                            layout_list[pos].relative_layout?.
-//                            addView(WidgetNewsList.getWidgetNewsListAll(this,item,list),item.frame_w,item.frame_h)
-//                        }
+                        var title = DataParsing.parse2(inputStream2)
+                        setAllNewsListRotation(pos,list,item,title)
                     }else{
                         // being news
                         var being_news = Gson().fromJson(response.data,BeingNewsData::class.java)
@@ -387,6 +384,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             }
         })
 
+        // emergency message response
+        viewModel.emergency_req_result.observe(this, Observer {
+                response ->
+            if(response.status == Status.SUCCESS){
+                var data = response.data
+            }
+        })
+
         // file downloading observer
         viewModel.download_file_result.observe(this, Observer { response ->
             if(response.status == Status.SUCCESS){
@@ -405,8 +410,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     }
 
-    private fun changeContent() {
+    private fun setWaterMark() {
+        Log.d("TAG", "setWaterMark: ${DataParsing.isWatermarkAvailable(pref)}")
+        if(DataParsing.isWatermarkAvailable(pref)){
+            WaterMarkWidget.getWaterMark(binding,DataParsing.getWatermark(pref))
+        }else binding.llWatermark.visibility = View.GONE
+    }
 
+    private fun changeContent() {
         if(!pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) {
             showNotRegisterDialog()
             return
@@ -422,8 +433,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             binding.rlDownloading.visibility = View.GONE
             downloading = 0
             removeData()
+            setWaterMark()
             var is_frames = DataParsing.isFrameAvailable(pref)
             var is_override = DataParsing.isOverrideAvailable(pref)
+
+            Log.d(TAG, "changeContent: $is_override")
+
             if(is_frames || is_override) contentPlaying(is_frames,is_override)
             else loadWaiting()
         }
@@ -432,6 +447,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     fun removeData() {
         play_activate = false
         binding.rootLayout.visibility = View.GONE
+        binding.llWatermark.visibility = View.GONE
         binding.rootLayout.removeAllViews()
         items = mutableListOf()
         multiframe_items = mutableListOf()
@@ -535,12 +551,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     }
 
 
-    private fun setAllNewsListRotation(pos: Int, list: List<RssItem>, item: Item) {
+    private fun setAllNewsListRotation(pos: Int, list: List<RssItem>, item: Item, title: String?) {
         if(list!=null && list.size>0){
             var adapter = NewsAdapter(list,item,ctx!!)
             layout_list[pos].relative_layout?.removeAllViews()
             layout_list[pos].relative_layout?.
-            addView(getWidgetNewsListAll(this,item,list,adapter),item.frame_w,item.frame_h)
+            addView(getWidgetNewsListAll(this,item,list,adapter,title),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
@@ -556,7 +572,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                             }
                             adapter.updateAdapter(newlist)
                             if(layout_list[pos].active_widget.equals(Constant.CONTENT_WIDGET_NEWS)){
-                                setAllNewsListRotation(pos,newlist,item)
+                                setAllNewsListRotation(pos, newlist, item, title)
                             }
                         }
                     }
@@ -601,8 +617,17 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 layout_list[i].relative_layout?.visibility = View.GONE
         }
         binding.rlBackground.visibility = View.VISIBLE
+        var fileName = DataParsing.isDefaultImageAvailable(pref)
+        if(!fileName.equals("")){
+            Log.d(TAG, "loadWaiting: default showing")
+            val path = DataManager.getDirectory()+ File.separator+fileName
+            binding.ivMainDefaultimg.visibility = View.VISIBLE
+            binding.ivMainDefaultimg.setImageBitmap(BitmapFactory.decodeFile(path, ImageUtil.getImageOption()))
+        }else {
+            Log.d(TAG, "loadWaiting: default not showing")
+            binding.ivMainDefaultimg.visibility = View.GONE
+        }
     }
-
 
     private fun startPlayingContent() {
         Log.d(TAG, "startPlayingContent")
@@ -972,10 +997,13 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         play_activate = false
         removeData()
         binding.rlBackground.visibility = View.VISIBLE
+        binding.ivMainDefaultimg.visibility = View.GONE
         pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,false)
         pref?.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,"")
+        pref?.putStringData(MySharePrefernce.KEY_JSON_DATA,"")
         showNotRegisterDialog()
         viewModel.deleteFiles(null)
+
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -1029,6 +1057,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         viewModel.registerNewDevce(this,pref,device_id)
     }
 
+    // manage orientation
     var newBundy = Bundle()
 
     override fun onSaveInstanceState(outState: Bundle) {

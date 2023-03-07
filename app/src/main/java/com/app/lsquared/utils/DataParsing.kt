@@ -25,53 +25,33 @@ class DataParsing() {
 
     companion object{
 
-        fun getInactiveItems(data_obj: ResponseJsonData) :MutableList<String>{
-            var items: MutableList<String> = mutableListOf()
-            var layout = data_obj.layout.get(0)
-            if (layout.inactive != null && layout.inactive!!.size > 0) {
-                var inactive = layout.inactive
-                for (i in 0..inactive.size - 1) {
-                    if (inactive.get(i).item != null && inactive.get(i).item.size > 0) {
-                        var items_array = inactive.get(i).item
-                        for (j in 0..items_array.size - 1) {
-                            items.add(items_array[j].fileName)
-                        }
-                    }
-                }
-            }
-            return items
-        }
-
-        fun getFrame(prefernce: MySharePrefernce?,frame_position:Int): Frame?{
+        // check watermark available
+        fun isWatermarkAvailable(prefernce: MySharePrefernce?): Boolean{
             var data = prefernce?.getContentData()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
-                    return data_obj.layout.get(0).frame.get(frame_position)
-                }
-            }
-            return null
-        }
-
-        // check layout is availavle
-        fun isLayoutAvailable(prefernce: MySharePrefernce?): Boolean{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-
-                if (data_obj.device[0].screenshotUploadInterval != 0){
-                    var ss_interval = if(data_obj.device[0].screenshotUploadInterval!=0)data_obj.device[0].screenshotUploadInterval else 300
-                    prefernce?.putIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL,ss_interval)
-                }
-                if (data_obj.device[0].wcoditime != 0){
-                    var cod_ideal_time = if(data_obj.device[0].wcoditime!=null)data_obj.device[0].wcoditime else 0
-                    prefernce?.putIntData(MySharePrefernce.KEY_COD_IDEAL_TIME,cod_ideal_time)
-                }
-                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
-                    return true
-                }
+                return if (!data_obj.device[0].wm.equals("false") &&!data_obj.device[0].wm.equals("")) true else false
             }
             return false
+        }
+
+        // check watermark available
+        fun isDefaultImageAvailable(prefernce: MySharePrefernce?): String{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                var image_name = data_obj.device[0].defaultImageName
+                return if (!image_name.equals("false") &&!image_name.equals("")) image_name else ""
+            }
+            return ""
+        }
+
+        // get watermark
+        fun getWatermark(prefernce: MySharePrefernce?): DeviceWaterMark {
+            var data = prefernce?.getContentData()
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            var watermark_obj = Gson().fromJson(data_obj.device[0].wm, DeviceWaterMark::class.java)
+            return watermark_obj
         }
 
         // check frames available
@@ -114,39 +94,23 @@ class DataParsing() {
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
                 if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
-                    return true
+                    var frames = data_obj.ovr.get(0).frame
+                    var list = ArrayList<String>()
+                    var list_frame = ArrayList<Frame>()
+                    for(frame in frames){
+                        if(!list.contains(frame.name)) {
+                            if(DateTimeUtil.isValidWithTime(frame)){
+                                list.add(frame.name)
+                                list_frame.add(frame)
+                            }
+                        }
+                    }
+                    return if(list_frame.size>0) true else false
                 }
             }
             return false
         }
 
-
-        // get dynamic frame layout
-        fun getFrameLayouts(prefernce: MySharePrefernce?,ctx:Activity): List<RelativeLayout>{
-            var list = mutableListOf<RelativeLayout>()
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
-
-                    var layout = data_obj.layout.get(0)
-                    var list_frame = Utility.getFilterFrameList(layout.frame)
-                    for (i in 0..list_frame.size - 1) {
-                        val params = RelativeLayout.LayoutParams(list_frame.get(i).w,list_frame.get(i).h)
-                        var frame_layout = RelativeLayout(ctx)
-                        frame_layout.layoutParams = params
-                        frame_layout.id = i+11234
-                        frame_layout.x = list_frame.get(i).x.toFloat()
-                        frame_layout.y = list_frame.get(i).y.toFloat()
-
-                        if(list_frame.get(i).bg.equals(""))frame_layout.setBackgroundColor(Color.TRANSPARENT)
-                        else frame_layout.setBackgroundColor(Color.parseColor(list_frame.get(i).bg))
-                        list.add(frame_layout)
-                    }
-                }
-            }
-            return list
-        }
 
         // get frames
         fun getFilterdFrames(prefernce: MySharePrefernce?): List<Frame>?{
@@ -170,7 +134,6 @@ class DataParsing() {
                     }
                     prefernce?.putStringData(MySharePrefernce.KEY_TIME_SIGNATURE,time_signature.toString())
                     return list_frame
-//                    return Utility.getFilterFrameList(data_obj.layout.get(0).frame)
                 }
             }
             return null
@@ -234,25 +197,6 @@ class DataParsing() {
         }
 
         // check download content
-        fun getDownloableFileName(prefernce: MySharePrefernce?): List<String>{
-            var list = mutableListOf<String>()
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
-                    for(i in 0..data_obj.downloadable.size-1){
-                        Log.d("TAG", "getDownloableList: $i - ${data_obj.downloadable[i].name}")
-                        if(!DataManager.fileIsExist(data_obj.downloadable[i])){
-                            Log.d("TAG", "getDownloableList: not exist $i - ${data_obj.downloadable[i].name}")
-                            list.add(data_obj.downloadable[i].name)
-                        }
-                    }
-                }
-            }
-            return list
-        }
-
-        // check download content
         fun getDownloableFileNameList(prefernce: MySharePrefernce?): List<String>{
             var list = mutableListOf<String>()
             var data = prefernce?.getContentData()
@@ -283,9 +227,6 @@ class DataParsing() {
             val rssItems = ArrayList<RssItem>()
             var rssItem : RssItem?= null
             var text: String? = null
-            var title_text: String? = null
-
-
             try {
                 val factory = XmlPullParserFactory.newInstance()
                 factory.isNamespaceAware = true
@@ -296,7 +237,6 @@ class DataParsing() {
                 var title_foundItem = false
                 while (eventType != XmlPullParser.END_DOCUMENT) {
                     val tagname = parser.name
-                    Log.d("TAG", "parse: tagnemt - $tagname")
                     when (eventType) {
 
                         XmlPullParser.START_TAG -> if (tagname.equals("item", ignoreCase = true)) {
@@ -324,9 +264,49 @@ class DataParsing() {
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-            Log.d("TAG", "parse: title - $title_text")
             return rssItems
         }
+
+        fun parse2(inputStream: InputStream):String {
+
+            var text: String? = null
+            var title_text = ""
+            try {
+                val factory = XmlPullParserFactory.newInstance()
+                factory.isNamespaceAware = true
+                val parser = factory.newPullParser()
+                parser.setInput(inputStream, null)
+                var eventType = parser.eventType
+                var foundItem = false
+                var title_foundItem = false
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    val tagname = parser.name
+
+                    Log.d("TAG", "parse: $tagname")
+                    when (eventType) {
+
+                        XmlPullParser.START_TAG -> if (tagname.equals("channel", ignoreCase = true)) {
+                            // create a new instance of employee
+                            foundItem = true
+                        }
+                        XmlPullParser.TEXT -> text = parser.text
+                        XmlPullParser.END_TAG -> if (tagname.equals("channel", ignoreCase = true)) {
+                            // add employee object to list
+                            foundItem = false
+                        } else if ( foundItem && tagname.equals("title", ignoreCase = true)) {
+                            if(title_text.equals("")) title_text = text.toString()
+                        }
+                    }
+                    eventType = parser.next()
+                }
+            } catch (e: XmlPullParserException) {
+                e.printStackTrace()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+            return title_text
+        }
+
 
         // web view interval
         fun getWebInterval(item: Item):Int{
@@ -343,7 +323,7 @@ class DataParsing() {
             return setting_obj.getInt("rotate")
         }
 
-
+        // override frame
         fun getOverrideFrame(ctx: Context):LinearLayout{
             var id = 10
             var ll_frame = LinearLayout(ctx)
@@ -353,7 +333,8 @@ class DataParsing() {
             return ll_frame
         }
 
-        fun getLayoutFrame(ctx: Context,frame: Frame,position: Int):LinearLayout{
+        // create frame
+        fun getLayoutFrame(ctx: Context, frame: Frame,position: Int):LinearLayout{
             var ll_frame = LinearLayout(ctx)
             ll_frame.id = position+10
             val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)
@@ -383,6 +364,7 @@ class DataParsing() {
             return ll_frame
         }
 
+        // screen capture frame
         fun getScreenCaptureFrame(ctx: Context,frame: Frame):ImageView{
             var image_frame = ImageView(ctx)
             val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)

@@ -62,6 +62,13 @@ class MainViewModel : ViewModel() {
     private val _screenshot_data = MutableLiveData<ApiResponse>()
     val screenshot_api_result : LiveData<ApiResponse> get() = _screenshot_data
 
+    // 7. post screen shot
+    private val reister_new_device_data = MutableLiveData<ApiResponse>()
+    val reister_new_device_data_result : LiveData<ApiResponse> get() = reister_new_device_data
+
+    // 8. emergency request
+    private val emergenncy_req_data = MutableLiveData<ApiResponse>()
+    val emergency_req_result : LiveData<ApiResponse> get() = emergenncy_req_data
 
 
     // 1 check device is registered
@@ -282,9 +289,6 @@ class MainViewModel : ViewModel() {
     }
 
 
-    // 7. post screen shot
-    private val reister_new_device_data = MutableLiveData<ApiResponse>()
-    val reister_new_device_data_result : LiveData<ApiResponse> get() = reister_new_device_data
 
     fun registerNewDevce(ctx:Activity,pref: MySharePrefernce,device_id :String){
         if(internet){
@@ -360,12 +364,14 @@ class MainViewModel : ViewModel() {
 
     fun getQuoteText(id :String,frame_pos :Int) {
         var url = Constant.API_WIDGET_QUOTE+"$id?format=json"
+        Log.d("TAG", "getQuoteText: url - $url")
         viewModelScope.launch(Dispatchers.IO) {
             ApiInterface.create().checkIsDeviceRegister(url)
                 .enqueue( object : Callback<ResponseBody> {
                     override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        var res = response?.body()!!.string()
+                        Log.d("TAG", "getQuoteText: onResponse - $res")
                         if(response?.body() != null){
-                            var res = response?.body()!!.string()
                             quote_data.postValue(ApiResponse(Status.SUCCESS,res,"success",frame_pos))
                         }else{
                             var error = response?.errorBody()!!.toString()
@@ -373,6 +379,7 @@ class MainViewModel : ViewModel() {
                         }
                     }
                     override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Log.d("TAG", "onFailure: - $t")
                         quote_data.postValue(ApiResponse(Status.ERROR,null,"error",frame_pos))
                     }
                 })
@@ -425,6 +432,29 @@ class MainViewModel : ViewModel() {
                     }
                     override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
                         text_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+    fun getEmergencyMessagedata(device_id: String) {
+        var url = Constant.getApiEmergencyMessage(device_id)
+        Log.d("TAG", "getEmergencyMessagedata: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().getEmergencyMessage(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            Log.d("TAG", "getEmergencyMessagedata onResponse: $res")
+                            emergenncy_req_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
+                        }else{
+                            var error = response?.errorBody()!!.toString()
+                            emergenncy_req_data.postValue(ApiResponse(Status.ERROR,null,"error"))
+                        }
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        emergenncy_req_data.postValue(ApiResponse(Status.ERROR,null,"error"))
                     }
                 })
         }

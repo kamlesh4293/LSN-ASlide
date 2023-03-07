@@ -32,6 +32,8 @@ class ImageUtil {
             return options
         }
 
+
+
         // relative layout
         fun screenshot(view: RelativeLayout, filename: String): File? {
             if(view==null) return null

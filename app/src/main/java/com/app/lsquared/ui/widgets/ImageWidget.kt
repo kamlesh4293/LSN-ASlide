@@ -11,6 +11,7 @@ import com.app.lsquared.model.Content
 import com.app.lsquared.model.Item
 import com.app.lsquared.ui.MainActivity
 import com.app.lsquared.utils.DataManager
+import com.app.lsquared.utils.ImageUtil
 import com.app.lsquared.utils.Utility
 import java.io.File
 
@@ -24,14 +25,14 @@ class ImageWidget {
             var image = ImageView(ctx)
             val params = RelativeLayout.LayoutParams(width,height)
             image.layoutParams = params
-            val options = BitmapFactory.Options()
-            options.inSampleSize = 1
-            options.inPreferredConfig = Bitmap.Config.ARGB_8888
-            options.inJustDecodeBounds = false
+//            val options = BitmapFactory.Options()
+//            options.inSampleSize = 1
+//            options.inPreferredConfig = Bitmap.Config.ARGB_8888
+//            options.inJustDecodeBounds = false
 
             val path = DataManager.getDirectory()+ File.separator+fileName
             if(Utility.isFileCompleteDownloaded(fileName,filesize)){
-                image.setImageBitmap(BitmapFactory.decodeFile(path,options))
+                image.setImageBitmap(BitmapFactory.decodeFile(path, ImageUtil.getImageOption()))
             }
             return image
         }

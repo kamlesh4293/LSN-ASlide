@@ -23,6 +23,10 @@ interface ApiInterface {
     @GET
     fun postTemperature(@Url url:String) : Call<ResponseBody>
 
+    // 4. emergency message
+    @GET
+    fun getEmergencyMessage(@Url url:String) : Call<ResponseBody>
+
 
     companion object {
 

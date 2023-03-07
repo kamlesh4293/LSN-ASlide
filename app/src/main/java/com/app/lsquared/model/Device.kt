@@ -32,6 +32,7 @@ data class Device (
 //	@SerializedName("screenshotUpdate") val screenshotUpdate : Boolean,
 //	@SerializedName("odss") val odss : Boolean,
 	@SerializedName("timeZone") val timeZone : String,
+	@SerializedName("wm") val wm : String,
 //	@SerializedName("cods") val cods : String,
 //	@SerializedName("cod") val cod : Boolean,
 //	@SerializedName("codc") val codc : String,
@@ -68,8 +69,8 @@ data class Device (
 //	@SerializedName("microphone") val microphone : Boolean,
 //	@SerializedName("feedRestriction") val feedRestriction : Boolean,
 //	@SerializedName("pollingFrequency") val pollingFrequency : Int,
-//	@SerializedName("defaultImageName") val defaultImageName : String,
-//	@SerializedName("defaultImageSrc") val defaultImageSrc : String,
+	@SerializedName("defaultImageName") val defaultImageName : String,
+	@SerializedName("defaultImageSrc") val defaultImageSrc : String,
 //	@SerializedName("defaultImageSize") val defaultImageSize : Int,
 //	@SerializedName("identify") val identify : Boolean,
 //	@SerializedName("identifyDuration") val identifyDuration : Int,
@@ -78,4 +79,44 @@ data class Device (
 //	@SerializedName("prop") val prop : String,
 //	@SerializedName("scheduledSize") val scheduledSize : Int,
 //	@SerializedName("size") val size : Int
+)
+
+data class DeviceWaterMark (
+
+	@SerializedName("img"       ) var img       : Img?       = Img(),
+	@SerializedName("alignOpt"  ) var alignOpt  : String?    = null,
+	@SerializedName("align"     ) var align     : String?    = null,
+	@SerializedName("x"         ) var x         : Int?       = null,
+	@SerializedName("y"         ) var y         : Int?       = null,
+	@SerializedName("dateRange" ) var dateRange : DateRange? = DateRange(),
+	@SerializedName("bg"        ) var bg        : String?    = null,
+	@SerializedName("bga"       ) var bga       : String?    = null,
+	@SerializedName("ctype"     ) var ctype     : Ctype?     = Ctype()
+
+)
+
+data class Img (
+
+	@SerializedName("id"    ) var id    : Int?    = null,
+	@SerializedName("extn"  ) var extn  : String? = null,
+	@SerializedName("type"  ) var type  : String? = null,
+	@SerializedName("label" ) var label : String? = null,
+	@SerializedName("thumb" ) var thumb : String? = null,
+	@SerializedName("path"  ) var path  : String? = null,
+	@SerializedName("w"     ) var w     : Int?    = null,
+	@SerializedName("h"     ) var h     : Int?    = null
+
+)
+
+data class DateRange (
+
+	@SerializedName("startDate" ) var startDate : String? = null,
+	@SerializedName("endDate"   ) var endDate   : String? = null
+
+)
+
+data class Ctype (
+
+	@SerializedName("bg" ) var bg : String? = null
+
 )

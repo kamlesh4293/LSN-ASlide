@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+    android:id="@+id/ll_quotes_bg"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:orientation="vertical"
@@ -12,6 +13,15 @@
         android:textColor="@color/white"
         android:layout_gravity="center"
         android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:paddingRight="10dp"
+        android:id="@+id/tv_quotes_auther"
+        android:textColor="@color/white"
+        android:layout_gravity="center"
+        android:gravity="right"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 

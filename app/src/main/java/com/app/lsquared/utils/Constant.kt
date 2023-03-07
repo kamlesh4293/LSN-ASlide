@@ -19,8 +19,12 @@ class Constant {
 //        const val BASE_FILE_URL = "https://s3-us-west-2.amazonaws.com/lsquared-hub/"
 //        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
 
-        // api
+        // api for device register
         const val API_NEW_DEVICE_REGISTER = BASE_URL+"api/v1/feed/autoreg"
+
+        // api for identify request
+        fun getApiEmergencyMessage(id:String) = "$BASE_FILE_FEED_URL/em/$id/1?format=json"
+
 
         // device register response
         const val DEVICE_REGISTERED = 22001
