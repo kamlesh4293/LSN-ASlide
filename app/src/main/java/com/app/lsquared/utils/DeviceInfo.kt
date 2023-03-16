@@ -1,30 +1,26 @@
 package com.app.lsquared.utils
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Point
 import android.net.ConnectivityManager
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Build.VERSION_CODES
 import android.os.Environment
 import android.os.StatFs
 import android.provider.Settings
+import android.text.format.Formatter
+import android.util.Log
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.SocketException
+import java.text.SimpleDateFormat
 import java.util.*
-import android.os.Build.VERSION_CODES
-import java.lang.Exception
-import android.util.DisplayMetrics
-import android.util.Log
-import java.lang.StringBuilder
-import android.net.wifi.WifiManager
-import android.text.format.Formatter
-import com.app.lsquared.BuildConfig
-import org.json.JSONObject
+
 
 class DeviceInfo {
 
@@ -32,7 +28,6 @@ class DeviceInfo {
 
         // device id
         fun getDeviceId(ctx:Context,prefernce: MySharePrefernce):String{
-            var id = prefernce.getStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID)
             return Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID)
         }
 
@@ -107,7 +102,7 @@ class DeviceInfo {
                 } else {
                     return 0
                 }
-                val megAvailable = bytesAvailable / 1024
+                val megAvailable = bytesAvailable / 1000
                 return megAvailable
             }catch (ex:RuntimeException){
                 return 0
@@ -123,7 +118,7 @@ class DeviceInfo {
             }else{
                 return 0
             }
-            val megAvailable = bytesAvailable / 1024
+            val megAvailable = bytesAvailable / 1000
             return megAvailable
         }
 
@@ -147,12 +142,13 @@ class DeviceInfo {
         }
 
         fun getSerial(): String{
-            try {
-                if (Build.VERSION.SDK_INT >= VERSION_CODES.P)return Build.getSerial()
-                else return Build.SERIAL
-            }catch (ex : Exception){
-                return ""
-            }
+//            try {
+//                if (Build.VERSION.SDK_INT >= VERSION_CODES.P)return Build.ID
+//                else return Build.SERIAL
+//            }catch (ex : Exception){
+//                return ""
+//            }
+            return "NA"
         }
 
         fun getModelName(): String {
@@ -179,6 +175,45 @@ class DeviceInfo {
             }catch (ex: Exception){
                 return ip_address
             }
+        }
+
+        fun getTime(ctx:Context) : String{
+            val df = SimpleDateFormat("ddd MMM yyyy hh:mm:ss a", Locale.US)
+            return df.format(Date())
+        }
+
+        fun bytesIntoHumanReadable(bytes: Long): String? {
+            val megabyte = 1000
+            val gigabyte = megabyte * 1000
+            return ((bytes / gigabyte).toString())
+        }
+
+        fun getWifiStrength(ctx: Context): Int {
+            val numberOfLevels = 5
+            val wifiManager = ctx.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val wifiInfo: WifiInfo = wifiManager.getConnectionInfo()
+            val level = WifiManager.calculateSignalLevel(wifiInfo.rssi, numberOfLevels)
+            return level
+        }
+
+        fun getSerialNumber(): String? {
+            var serialNumber: String?
+            try {
+                val c = Class.forName("android.os.SystemProperties")
+                val get = c.getMethod("get", String::class.java)
+                serialNumber = get.invoke(c, "gsm.sn1").toString()
+                if (serialNumber == "") serialNumber = get.invoke(c, "ril.serialnumber").toString()
+                if (serialNumber == "") serialNumber = get.invoke(c, "ro.serialno").toString()
+                if (serialNumber == "") serialNumber = get.invoke(c, "sys.serialnumber").toString()
+                if (serialNumber == "") serialNumber = Build.SERIAL
+
+                // If none of the methods above worked
+                if (serialNumber == "") serialNumber = null
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+                serialNumber = null
+            }
+            return serialNumber
         }
 
     }

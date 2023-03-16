@@ -38,7 +38,7 @@ class WaterMarkWidget {
 
             val path = DataManager.getDirectory()+ File.separator+watermark.img?.thumb?.replace("images/","")
             var file = File(path)
-            Log.d("TAG", "getWaterMark: file exist - ${file.exists()}")
+            binding.ivMainWatermark.visibility = View.VISIBLE
             binding.ivMainWatermark.setImageBitmap(BitmapFactory.decodeFile(path,ImageUtil.getImageOption()))
             layout.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity( watermark.bg!!,watermark.bga!!)))
         }

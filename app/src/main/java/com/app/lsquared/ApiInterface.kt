@@ -27,6 +27,10 @@ interface ApiInterface {
     @GET
     fun getEmergencyMessage(@Url url:String) : Call<ResponseBody>
 
+    // 5. Identify acknowlegde
+    @GET
+    fun getIdentifyAcknowledge(@Url url:String) : Call<ResponseBody>
+
 
     companion object {
 

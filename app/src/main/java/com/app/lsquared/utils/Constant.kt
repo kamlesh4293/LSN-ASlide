@@ -5,29 +5,43 @@ class Constant {
     companion object{
 
             // development environment
-        const val BASE_URL = "https://rc.lsquared.com/"
-        const val BASE_FILE_URL = BASE_URL+"rc-lsquared-hub/"
-        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+//        const val BASE_URL = "https://rc.lsquared.com/"
+//        const val BASE_FILE_URL = BASE_URL+"rc-lsquared-hub/"
+//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+//        const val ENVIRONMENT = "LS-AZCARC-1001"
 
         // US production environment
 //        const val BASE_URL = "https://us.lsquared.com/"
 //        const val BASE_FILE_URL = BASE_URL+"lsquared-hub/"
 //        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+//        const val ENVIRONMENT = "LS-AZUSUS-1001"
 
         // HUB production environment
-//        const val BASE_URL = "https://hub.lsquared.com/"
-//        const val BASE_FILE_URL = "https://s3-us-west-2.amazonaws.com/lsquared-hub/"
-//        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+        const val BASE_URL = "https://hub.lsquared.com/"
+        const val BASE_FILE_URL = "https://s3-us-west-2.amazonaws.com/lsquared-hub/"
+        const val BASE_FILE_FEED_URL = BASE_URL+"api/v1/feed"
+        const val ENVIRONMENT = "LS-AWUSPRO-1001"
 
         // api for device register
         const val API_NEW_DEVICE_REGISTER = BASE_URL+"api/v1/feed/autoreg"
 
-        // api for identify request
-        fun getApiEmergencyMessage(id:String) = "$BASE_FILE_FEED_URL/em/$id/1?format=json"
+        // api for emergency message
+        fun getApiEmergencyMessage(id:String) = "$BASE_FILE_FEED_URL/em/$id/1?format=json?did="
+
+        // api for emergency acknowldge
+        fun getApiEmergencyAcknowledge(id:String) = "$BASE_FILE_FEED_URL/em/$id/true?format=json&did="
+
+
+
+
+
+        // api for identify request acknowledge
+        fun getApiIdentifyAcknowledge(mac:String,id:String) = "$BASE_FILE_FEED_URL/acknowledgements/identify/$mac?did=$id"
 
 
         // device register response
         const val DEVICE_REGISTERED = 22001
+        const val DEVICE_NOT_FOUND = "device not found"
 //        22001 - Device updated
 //        22002 - Device with new mac already exists
 //        22003 - Device not found
@@ -42,6 +56,8 @@ class Constant {
         const val CONTENT_WORD = "word"
         const val CONTENT_VIDEO = "video"
         const val CONTENT_WEB = "webPage"
+        const val WIDGET_MESSAGE = "message"
+
 //        widgets
         const val CONTENT_WIDGET_GOOGLE = "googleSlide"
         const val CONTENT_WIDGET_POWER = "powerbi" // power bi

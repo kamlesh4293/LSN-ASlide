@@ -17,6 +17,7 @@ import androidx.viewpager.widget.ViewPager
 import com.app.lsquared.databinding.ActivityCodBinding
 import com.app.lsquared.model.CodItem
 import com.app.lsquared.network.isConnected
+import com.app.lsquared.ui.MainActivity
 import com.app.lsquared.ui.MainViewModel
 import com.app.lsquared.ui.adapter.CODViewPagerAdapter
 import com.app.lsquared.ui.adapter.CodTabAdapter
@@ -145,7 +146,9 @@ class CODActivity : AppCompatActivity() {
             Handler(Looper.getMainLooper()).postDelayed({finish()},10000)
         }
 
-        binding.ivCodClose.setOnClickListener { finish() }
+        binding.ivCodClose.setOnClickListener {
+            finish()
+        }
     }
 
     private fun isValidCod(codItem: CodItem): Boolean {
@@ -163,6 +166,7 @@ class CODActivity : AppCompatActivity() {
         super.onPause()
         screenshot_handler.removeCallbacks(screenshot_runnable!!)
     }
+
 
     fun initCountDownTimer() {
         var ideal_time = myPerf.getIntData(MySharePrefernce.KEY_COD_IDEAL_TIME)*60

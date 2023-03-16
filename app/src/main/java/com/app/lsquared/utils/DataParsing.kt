@@ -1,14 +1,15 @@
 package com.app.lsquared.utils
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager.LayoutParams
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RelativeLayout
+import androidx.annotation.RequiresApi
 import com.app.lsquared.model.*
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.ui.UiUtils
@@ -19,11 +20,92 @@ import org.xmlpull.v1.XmlPullParserException
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.IOException
 import java.io.InputStream
+import javax.inject.Inject
 
-class DataParsing() {
+
+class DataParsing @Inject constructor(
+    private val prefernce: MySharePrefernce?
+) {
+
+    // get downloadble list
+    fun getDownloableList(): List<Downloadable>{
+        var list = mutableListOf<Downloadable>()
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            DateTimeUtil.setTimeZone(data_obj.device.get(0).timeZone)
+            if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
+                for(i in 0..data_obj.downloadable.size-1){
+                    Log.d("TAG", "getDownloableList: $i - ${data_obj.downloadable[i].name}")
+                    if(!DataManager.fileIsExist(data_obj.downloadable[i])){
+                        Log.d("TAG", "getDownloableList: not exist $i - ${data_obj.downloadable[i].name}")
+                        list.add(data_obj.downloadable[i])
+                    }
+                }
+            }
+        }
+        return list
+    }
+
+    fun getAllDownloadingList(): List<Downloadable> {
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            DateTimeUtil.setTimeZone(data_obj.device.get(0).timeZone)
+            if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
+                return data_obj.downloadable
+            }
+        }
+        return mutableListOf<Downloadable>()
+    }
+
+    // get image name for message widget
+    fun getImageName(content_id:Int?):String{
+        var list = getAllDownloadingList()
+        for (item in list){
+            var id = item.id.split("-")
+            Log.d("TAG", "getImageName: ${id[2]}")
+            if(id.size>2 && id[2].equals(content_id.toString())){
+                return item.name
+                break
+            }
+        }
+        return ""
+    }
+
+    // get device
+    fun getDevice(): Device? {
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            return data_obj.device[0]
+        }
+        return null
+    }
 
 
     companion object{
+
+
+        // check identify requesr
+        fun isIdentifyRequestAvailable(prefernce: MySharePrefernce?): Boolean{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                return if (!data_obj.device[0].identify.equals("true")) true else false
+            }
+            return false
+        }
+
+        // identify duration
+        fun getIdentifyRequestDuration(prefernce: MySharePrefernce?): Int{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                return data_obj.device[0].identifyDuration
+            }
+            return 60
+        }
 
         // check watermark available
         fun isWatermarkAvailable(prefernce: MySharePrefernce?): Boolean{
@@ -41,8 +123,10 @@ class DataParsing() {
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
                 var image_name = data_obj.device[0].defaultImageName
+                Log.d("TAG", "isDefaultImageAvailable: $image_name")
                 return if (!image_name.equals("false") &&!image_name.equals("")) image_name else ""
             }
+            Log.d("TAG", "isDefaultImageAvailable: no")
             return ""
         }
 
@@ -52,6 +136,16 @@ class DataParsing() {
             var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
             var watermark_obj = Gson().fromJson(data_obj.device[0].wm, DeviceWaterMark::class.java)
             return watermark_obj
+        }
+
+        // get device
+        fun getDevice(prefernce: MySharePrefernce?): Device? {
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                return data_obj.device[0]
+            }
+            return null
         }
 
         // check frames available
@@ -126,7 +220,6 @@ class DataParsing() {
                         if(!list.contains(frame.name)) {
                             if(DateTimeUtil.isValidWithTime(frame)){
                                 time_signature.append(frame.sort)
-                                Log.d("TAG", "getFilterdFrames: ${frame.sort}")
                                 list.add(frame.name)
                                 list_frame.add(frame)
                             }
@@ -153,7 +246,6 @@ class DataParsing() {
                         if(!list.contains(frame.name)) {
                             if(DateTimeUtil.isValidWithTime(frame)){
                                 time_signature.append(frame.sort)
-                                Log.d("TAG", "getFilterdFrames: ${frame.sort}")
                                 list.add(frame.name)
                                 list_frame.add(frame)
                             }
@@ -165,35 +257,63 @@ class DataParsing() {
             return ""
         }
 
+        // get time signature for override
+        fun getTimeSignatureOverride(prefernce: MySharePrefernce?): String{
+            var data = prefernce?.getContentData()
+            var time_signature = StringBuilder()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
+                    var frames = data_obj.ovr.get(0).frame
+                    var list = ArrayList<String>()
+                    var list_frame = ArrayList<Frame>()
+                    for(frame in frames){
+                        Log.d("TAG", "getTimeSignatureOverride: frame - ${frame.tr}")
+                        if(!list.contains(frame.tr)) {
+                            if(DateTimeUtil.isValidWithTime(frame)){
+                                Log.d("TAG", "getTimeSignatureOverride: frame added - ${frame.tr}")
+                                time_signature.append(frame.tr)
+                                list.add(frame.tr)
+                                list_frame.add(frame)
+                            }
+                        }
+                    }
+                    Log.d("TAG", "getTimeSignatureOverride: timsig ${time_signature.toString()}")
+                    return time_signature.toString()
+                }
+            }
+            Log.d("TAG", "getTimeSignatureOverride: null")
+            return ""
+        }
+
         // get override frames
         fun getOverrideFrames(prefernce: MySharePrefernce?): List<Frame>?{
             var data = prefernce?.getContentData()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
                 if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
-                    return data_obj.ovr.get(0).frame
+                    var frames  =  data_obj.ovr.get(0).frame
+                    var list = ArrayList<String>()
+                    var list_frame = ArrayList<Frame>()
+                    var time_signature = StringBuilder()
+                    for(frame in frames){
+                        if(!list.contains(frame.name)) {
+                            if(DateTimeUtil.isValidWithTime(frame)){
+                                time_signature.append(frame.tr)
+                                Log.d("TAG", "getOverrideFrames: added frame : ${frame.tr}")
+                                list.add(frame.name)
+                                list_frame.add(frame)
+                                break
+                                return list_frame
+                            }
+                        }
+                    }
+                    prefernce?.putStringData(MySharePrefernce.KEY_TIME_SIGNATURE_OVERRIDE,time_signature.toString())
+//                    return data_obj.ovr.get(0).frame
+                    return list_frame
                 }
             }
             return null
-        }
-
-        // check download content
-        fun getDownloableList(prefernce: MySharePrefernce?): List<Downloadable>{
-            var list = mutableListOf<Downloadable>()
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
-                    for(i in 0..data_obj.downloadable.size-1){
-                        Log.d("TAG", "getDownloableList: $i - ${data_obj.downloadable[i].name}")
-                        if(!DataManager.fileIsExist(data_obj.downloadable[i])){
-                            Log.d("TAG", "getDownloableList: not exist $i - ${data_obj.downloadable[i].name}")
-                            list.add(data_obj.downloadable[i])
-                        }
-                    }
-                }
-            }
-            return list
         }
 
         // check download content
@@ -324,8 +444,8 @@ class DataParsing() {
         }
 
         // override frame
-        fun getOverrideFrame(ctx: Context):LinearLayout{
-            var id = 10
+        fun getOverrideFrame(ctx: Context,id:Int):LinearLayout{
+//            var id = 10
             var ll_frame = LinearLayout(ctx)
             ll_frame.id = id
             val params = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
@@ -334,9 +454,9 @@ class DataParsing() {
         }
 
         // create frame
-        fun getLayoutFrame(ctx: Context, frame: Frame,position: Int):LinearLayout{
+        fun getLayoutFrame(ctx: Context, frame: Frame, position: Int, id: Int):LinearLayout{
             var ll_frame = LinearLayout(ctx)
-            ll_frame.id = position+10
+            ll_frame.id = position+id
             val params = LinearLayout.LayoutParams(frame?.w!!,frame.h)
 
             ll_frame.layoutParams = params
@@ -356,13 +476,53 @@ class DataParsing() {
             if(frame.align.equals(Constant.ALIGN_BOTTOM_RIGHT)) ll_frame.gravity = Gravity.BOTTOM or Gravity.RIGHT
 
 
+            var  color = if(frame.bg.equals(""))Color.TRANSPARENT else Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga))
+
             if(frame.bg.equals(""))ll_frame.setBackgroundColor(Color.TRANSPARENT)
             else{
 //                relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
                 ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
             }
+            ll_frame.background =  getShape(color,frame.br)
+            ll_frame.rotation = frame.r.toFloat()
+
             return ll_frame
         }
+
+
+        private fun getShape(color: Int, br: String): GradientDrawable {
+            val shape = GradientDrawable()
+            shape.shape = GradientDrawable.RECTANGLE
+            if(!br.equals("")){
+                var br_obj = JSONObject(br)
+                var tl = br_obj.getInt("tl")
+                var tr = br_obj.getInt("tr")
+                var bl = br_obj.getInt("bl")
+                var br = br_obj.getInt("br")
+                shape.cornerRadii = floatArrayOf(tl.toFloat(), tl.toFloat(), tr.toFloat(),tr.toFloat(),
+                    bl.toFloat(), bl.toFloat(), br.toFloat(), br.toFloat())
+//                shape.cornerRadii = floatArrayOf(50f, 16f, 16f, 16f, 30f, 20f, 10f, 100f)
+            }
+            shape.setColor(color)
+            return shape
+        }
+
+        private fun getOnlyShape(color: Int, br: String): GradientDrawable {
+            val shape = GradientDrawable()
+            shape.shape = GradientDrawable.RECTANGLE
+            if(!br.equals("")){
+                var br_obj = JSONObject(br)
+                var tl = br_obj.getInt("tl")
+                var tr = br_obj.getInt("tr")
+                var bl = br_obj.getInt("bl")
+                var br = br_obj.getInt("br")
+                shape.cornerRadii = floatArrayOf(tl.toFloat(), tl.toFloat(), tr.toFloat(),tr.toFloat(),
+                    bl.toFloat(), bl.toFloat(), br.toFloat(), br.toFloat())
+//                shape.cornerRadii = floatArrayOf(50f, 16f, 16f, 16f, 30f, 20f, 10f, 100f)
+            }
+            return shape
+        }
+
 
         // screen capture frame
         fun getScreenCaptureFrame(ctx: Context,frame: Frame):ImageView{
@@ -470,5 +630,28 @@ class DataParsing() {
             return list
         }
 
+        fun isItemvailable(allFrames: List<Frame>?): Boolean {
+            var items = false
+            allFrames?.forEach { frame ->
+                if (frame.item!= null && frame.item.size>0){
+                    items = true
+                }
+            }
+            return items
+        }
+
+        fun isVideoPlaying(layoutList: MutableList<NewLayoutView>): Boolean {
+            if(layoutList!=null && layoutList.size>0){
+                for (layout in layoutList){
+                    if(layout.active_widget.equals(Constant.CONTENT_VIDEO)){
+                        return true
+                        break
+                    }
+                }
+            }
+            return false
+        }
     }
+
+
 }

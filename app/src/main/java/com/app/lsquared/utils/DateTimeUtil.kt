@@ -83,9 +83,15 @@ class DateTimeUtil {
             val start_time = df.parse(frame.st)
             val end_time = df.parse(frame.et)
             val current_time = createDateForCustomTime()
-            return if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
+            Log.d("TAG", "isValidWithTime current ${df.format(current_time)}")
+            var check = if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
+            return check
         }
 
+        fun setTimeZone(timeZone: String) {
+            val tz = TimeZone.getTimeZone(timeZone)
+            TimeZone.setDefault(tz)
+        }
 
     }
 

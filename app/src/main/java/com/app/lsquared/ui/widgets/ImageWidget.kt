@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import android.view.View
+import android.view.WindowManager.LayoutParams
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import com.app.lsquared.model.Content
@@ -34,6 +35,14 @@ class ImageWidget {
             if(Utility.isFileCompleteDownloaded(fileName,filesize)){
                 image.setImageBitmap(BitmapFactory.decodeFile(path, ImageUtil.getImageOption()))
             }
+            return image
+        }
+
+        fun getSSImageWidget(ctx: Context,image_bitmap: Bitmap): ImageView {
+            var image = ImageView(ctx)
+            val params = RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+            image.layoutParams = params
+            image.setImageBitmap(image_bitmap)
             return image
         }
 

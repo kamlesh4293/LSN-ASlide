@@ -1,5 +1,6 @@
 package com.app.lsquared.model
 
+import android.media.MediaMetadataRetriever
 import android.widget.LinearLayout
 import android.widget.VideoView
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -14,7 +15,8 @@ data class NewLayoutView (
     var isvideoAvail: Boolean,
     var active_widget :String,
     var job: Job?,
-    var rotate_job: Job?
+    var rotate_job: Job?,
+    var myMediaMetadataRetriever: MediaMetadataRetriever?
 ){
 
 }

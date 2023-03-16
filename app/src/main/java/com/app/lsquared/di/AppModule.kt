@@ -3,6 +3,7 @@ package com.app.lsquared.di
 import android.content.Context
 import com.app.lsquared.network.VimeoClientAPI
 import com.app.lsquared.utils.Constant
+import com.app.lsquared.utils.DataParsing
 import com.app.lsquared.utils.MySharePrefernce
 import dagger.Module
 import dagger.Provides
@@ -23,6 +24,12 @@ object AppModule {
     @Singleton
     fun provideSharePref(@ApplicationContext context: Context): MySharePrefernce {
         return MySharePrefernce(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataParsing(prefernce:MySharePrefernce) : DataParsing{
+        return DataParsing(prefernce)
     }
 
     @Provides

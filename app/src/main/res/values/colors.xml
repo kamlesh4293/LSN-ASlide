@@ -10,6 +10,7 @@
     <color name="white">#FFFFFF</color>
     <color name="black_cod_bt">#4DEEEEEE</color>
     <color name="off_white">#f5f5f5</color>
+    <color name="trial">#ea9999</color>
 
     <color name="cod_bg_color">#0c0c0c</color>
     <color name="cod_selected_color">#1d1d1d</color>

@@ -6,7 +6,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.view.MotionEvent
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -30,7 +32,7 @@ class WidgetCodButton {
             var view = (ctx as Activity).layoutInflater.inflate(R.layout.view_cod,null)
 
             var ll_main_cod = view.findViewById<LinearLayout>(R.id.ll_main_cod)
-            var cod_bt = view.findViewById<TextView>(R.id.bt_cod)
+            var cod_bt = view.findViewById<Button>(R.id.bt_cod)
             var iv_top = view.findViewById<ImageView>(R.id.iv_cod_top)
             var iv_bottom = view.findViewById<ImageView>(R.id.iv_cod_bottom)
             var iv_left = view.findViewById<ImageView>(R.id.iv_cod_left)
@@ -89,7 +91,11 @@ class WidgetCodButton {
                 iv_right.visibility =  View.GONE
             }
 
-            ll_main_cod.setOnClickListener { openCod(ctx,pref) }
+            cod_bt.setOnClickListener { openCod(ctx,pref) }
+            iv_bottom.setOnClickListener { openCod(ctx,pref) }
+            iv_left.setOnClickListener { openCod(ctx,pref) }
+            iv_right.setOnClickListener { openCod(ctx,pref) }
+            iv_top.setOnClickListener { openCod(ctx,pref) }
             return view
         }
 
@@ -109,3 +115,4 @@ class WidgetCodButton {
     }
 
 }
+

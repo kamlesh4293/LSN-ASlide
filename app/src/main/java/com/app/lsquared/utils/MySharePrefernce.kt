@@ -26,6 +26,8 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_DEVICE_REGISTERED = "device_registered"
         const val KEY_DEVICE_REGISTERED_ID = "device_id"
         const val KEY_TIME_SIGNATURE = "time_signature"
+        const val KEY_TIME_SIGNATURE_OVERRIDE = "time_signature_over"
+        const val KEY_IDENTIFY_SIGNATURE = "identify_signature"
 
     }
 

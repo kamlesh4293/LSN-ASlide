@@ -21,8 +21,6 @@ import com.androidnetworking.interfaces.JSONObjectRequestListener
 import com.androidnetworking.interfaces.StringRequestListener
 import com.app.lsquared.model.Downloadable
 import com.app.lsquared.utils.*
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import java.io.File
 import com.test.RetrofitClient
 
@@ -447,6 +445,7 @@ class MainViewModel : ViewModel() {
                         if(response?.body() != null){
                             var res = response?.body()!!.string()
                             Log.d("TAG", "getEmergencyMessagedata onResponse: $res")
+                            getEmergencyAcknowldge(device_id)
                             emergenncy_req_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
                         }else{
                             var error = response?.errorBody()!!.toString()
@@ -455,6 +454,45 @@ class MainViewModel : ViewModel() {
                     }
                     override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
                         emergenncy_req_data.postValue(ApiResponse(Status.ERROR,null,"error"))
+                    }
+                })
+        }
+    }
+
+    fun getEmergencyAcknowldge(device_id: String) {
+        var url = Constant.getApiEmergencyAcknowledge(device_id)
+        Log.d("TAG", "getEmergencyMessagedata: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().getEmergencyMessage(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        Log.d("TAG", "getEmergencyAcknowldge onResponse: ${response.body().toString()}")
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Log.d("TAG", "getEmergencyAcknowldge onFailure: $t")
+                    }
+                })
+        }
+    }
+
+    fun getIdentifyAcknowledge(pref: MySharePrefernce) {
+        var device = DataParsing.getDevice(pref)
+        if(device == null) return
+        var url = Constant.getApiIdentifyAcknowledge(device!!.mac,device!!.id.toString())
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().getIdentifyAcknowledge(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            Log.d("TAG", "getIdentifyAcknowledge onResponse: $res")
+                        }else{
+                            var error = response?.errorBody()!!.toString()
+                            Log.d("TAG", "getIdentifyAcknowledge onResponse error: $error")
+                        }
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Log.d("TAG", "getIdentifyAcknowledge onFailure: $t")
                     }
                 })
         }

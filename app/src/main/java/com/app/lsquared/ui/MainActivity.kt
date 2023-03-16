@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     // view list
     var layout_list : MutableList<NewLayoutView> = mutableListOf()
+    var screen_layout_list : MutableList<LinearLayout> = mutableListOf()
 
     var multiframe_items: MutableList<MutableList<Item>> = mutableListOf()
     var items: MutableList<Item> = mutableListOf()
@@ -70,7 +72,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     var play_activate = false
 
     // share prefernce
+    @Inject
     lateinit var pref: MySharePrefernce
+    @Inject
+    lateinit var dataParsing: DataParsing
 
 
     // view  binding
@@ -94,11 +99,22 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     lateinit var temp_handler: Handler
     lateinit var report_handler: Handler
 
+    var time = 0
+
     private val timeSchedularTask = object : Runnable {
         override fun run() {
-            var running_signature = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE)
-            var current_signature = DataParsing.getTimeSignature(pref)
-            Log.d(TAG, "run: running - $running_signature \n current - $current_signature")
+            var running_signature_lay = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE)
+            var running_signature_over = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE_OVERRIDE)
+            var is_override = DataParsing.isOverrideAvailable(pref)
+
+            var ovr_current_signature = DataParsing.getTimeSignatureOverride(pref)
+            var lay_current_signature = DataParsing.getTimeSignature(pref)
+
+            Log.d(TAG, "run check: override - $is_override , curr - $ovr_current_signature , lay - $lay_current_signature")
+            var current_signature = if(is_override) ovr_current_signature else lay_current_signature
+            var running_signature = if(is_override) running_signature_over else running_signature_lay
+
+            Log.d(TAG, "run: current sig - $current_signature , running sig - $running_signature")
             if(!running_signature.equals("") && !current_signature.equals("") && !running_signature.equals(current_signature)){
                 changeContent()
             }
@@ -115,10 +131,39 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private val ssTask = object : Runnable {
         override fun run() {
-            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
-            if(file!=null)
-                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
-            screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
+//            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+//            if(file!=null)
+//                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
+//            screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
+
+            // for video
+            var isVideo = DataParsing.isVideoPlaying(layout_list)
+            if(isVideo){
+                for(i in 0..layout_list.size-1){
+                    if(layout_list[i].active_widget.equals(Constant.CONTENT_VIDEO)){
+                        Log.d(TAG, "run: active widget - video")
+                        val currentPosition: Int? = layout_list[i].videoView?.getCurrentPosition() //in millisecond
+                        val pos = currentPosition?.times(1000) //unit in microsecond
+                        val bmFrame = layout_list[i].myMediaMetadataRetriever?.getFrameAtTime(pos!!.toLong())
+                        screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
+                    }else{
+                        Log.d(TAG, "run: active widget - other")
+                        val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
+//                    val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+                        if(file!=null)
+                            screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,BitmapFactory.decodeFile(file?.absolutePath)))
+                    }
+                }
+                val file = ImageUtil.screenshot(binding.screenRootLayout,"Screen_final_"+Utility.getCurrentdate())
+                if(file!=null)
+                    viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
+                screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
+            }else{
+                val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+                if(file!=null)
+                    viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
+                screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
+            }
         }
     }
 
@@ -139,8 +184,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     private val broadcastreceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10
+            setIdentifyRequest()
         }
     }
+
 
     override fun onStart() {
         super.onStart()
@@ -198,7 +245,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         vimeoViewModel = ViewModelProvider(this).get(CodViewModel::class.java)
 
         setContentView(binding.root)
-        pref = MySharePrefernce(ctx)
+//        pref = MySharePrefernce(ctx)
         Utility.checkAllPermissionGranted(this)
         @RequiresApi(Build.VERSION_CODES.R)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -247,13 +294,13 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
         // device registred observer
         viewModel.device_register_api_result.observe(this, Observer { response ->
-            Log.d(TAG, "initObserver: observ register api")
             if (response.status == Status.SUCCESS) {
                 var device_obj = Gson().fromJson(response.data, ResponseCheckDeviceData::class.java)
-                if (device_obj.desc.equals("device not found")) {
+                if (device_obj.desc.equals(Constant.DEVICE_NOT_FOUND)) {
                     viewModel.is_device_registered = false
                     viewModel.is_deviceinfo_submitted = false
                     deviceNotRegistered()
+                    setIdentifyRequest()
                 } else {
                     DialogView.hideKeyBoardShowing()
                     pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,true)
@@ -389,6 +436,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 response ->
             if(response.status == Status.SUCCESS){
                 var data = response.data
+                setEmergencyMessage(data)
             }
         })
 
@@ -422,8 +470,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             showNotRegisterDialog()
             return
         }
-
-        var list = DataParsing.getDownloableList(pref)
+        var list = dataParsing.getDownloableList()
         if(list.size>0 && isConnected){
             downloading = 1
             binding.rlDownloading.visibility = View.VISIBLE
@@ -434,6 +481,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             downloading = 0
             removeData()
             setWaterMark()
+            setIdentifyRequest()
+            isEmergencyMessage()
             var is_frames = DataParsing.isFrameAvailable(pref)
             var is_override = DataParsing.isOverrideAvailable(pref)
 
@@ -443,6 +492,56 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             else loadWaiting()
         }
     }
+
+    private fun setIdentifyRequest() {
+        var content_version = pref?.getVersionOfConytentAPI()
+        var set_version = pref.getIntData(MySharePrefernce.KEY_IDENTIFY_SIGNATURE)
+        if(time!=0 && !viewModel.is_device_registered){
+            IdentifyRequestWidget.setIdentifyRequest(binding,pref,this,isConnected,temp.toString(),viewModel.is_device_registered)
+        }else if(DataParsing.isIdentifyRequestAvailable(pref) && set_version != content_version){
+            viewModel.getIdentifyAcknowledge(pref!!)
+            binding.llIdentifyRequest.visibility = View.VISIBLE
+            IdentifyRequestWidget.setIdentifyRequest(binding,pref,this,isConnected,temp.toString(),viewModel.is_device_registered)
+            startRequestIdentifyTimer((DataParsing.getIdentifyRequestDuration(pref)*1000).toLong())
+        }else binding.llIdentifyRequest.visibility = View.GONE
+    }
+
+    private fun isEmergencyMessage(){
+        var device = DataParsing.getDevice(pref)
+        if(device?.em ==1)
+            viewModel.getEmergencyMessagedata(DeviceInfo.getDeviceIdFromDevice(this))
+    }
+
+    private fun setEmergencyMessage(data: String?) {
+        if(!data.equals("{}") && data?.length!!>100){
+            binding.llEmergencyMsg.visibility = View.VISIBLE
+            binding.llEmergencyMsg.addView(EmergencyMessageView.getEmView(this,data))
+            startEmergencyMsgTiner(EmergencyMessageView.getEmDuration(data))
+        }
+    }
+
+    fun startRequestIdentifyTimer(seconds: Long) {
+        time = (seconds/1000).toInt()
+        object : CountDownTimer(seconds, 1000) {
+            override fun onTick(duration: Long) {}
+            override fun onFinish() {
+                time = 0
+                binding.llIdentifyRequest.visibility = View.GONE
+                pref.putIntData(MySharePrefernce.KEY_IDENTIFY_SIGNATURE,pref?.getVersionOfDeviceAPI()!!)
+            }
+        }.start()
+    }
+
+    fun startEmergencyMsgTiner(seconds: Long) {
+        time = (seconds/1000).toInt()
+        object : CountDownTimer(seconds, 1000) {
+            override fun onTick(duration: Long) {}
+            override fun onFinish() {
+                binding.llEmergencyMsg.visibility = View.GONE
+            }
+        }.start()
+    }
+
 
     fun removeData() {
         play_activate = false
@@ -475,28 +574,35 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     private fun contentPlaying(is_frames: Boolean, is_override: Boolean) {
 
         if(is_override){
-            Log.d(TAG, "contentPlaying: override - true")
             // create single frame for override
-            var frame = DataParsing.getOverrideFrame(ctx!!)
+            var frame = DataParsing.getOverrideFrame(ctx!!,100)
+            var ss_frame = DataParsing.getOverrideFrame(ctx!!,1000)
             var videoView = VideoView(this)
             var exoPlayerView  = StyledPlayerView(ctx)
+            var myMediaMetadataRetriever = MediaMetadataRetriever()
 
             // add frame in layout list
-            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null))    // add frame in list
+            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
+            screen_layout_list.add(ss_frame)    // add frame in list
+
             binding.rootLayout.addView(frame)   // attach frame in root
+            binding.screenRootLayout.addView(ss_frame)   // attach frame in root
 //            binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
             var all_frames = DataParsing.getOverrideFrames(pref)
             // add multi-fame items
             if (all_frames?.get(0)?.item != null && all_frames.get(0).item.size > 0) {
-                Log.d(TAG, "contentPlaying: item size - ${all_frames.get(0).item.size}")
 
+                Log.d(TAG, "contentPlaying: frame tr - ${all_frames?.get(0)?.tr}")
                 var child_items: MutableList<Item> = mutableListOf()
                 var items_array = all_frames.get(0).item
                 for (j in 0..items_array.size - 1) {
+                    Log.d(TAG, "contentPlaying: frame item $j - ${items_array[j].type}")
+
                     var item = items_array[j]
                     item.frame_h = DeviceInfo.getScreenHeight(this)
                     item.frame_w = DeviceInfo.getScreenWidth(this)
+                    item.br = all_frames.get(0).br
                     items.add(item)
                     items.get(items.size-1).pos = 0
                     child_items.add(item)
@@ -511,20 +617,32 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             startPlayingContent()
         }else if(is_frames){
             var all_frames = DataParsing.getFilterdFrames(pref)
+            var is_items = DataParsing.isItemvailable(all_frames)
+            if(!is_items){
+                loadWaiting()
+                return
+            }
             for (i in 0..all_frames!!.size-1) {
                 // create availble frames with bg
-                var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i)
+                var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,10)
+                var ss_frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,1000)
                 var videoView = VideoView(this)
                 var exoPlayerView  = StyledPlayerView(ctx)
+                var myMediaMetadataRetriever = MediaMetadataRetriever()
 
                 // add frame in layout list
-                layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null))    // add frame in list
+                layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
                 binding.rootLayout.addView(frame)   // attach frame in root
+
+                screen_layout_list.add(ss_frame)    // add frame in list
+                binding.screenRootLayout.addView(ss_frame)
+
                 binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+                binding.screenRootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+
 
                 // add frame for screen capture
-                var image_frame = DataParsing.getScreenCaptureFrame(ctx!!,all_frames.get(i))
-                binding.screenRootLayout.addView(image_frame)
+//                var image_frame = DataParsing.getScreenCaptureFrame(ctx!!,all_frames.get(i))
 
                 // add multi-fame items
                 if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
@@ -534,7 +652,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                         var item = items_array[j]
                         item.frame_h = all_frames.get(i).h
                         item.frame_w = all_frames.get(i).w
-                        Log.d(TAG, "contentPlaying: height - ${all_frames.get(i).h} width - ${all_frames.get(i).w}")
+                        item.br = all_frames.get(i).br
                         items.add(item)
                         items.get(items.size-1).pos = i
                         child_items.add(item)
@@ -612,6 +730,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     }
 
     fun loadWaiting() {
+        Log.d(TAG, "loadWaiting: start")
         if(layout_list!=null &&layout_list.size>0){
             for (i in 0..layout_list.size-1)
                 layout_list[i].relative_layout?.visibility = View.GONE
@@ -622,10 +741,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             Log.d(TAG, "loadWaiting: default showing")
             val path = DataManager.getDirectory()+ File.separator+fileName
             binding.ivMainDefaultimg.visibility = View.VISIBLE
+            binding.llDefaultimgBg.visibility = View.VISIBLE
             binding.ivMainDefaultimg.setImageBitmap(BitmapFactory.decodeFile(path, ImageUtil.getImageOption()))
         }else {
             Log.d(TAG, "loadWaiting: default not showing")
             binding.ivMainDefaultimg.visibility = View.GONE
+            binding.llDefaultimgBg.visibility = View.GONE
         }
     }
 
@@ -651,6 +772,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         val path = DataManager.getDirectory()+File.separator+ item.fileName
         if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
             if(!File(path).exists()){
+                Log.d(TAG, "nextPlay: current - from 2")
                 current_size_list[position] = current_size_list[position]+1
                 nextPlay(position)
                 return
@@ -658,29 +780,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         }
 
         Log.d(TAG, "validateItem item type : ${item.type} ${item.duration} ${DateTimeUtil.getTimeSeconds()}")
-        if(
-            item.type == Constant.CONTENT_IMAGE ||
-            item.type == Constant.CONTENT_VIDEO ||
-            item.type == Constant.CONTENT_VECTOR ||
-            item.type == Constant.CONTENT_POWERPOINT||
-            item.type == Constant.CONTENT_WORD ||
-            item.type == Constant.CONTENT_WEB ||
-            item.type == Constant.CONTENT_WIDGET_GOOGLE ||
-            item.type == Constant.CONTENT_WIDGET_DATE_TIME ||
-            item.type == Constant.CONTENT_WIDGET_POWER ||
-            item.type == Constant.CONTENT_WIDGET_QUOTES ||
-            item.type == Constant.CONTENT_WIDGET_TRAFFIC ||
-            item.type == Constant.CONTENT_WIDGET_YOUTUBE ||
-            item.type == Constant.CONTENT_WIDGET_VIMEO ||
-            item.type == Constant.CONTENT_WIDGET_NEWS ||
-            item.type == Constant.CONTENT_WIDGET_TEXT ||
-            item.type == Constant.CONTENT_WIDGET_COD ||
-            item.type == Constant.CONTENT_WIDGET_IFRAME ||
-            item.type == Constant.CONTENT_WIDGET_LIVESTREAM ||
-//            item.type == Constant.CONTENT_WIDGET_WEATHER ||
-            item.type == Constant.CONTENT_WIDGET_QRCODE
-        ) setWidget(position,item)
+        setWidget(position,item)
     }
+
 
     private fun setWidget(pos: Int, item: Item){
 
@@ -690,6 +792,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         binding.rlBackground.visibility = View.GONE
         var layout = layout_list[pos].relative_layout
         var video = layout_list[pos].videoView
+        var media_data = layout_list[pos].myMediaMetadataRetriever
         var exoPlayerView = layout_list[pos].exoPlayerView
         var exoPlayer = layout_list[pos].exoPlayer
         layout?.visibility = View.VISIBLE
@@ -707,31 +810,33 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize))
         }
         // QR-Code
-        if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
+        else if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
             layout?.removeAllViews()
             layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize))
         }
         // video
-        if(widget_type.equals(Constant.CONTENT_VIDEO)){
+        else if(widget_type.equals(Constant.CONTENT_VIDEO)){
             layout?.removeAllViews()
-            layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,item.frame_w,item.frame_h,item.fileName,item.sound,Constant.CALLING_MAIN))
+            layout_list[pos].myMediaMetadataRetriever = WidgetVideo.getMediaData(this,item.fileName,media_data!!)
+            layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,item.frame_w,item.frame_h,item.fileName,item.sound))
         }
         // webview
-        if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
+        else if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
             setWebViewWithReload(pos,item)
         }
         // iFrame
-        if(widget_type == Constant.CONTENT_WIDGET_IFRAME){
+        else if(widget_type == Constant.CONTENT_WIDGET_IFRAME){
             layout?.removeAllViews()
             layout?.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!))
         }
         // youtube
-        if(widget_type == Constant.CONTENT_WIDGET_YOUTUBE) {
+        else if(widget_type == Constant.CONTENT_WIDGET_YOUTUBE) {
             layout?.removeAllViews()
             layout?.addView(YouTubeWidget.getYouTubeWidget(this,item),item.frame_w,item.frame_h)
         }
         // vimeo
-        if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
+        else if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
+            Log.d(TAG, "setWidget: vimeo duration ${item.duration}")
             layout?.removeAllViews()
             var player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_SLIDE,item?.sound!!)
             layout_list[pos].exoPlayer = player
@@ -739,35 +844,35 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             vimeoViewModel.getVimeoUrl(item.src,item,pos,vimeo_retro)
         }
         // power BI
-        if(widget_type == Constant.CONTENT_WIDGET_POWER){
+        else if(widget_type == Constant.CONTENT_WIDGET_POWER){
             layout?.removeAllViews()
             layout?.addView(WidgetPowerBI.getWidgetPowerBI(this,item),item.frame_w,item.frame_h)
         }
         // traffic
-        if(widget_type == Constant.CONTENT_WIDGET_TRAFFIC){
+        else if(widget_type == Constant.CONTENT_WIDGET_TRAFFIC){
             layout?.removeAllViews()
             layout?.addView(WidgetTraffic.getWidgetTrafic(this,item.id),item.frame_w,item.frame_h)
         }
         // date time
-        if(widget_type == Constant.CONTENT_WIDGET_DATE_TIME){
+        else if(widget_type == Constant.CONTENT_WIDGET_DATE_TIME){
             layout?.removeAllViews()
             layout?.addView(DateTimeWidget.getDateTimeWidget(this,item),item.frame_w,item.frame_h)
         }
         // quotes
-        if(widget_type == Constant.CONTENT_WIDGET_QUOTES)
+        else if(widget_type == Constant.CONTENT_WIDGET_QUOTES)
             viewModel.getQuoteText(item.id.split("-")[2],pos)
         // text
-        if(widget_type == Constant.CONTENT_WIDGET_TEXT)
+        else if(widget_type == Constant.CONTENT_WIDGET_TEXT)
             viewModel.getText(item.id.split("-")[2],pos)
         // news
-        if(widget_type == Constant.CONTENT_WIDGET_NEWS){
+        else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
             if(item.src.equals(""))
                 viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos)
             else
                 viewModel.getNews(item.src,pos)
         }
         // live streaming
-        if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
+        else if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
             layout?.removeAllViews()
             if(item?.dType.equals("yt"))
                 layout?.addView(YouTubeWidget.getYouTubeWidgetLiveStream(this,item),item.frame_w,item.frame_h)
@@ -775,12 +880,25 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 layout?.addView(WidgetExoPlayer.setExoPLayer(this,item,exoPlayerView),item.frame_w,item.frame_h)
         }
         // COD BUTTON
-        if(widget_type == Constant.CONTENT_WIDGET_COD){
+        else if(widget_type == Constant.CONTENT_WIDGET_COD){
             layout?.removeAllViews()
             var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
             layout?.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
             layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
         }
+        // MESSAGE
+        else if(widget_type == Constant.WIDGET_MESSAGE){
+            layout?.removeAllViews()
+            var image = dataParsing.getImageName(WidgetMessage.getData(item.data).contentid)
+            layout?.addView(WidgetMessage.getMessageWidget(this,item,image))
+        }
+
+        // not implemetated
+        else {
+            layout?.removeAllViews()
+            layout?.addView(WidgetText.getBlankView(this),item.frame_w,item.frame_h)
+        }
+
         // weather
 //        if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
 //            setWatherFragment(pos,item)
@@ -790,6 +908,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 delay(TimeUnit.SECONDS.toMillis(item.duration.toLong()))
                 withContext(Dispatchers.Main) {
 //                    if(exoPlayerView.player != null && exoPlayerView.player!!.isPlaying) exoPlayerView.player?.stop()
+//                    if(video != null && video!!.isPlaying){
+//                        video!!.stopPlayback()
+//                        video = null
+//                    }
                     if(exoPlayer != null && exoPlayer!!.isPlaying){
                         exoPlayer!!.release()
                         exoPlayer = null
@@ -801,6 +923,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     if(play_activate){
                         pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
+                        Log.d(TAG, "nextPlay: current - from 1")
                         nextPlay(pos)
                     }
                 }
@@ -822,7 +945,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         var layout = layout_list[pos].relative_layout
         if(layout_list[pos].active_widget.equals(Constant.CONTENT_WEB)){
             layout?.removeAllViews()
-            layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                layout?.addView(WebViewChromium.getWebChromeWidget(this,item.src),item.frame_w,item.frame_h)
+            else
+                layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
             if(DataParsing.getWebInterval(item) !=0 && DataParsing.getWebInterval(item) < item.duration){
                 layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getWebInterval(item).toLong()))
@@ -903,15 +1029,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     }
 
     private fun nextPlay(pos:Int){
+        Log.d(TAG, "nextPlay: current - ${current_size_list[pos]} , multi - ${multiframe_items.get(pos).size}")
         if(current_size_list[pos] < multiframe_items.get(pos).size){
             validateItem(multiframe_items.get(pos)[current_size_list[pos]],pos)
         }else{
+            Log.d(TAG, "nextPlay: current - from 0")
             current_size_list[pos] = 0
             nextPlay(pos)
         }
     }
 
     override fun onBackPressed() {
+        super.onBackPressed()
         finishAffinity()
     }
 

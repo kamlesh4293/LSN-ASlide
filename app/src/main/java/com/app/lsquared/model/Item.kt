@@ -21,12 +21,14 @@ data class Item (
     @SerializedName("mute") val mute : Int = -1,
     @SerializedName("sound") val sound : String = "",
     @SerializedName("settings") val settings : String = "",
+    @SerializedName("data") val data : String = "",
     @SerializedName("actualDuration") val actualDuration : Float = -1.0f,
     @SerializedName("forecast") val forecast : Int = 0,
     @SerializedName("params") val params : String = "",
     @SerializedName("content"  ) var content  : ArrayList<ItemContent> = arrayListOf(),
     var frame_h : Int = 0,
     var frame_w : Int = 0,
+    var br : String = "",
     var pos : Int = -1
 )
 
