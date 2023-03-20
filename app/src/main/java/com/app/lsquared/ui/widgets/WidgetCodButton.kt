@@ -6,7 +6,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.view.MotionEvent
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -89,7 +91,12 @@ class WidgetCodButton {
                 iv_right.visibility =  View.GONE
             }
 
-            ll_main_cod.setOnClickListener { openCod(ctx,pref) }
+//            ll_main_cod.setOnClickListener { openCod(ctx,pref) }
+//            cod_bt.setOnClickListener { openCod(ctx,pref) }
+//            iv_bottom.setOnClickListener { openCod(ctx,pref) }
+//            iv_left.setOnClickListener { openCod(ctx,pref) }
+//            iv_right.setOnClickListener { openCod(ctx,pref) }
+//            iv_top.setOnClickListener { openCod(ctx,pref) }
             return view
         }
 
@@ -109,3 +116,4 @@ class WidgetCodButton {
     }
 
 }
+

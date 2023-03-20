@@ -1,15 +1,11 @@
 package com.app.lsquared.ui.widgets
 
+import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.util.Log
-import android.view.View
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import com.app.lsquared.model.Content
-import com.app.lsquared.model.Item
-import com.app.lsquared.ui.MainActivity
+import android.webkit.*
+import androidx.annotation.RequiresApi
 
 class WebViewWidget {
 
@@ -18,18 +14,29 @@ class WebViewWidget {
         fun getWebViewWidget(ctx:Context, src: String):WebView{
             var web = WebView(ctx)
             web.setWebChromeClient(WebChromeClient())
-            web.getSettings().setJavaScriptEnabled(true)
+            web.settings.javaScriptEnabled = true
+            web.settings.useWideViewPort = true
             try {
+                Log.d("TAG", "getWebViewWidget: src - $src")
                 web.loadUrl(src)
             } catch (e: java.lang.Exception) {
-                Log.w("TAG", "Exception : ", e)
+                Log.d("TAG", "Exception : ", e)
             }
-            web.setWebViewClient(object : WebViewClient() {
-                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                    view.loadUrl(request.url.toString())
-                    return false
+
+            web.setWebChromeClient(object : WebChromeClient() {
+                @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+                override fun onPermissionRequest(request: PermissionRequest) {
+                    (ctx as Activity).runOnUiThread(Runnable {
+                        request.grant(request.resources) })
                 }
             })
+
+//            web.setWebViewClient(object : WebViewClient() {
+//                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+//                    view.loadUrl(request.url.toString())
+//                    return false
+//                }
+//            })
             return web
         }
 

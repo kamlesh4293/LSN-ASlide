@@ -3,6 +3,7 @@ package com.app.lsquared.ui.activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.app.lsquared.SerialPortActivity
 import com.app.lsquared.databinding.ActivitySplashBinding
 import com.app.lsquared.ui.MainActivity
 import com.app.lsquared.utils.DataManager
@@ -24,6 +25,8 @@ class SplashActivity : AppCompatActivity(){
         setContentView(binding.root)
         pref = MySharePrefernce(this)
         DataManager.createReportFile(pref)
+//        startActivity(Intent(this, UsbPortActivity::class.java))
+//        startActivity(Intent(this, SerialPortActivity::class.java))
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }

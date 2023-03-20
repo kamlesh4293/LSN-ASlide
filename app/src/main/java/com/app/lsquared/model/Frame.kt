@@ -13,23 +13,57 @@ import com.google.gson.annotations.SerializedName
 
 data class Frame (
 
-	@SerializedName("sort") val sort : String,
-	@SerializedName("id") val id : Int,
-	@SerializedName("name") val name : String,
-	@SerializedName("w") val w : Int,
-	@SerializedName("h") val h : Int,
-	@SerializedName("x") val x : Int,
-	@SerializedName("y") val y : Int,
-	@SerializedName("z") val z : Int,
-	@SerializedName("r") val r : Int,
-	@SerializedName("bg") val bg : String,
-	@SerializedName("align") val align : String,
-	@SerializedName("a") val a : String,
-	@SerializedName("bga") val bga : String,
-	@SerializedName("timeRange") val timeRange : String,
-	@SerializedName("tr") val tr : String,
-	@SerializedName("st") val st : String,
-	@SerializedName("et") val et : String,
-	@SerializedName("item") val item : List<Item>,
+	@SerializedName("sort") val sort : String = "",
+	@SerializedName("id") val id : Int = 0,
+	@SerializedName("name") val name : String = "",
+	@SerializedName("w") val w : Int = 0,
+	@SerializedName("h") val h : Int = 0,
+	@SerializedName("x") val x : Int = 0,
+	@SerializedName("y") val y : Int = 0,
+	@SerializedName("z") val z : Int = 0,
+	@SerializedName("r") val r : Int = 0,
+	@SerializedName("bg") val bg : String = "",
+	@SerializedName("align") val align : String = "",
+	@SerializedName("a") val a : String = "",
+	@SerializedName("bga") val bga : String = "",
+	@SerializedName("timeRange") val timeRange : String = "",
+	@SerializedName("tr") val tr : String = "",
+	@SerializedName("st") val st : String = "",
+	@SerializedName("et") val et : String = "",
+	@SerializedName("item") val item : List<Item> = arrayListOf(),
+	@SerializedName("settings") val settings : String = "",
 	var position : Int = 0
+)
+
+// settings
+
+data class FrameSetting (
+
+	@SerializedName("br"  ) var br  : Br?  = Br(),
+	@SerializedName("ish" ) var ish : Ish? = Ish()
+
+)
+
+data class Br (
+
+	@SerializedName("tl"       ) var tl       : Int?     = null,
+	@SerializedName("tr"       ) var tr       : Int?     = null,
+	@SerializedName("bl"       ) var bl       : Int?     = null,
+	@SerializedName("br"       ) var br       : Int?     = null,
+	@SerializedName("isBorder" ) var isBorder : Boolean? = null
+
+)
+
+data class Ish (
+
+	@SerializedName("hl"       ) var hl       : Int?     = null,
+	@SerializedName("vl"       ) var vl       : Int?     = null,
+	@SerializedName("br"       ) var br       : Int?     = null,
+	@SerializedName("sr"       ) var sr       : Int?     = null,
+	@SerializedName("sc"       ) var sc       : String?  = null,
+	@SerializedName("sca"      ) var sca      : Double?  = null,
+	@SerializedName("rgba"     ) var rgba     : String?  = null,
+	@SerializedName("scType"   ) var scType   : String?  = null,
+	@SerializedName("isShadow" ) var isShadow : Boolean? = null
+
 )

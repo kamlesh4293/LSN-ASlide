@@ -1,11 +1,15 @@
 package com.app.lsquared.ui.activity
 
+import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.*
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -28,7 +32,6 @@ import retrofit2.Retrofit
 import java.io.File
 import java.util.*
 import javax.inject.Inject
-import kotlin.collections.ArrayList
 
 
 @AndroidEntryPoint
@@ -171,7 +174,11 @@ class CodContentActivity : AppCompatActivity() {
         }
         /// webview
         if(item?.type.equals(Constant.CONTENT_WEB)|| item?.type.equals(Constant.CONTENT_WIDGET_GOOGLE))
-            binding.rlCodContent.addView(WebViewWidget.getWebViewWidget(this,item?.src!!))
+            setWebView(item?.src)
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+//                binding.rlCodContent.addView(WebViewChromium.getWebChromeWidget(this,item?.src!!))
+//            else
+//                binding.rlCodContent.addView(WebViewWidget.getWebViewWidget(this,item?.src!!))
         /// iframe
         if(item?.type.equals(Constant.CONTENT_WIDGET_IFRAME))
             binding.rlCodContent.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!),width,height)
@@ -282,6 +289,28 @@ class CodContentActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         binding.wvCodContent.removeAllViews()
+    }
+
+    fun setWebView(src: String?) {
+        Log.d(TAG, "setWebView: src = $src")
+        binding.wvCodContent.visibility = View.VISIBLE
+        val webView = binding.wvCodContent
+        WebViewChromium.setUpWebViewDefaults(webView)
+        webView.loadUrl(src!!)
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest) {
+                Log.d("TAG", "onPermissionRequest")
+                runOnUiThread {
+                    if (request.origin.toString() == src) {
+                        request.grant(request.resources)
+                    } else {
+                        request.deny()
+                    }
+                }
+            }
+        }
+
     }
 
 

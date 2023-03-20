@@ -22,6 +22,15 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:background="@color/black"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+            </RelativeLayout>
+
+
+
+            <RelativeLayout
                 android:id="@+id/rl_background"
                 android:orientation="horizontal"
                 android:background="@color/bg_color"
@@ -86,6 +95,23 @@
                     android:padding="10dp"
                     android:src="@drawable/logo" />
 
+                <LinearLayout
+                    android:visibility="gone"
+                    android:id="@+id/ll_defaultimg_bg"
+                    android:gravity="center"
+                    android:background="@color/black"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:visibility="gone"
+                        android:background="@color/black"
+                        android:id="@+id/iv_main_defaultimg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+
+                </LinearLayout>
 
 
             </RelativeLayout>
@@ -96,6 +122,31 @@
                 android:layout_height="match_parent">
 
             </RelativeLayout>
+
+
+            <LinearLayout
+                android:visibility="gone"
+                android:orientation="vertical"
+                android:id="@+id/ll_emergency_msg"
+                android:layout_width="match_parent"
+                android:background="@color/black"
+                android:layout_height="match_parent">
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_watermark"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/iv_main_watermark"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+            </LinearLayout>
+
 
         </RelativeLayout>
 
@@ -161,6 +212,247 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <LinearLayout
+            android:layout_margin="20dp"
+            android:id="@+id/ll_identify_request"
+            android:visibility="gone"
+            android:layout_alignParentBottom="true"
+            android:background="@color/black_trans"
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:padding="10dp"
+                android:drawablePadding="10dp"
+                android:gravity="center"
+                android:textSize="20dp"
+                android:drawableLeft="@drawable/logo_lsn"
+                android:textColor="@color/white"
+                android:text="L Squared Digital Signage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_name"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textSize="20px"
+                android:textColor="@color/white"
+                android:text="Name: Health Dashboard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_id"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Id: sda6767assda"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_server"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Server: GR"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_env"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textSize="20px"
+                android:textColor="@color/white"
+                android:text="Environment: LS-AZUSUS-1001"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_type"
+                android:layout_marginTop="25dp"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Type: Samsung"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:textSize="20px"
+                android:id="@+id/tv_main_identify_model"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Model: D4SH67"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:textSize="20px"
+                android:id="@+id/tv_main_identify_tizen"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Tizen: 1.3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_serial"
+                android:paddingVertical="2dp"
+                android:textSize="20px"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Serial: 0643j5h34j554wd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_lss"
+                android:paddingVertical="2dp"
+                android:textSize="20px"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="L Squared Slide: 2.1.52"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_ip"
+                android:paddingVertical="2dp"
+                android:textSize="20px"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="IP: 11.12.68|192.34.66.788"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_storage"
+                android:layout_marginTop="25dp"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Available Storage: T-JHKSJG-SJKS"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_time"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Time: 2.1.52"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:textSize="20px"
+                android:id="@+id/tv_main_identify_temp"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Temp: 11.12.68|192.34.66.788"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_conn_type"
+                android:layout_marginTop="25dp"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Connection type: 2.1.52"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:textSize="20px"
+                android:id="@+id/tv_main_identify_wifi"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Wifi strength: 11.12.68|192.34.66.788"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_gateway"
+                android:textSize="20px"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Gateway: T-JHKSJG-SJKS"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:id="@+id/tv_main_identify_internet"
+                android:paddingVertical="2dp"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/white"
+                android:text="Internet: 2.1.52"
+                android:textSize="20px"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:fontFamily="@font/myriad_pro_bold_condensed"
+                    android:id="@+id/tv_main_identify_status"
+                    android:drawableRight="@drawable/checked"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="10dp"
+                    android:textColor="@color/white"
+                    android:text="Status: online"
+                    android:drawablePadding="20dp"
+                    android:textSize="20px"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+            </LinearLayout>
+
+
+
+        </LinearLayout>
 
 
     </RelativeLayout>
