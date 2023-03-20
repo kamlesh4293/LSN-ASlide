@@ -74,6 +74,7 @@ class Utility {
             } else return false
         }
 
+/*
         // check all permission granted
         fun checkAllPermissionGranted(ctx: Context) : Boolean{
             val pm: PackageManager = ctx.getPackageManager()
@@ -103,6 +104,20 @@ class Utility {
             return false
         }
 */
+
+*/
+        // check all permission granted
+        fun checkAllPermissionGranted(ctx: Context) : Boolean{
+            val pm: PackageManager = ctx.getPackageManager()
+            val hasPerm = pm.checkPermission(permission.WRITE_EXTERNAL_STORAGE,ctx.getPackageName())
+            if (hasPerm == PackageManager.PERMISSION_GRANTED) {
+                return true
+            }
+            ActivityCompat.requestPermissions(ctx as Activity,
+                arrayOf(permission.WRITE_EXTERNAL_STORAGE),
+                STORAGE_PERMISSION_CODE)
+            return false
+        }
 
 
         fun getDetailsText(ctx:Context) : SpannableStringBuilder{
