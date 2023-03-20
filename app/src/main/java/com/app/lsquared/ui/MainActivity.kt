@@ -1078,6 +1078,16 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private fun checkDeviceVersion() {
         if(packageManager.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,getPackageName())==PackageManager.PERMISSION_GRANTED)
+            if(isConnected)
+                if(downloading==0){
+                    freeMemory()
+                    viewModel.isDeviceRegistered(this,DeviceInfo.getDeviceId(this,pref))
+                }
+    }
+
+/*
+    private fun checkDeviceVersion() {
+        if(packageManager.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,getPackageName())==PackageManager.PERMISSION_GRANTED)
             if(packageManager.checkPermission(Manifest.permission.READ_PHONE_STATE,getPackageName())==PackageManager.PERMISSION_GRANTED){
                 if(isConnected)
                     if(downloading==0){
@@ -1086,6 +1096,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     }
             }
     }
+*/
 
 
     // dialog
