@@ -30,8 +30,40 @@ data class Frame (
 	@SerializedName("tr") val tr : String = "",
 	@SerializedName("st") val st : String = "",
 	@SerializedName("et") val et : String = "",
-	@SerializedName("br") val br : String = "",
 	@SerializedName("item") val item : List<Item> = arrayListOf(),
+	@SerializedName("settings") val settings : String = "",
 	var position : Int = 0
 )
 
+// settings
+
+data class FrameSetting (
+
+	@SerializedName("br"  ) var br  : Br?  = Br(),
+	@SerializedName("ish" ) var ish : Ish? = Ish()
+
+)
+
+data class Br (
+
+	@SerializedName("tl"       ) var tl       : Int?     = null,
+	@SerializedName("tr"       ) var tr       : Int?     = null,
+	@SerializedName("bl"       ) var bl       : Int?     = null,
+	@SerializedName("br"       ) var br       : Int?     = null,
+	@SerializedName("isBorder" ) var isBorder : Boolean? = null
+
+)
+
+data class Ish (
+
+	@SerializedName("hl"       ) var hl       : Int?     = null,
+	@SerializedName("vl"       ) var vl       : Int?     = null,
+	@SerializedName("br"       ) var br       : Int?     = null,
+	@SerializedName("sr"       ) var sr       : Int?     = null,
+	@SerializedName("sc"       ) var sc       : String?  = null,
+	@SerializedName("sca"      ) var sca      : Double?  = null,
+	@SerializedName("rgba"     ) var rgba     : String?  = null,
+	@SerializedName("scType"   ) var scType   : String?  = null,
+	@SerializedName("isShadow" ) var isShadow : Boolean? = null
+
+)

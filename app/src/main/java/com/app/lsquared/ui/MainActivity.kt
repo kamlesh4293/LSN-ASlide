@@ -613,7 +613,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     var item = items_array[j]
                     item.frame_h = DeviceInfo.getScreenHeight(this)
                     item.frame_w = DeviceInfo.getScreenWidth(this)
-                    item.br = all_frames.get(0).br
+                    item.frame_setting = all_frames.get(0).settings
                     items.add(item)
                     items.get(items.size-1).pos = 0
                     child_items.add(item)
@@ -663,7 +663,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                         var item = items_array[j]
                         item.frame_h = all_frames.get(i).h
                         item.frame_w = all_frames.get(i).w
-                        item.br = all_frames.get(i).br
+                        item.frame_setting = all_frames.get(i).settings
                         items.add(item)
                         items.get(items.size-1).pos = i
                         child_items.add(item)

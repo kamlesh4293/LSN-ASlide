@@ -3,17 +3,16 @@ package com.app.lsquared.utils
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager.LayoutParams
 import android.widget.ImageView
 import android.widget.LinearLayout
-import androidx.annotation.RequiresApi
 import com.app.lsquared.model.*
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.ui.UiUtils
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -486,25 +485,25 @@ class DataParsing @Inject constructor(
 //                relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
                 ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
             }
-            ll_frame.background =  getShape(color,frame.br)
+            ll_frame.background =  getShape(color,frame.settings)
             ll_frame.rotation = frame.r.toFloat()
 
             return ll_frame
         }
 
 
-        private fun getShape(color: Int, br: String): GradientDrawable {
+        private fun getShape(color: Int, settings: String): GradientDrawable {
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.RECTANGLE
-            if(!br.equals("")){
-                var br_obj = JSONObject(br)
-                var tl = br_obj.getInt("tl")
-                var tr = br_obj.getInt("tr")
-                var bl = br_obj.getInt("bl")
-                var br = br_obj.getInt("br")
-                shape.cornerRadii = floatArrayOf(tl.toFloat(), tl.toFloat(), tr.toFloat(),tr.toFloat(),
-                    bl.toFloat(), bl.toFloat(), br.toFloat(), br.toFloat())
-//                shape.cornerRadii = floatArrayOf(50f, 16f, 16f, 16f, 30f, 20f, 10f, 100f)
+            var frame_setting = Gson().fromJson(settings,FrameSetting::class.java)
+            var border = frame_setting.br
+            if(border!=null && border.br!=null&& border.bl!=null&& border.tr!=null&& border.tl!=null){
+                var tl = border.tl
+                var tr = border.tr
+                var bl = border.bl
+                var br = border.br
+                shape.cornerRadii = floatArrayOf(tl!!.toFloat(), tl.toFloat(), tr!!.toFloat(),tr.toFloat(),
+                    bl!!.toFloat(), bl.toFloat(), br!!.toFloat(), br.toFloat())
             }
             shape.setColor(color)
             return shape
@@ -677,6 +676,5 @@ class DataParsing @Inject constructor(
 
 
         }
-
 
 }

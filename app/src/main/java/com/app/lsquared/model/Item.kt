@@ -28,7 +28,7 @@ data class Item (
     @SerializedName("content"  ) var content  : ArrayList<ItemContent> = arrayListOf(),
     var frame_h : Int = 0,
     var frame_w : Int = 0,
-    var br : String = "",
+    var frame_setting : String = "",
     var pos : Int = -1
 )
 
