@@ -11,11 +11,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.app.lsquared.R
 import com.app.lsquared.model.Item
 import com.app.lsquared.model.news_setting.News
-import com.app.lsquared.model.news_setting.NewsListSettingData
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.ui.adapter.BeingNewsAdapter
 import com.app.lsquared.ui.adapter.NewsAdapter
+import com.app.lsquared.utils.FontUtil
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 
 class WidgetNewsList {
 
@@ -42,7 +43,13 @@ class WidgetNewsList {
                     return false
                 }
             }
-            var adapter = NewsAdapter(list,item,ctx)
+
+            // setting
+            var setting_obj = Gson().fromJson(item.settings, NewsListSettingData::class.java)
+
+            FontUtil.setFonts(ctx,title_tv,setting_obj.headerFont?.label!!)
+
+            var adapter = NewsAdapter(list,item,ctx,setting_obj)
             list_rv.layoutManager = myLinearLayoutManager
             list_rv.adapter = adapter
             list_rv.isNestedScrollingEnabled = false
@@ -50,9 +57,7 @@ class WidgetNewsList {
             // title text
             title_tv.text = title
 
-            // setting
-            var setting_obj = Gson().fromJson(item.settings,
-                NewsListSettingData::class.java)
+
             title_tv.visibility = View.VISIBLE
             title_tv.textSize = setting_obj.headerSize!!.toFloat()
             title_tv.setBackgroundColor(Color.parseColor(setting_obj.titleText))
@@ -86,3 +91,48 @@ class WidgetNewsList {
         }
     }
 }
+
+data class NewsListSettingData(
+
+    @SerializedName("rotationOpt"  ) var rotationOpt  : String?     = null,
+    @SerializedName("rotate"       ) var rotate       : Int?        = null,
+    @SerializedName("hTextOpt"     ) var hTextOpt     : String?     = null,
+    @SerializedName("hText"        ) var hText        : String?     = null,
+    @SerializedName("headerBg"     ) var headerBg     : String?     = null,
+    @SerializedName("headerText"   ) var headerText   : String?     = null,
+    @SerializedName("headerFont"   ) var headerFont   : HeaderFont? = HeaderFont(),
+    @SerializedName("isbg"         ) var isbg         : Boolean?    = null,
+    @SerializedName("bg"           ) var bg           : String?     = null,
+    @SerializedName("rowBg"        ) var rowBg        : String?     = null,
+    @SerializedName("altRowBg"     ) var altRowBg     : String?     = null,
+    @SerializedName("titleText"    ) var titleText    : String?     = null,
+    @SerializedName("descText"     ) var descText     : String?     = null,
+    @SerializedName("rowFont"      ) var rowFont      : RowFont?    = RowFont(),
+    @SerializedName("altTitleText" ) var altTitleText : String?     = null,
+    @SerializedName("altDescText"  ) var altDescText  : String?     = null,
+    @SerializedName("altRowFont"   ) var altRowFont   : AltRowFont? = AltRowFont(),
+    @SerializedName("headerSize"   ) var headerSize   : Int?        = null,
+    @SerializedName("titleSize"    ) var titleSize    : Int?        = null,
+    @SerializedName("descSize"     ) var descSize     : Int?        = null
+)
+
+data class HeaderFont (
+
+    @SerializedName("label" ) var label : String? = null,
+    @SerializedName("value" ) var value : String? = null
+
+)
+
+data class RowFont (
+
+    @SerializedName("label" ) var label : String? = null,
+    @SerializedName("value" ) var value : String? = null
+
+)
+
+data class AltRowFont (
+
+    @SerializedName("label" ) var label : String? = null,
+    @SerializedName("value" ) var value : String? = null
+
+)

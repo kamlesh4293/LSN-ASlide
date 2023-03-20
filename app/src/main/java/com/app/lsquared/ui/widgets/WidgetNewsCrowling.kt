@@ -12,10 +12,11 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatTextView
 import com.app.lsquared.R
 import com.app.lsquared.model.Item
-import com.app.lsquared.model.news_setting.NewsCrawlSettingData
 import com.app.lsquared.ui.UiUtils
+import com.app.lsquared.utils.FontUtil
 import com.app.lsquared.utils.Utility
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import top.defaults.drawabletoolbox.DrawableBuilder
 import java.lang.reflect.Field
 import java.util.logging.Logger
@@ -43,6 +44,8 @@ class WidgetNewsCrowling {
             crowling_text.text = data
             crowling_text.isSelected = true
             setMarqueeSpeed(crowling_text,setting_obj.speed!!.toFloat())
+
+            FontUtil.setFonts(ctx,crowling_text,setting_obj.font?.label!!)
 
             return view
         }
@@ -78,3 +81,17 @@ class WidgetNewsCrowling {
         }
     }
 }
+
+data class NewsCrawlSettingData(
+    @SerializedName("speed"       ) var speed       : Int?    = null,
+    @SerializedName("bg"          ) var bg          : String? = null,
+    @SerializedName("bga"         ) var bga         : Int?    = null,
+    @SerializedName("bullet"      ) var bullet      : String? = null,
+    @SerializedName("titleText"   ) var titleText   : String? = null,
+    @SerializedName("font"        ) var font        : Font?   = Font(),
+    @SerializedName("dir"         ) var dir         : String? = null,
+    @SerializedName("align"       ) var align       : String? = null,
+    @SerializedName("fontSizeOpt" ) var fontSizeOpt : String? = null,
+    @SerializedName("fontSize"    ) var fontSize    : Int?    = null
+)
+

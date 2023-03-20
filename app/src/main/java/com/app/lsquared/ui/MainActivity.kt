@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     }else{
                         Log.d(TAG, "run: active widget - other")
                         val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
-//                    val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+//                        val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
                         if(file!=null)
                             screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,BitmapFactory.decodeFile(file?.absolutePath)))
                     }
@@ -364,8 +364,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 layout_list[pos].relative_layout?.removeAllViews()
                 layout_list[pos].relative_layout?.
                 addView(WidgetQuotes.getWidgetQuotes(this,item,response.data),item.frame_w,item.frame_h)
+                setQuoteRotation(pos,item)
             }
         })
+
 
         // news api
         viewModel.rss_api_result.observe(this, Observer { response ->
@@ -458,6 +460,19 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     }
 
+    fun setQuoteRotation(pos: Int, item: Item) {
+        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+            delay(TimeUnit.SECONDS.toMillis(WidgetQuotes.getRotation(item).toLong()))
+            withContext(Dispatchers.Main) {
+                if(play_activate){
+                    WidgetQuotes.pos = WidgetQuotes.pos+1
+                    WidgetQuotes.setText()
+                }
+            }
+        }
+    }
+
+
     private fun setWaterMark() {
         Log.d("TAG", "setWaterMark: ${DataParsing.isWatermarkAvailable(pref)}")
         if(DataParsing.isWatermarkAvailable(pref)){
@@ -483,13 +498,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             setWaterMark()
             setIdentifyRequest()
             isEmergencyMessage()
-            var is_frames = DataParsing.isFrameAvailable(pref)
+            var is_frames = dataParsing.isFrameAvailable()
             var is_override = DataParsing.isOverrideAvailable(pref)
-
-            Log.d(TAG, "changeContent: $is_override")
-
-            if(is_frames || is_override) contentPlaying(is_frames,is_override)
-            else loadWaiting()
+            if(is_frames || is_override) contentPlaying(is_frames,is_override) else loadWaiting()
         }
     }
 
@@ -509,7 +520,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     private fun isEmergencyMessage(){
         var device = DataParsing.getDevice(pref)
         if(device?.em ==1)
-            viewModel.getEmergencyMessagedata(DeviceInfo.getDeviceIdFromDevice(this))
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.WIDGET_EMERGENCY_MESSAGE,0))
+                viewModel.getEmergencyMessagedata(DeviceInfo.getDeviceIdFromDevice(this))
     }
 
     private fun setEmergencyMessage(data: String?) {
@@ -597,7 +609,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 var child_items: MutableList<Item> = mutableListOf()
                 var items_array = all_frames.get(0).item
                 for (j in 0..items_array.size - 1) {
-                    Log.d(TAG, "contentPlaying: frame item $j - ${items_array[j].type}")
 
                     var item = items_array[j]
                     item.frame_h = DeviceInfo.getScreenHeight(this)
@@ -671,7 +682,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private fun setAllNewsListRotation(pos: Int, list: List<RssItem>, item: Item, title: String?) {
         if(list!=null && list.size>0){
-            var adapter = NewsAdapter(list,item,ctx!!)
+
+            var setting_obj = Gson().fromJson(item.settings, NewsListSettingData::class.java)
+
+            var adapter = NewsAdapter(list,item,ctx!!,setting_obj)
             layout_list[pos].relative_layout?.removeAllViews()
             layout_list[pos].relative_layout?.
             addView(getWidgetNewsListAll(this,item,list,adapter,title),item.frame_w,item.frame_h)
@@ -701,7 +715,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private fun setBeingNewsListRotation(pos: Int, list: ArrayList<News>, item: Item) {
         if(list!=null && list.size>0){
-            var adapter = BeingNewsAdapter(list,item,ctx!!)
+            var setting_obj = Gson().fromJson(item.settings, NewsListSettingData::class.java)
+
+            var adapter = BeingNewsAdapter(list,item,ctx!!,setting_obj)
             layout_list[pos].relative_layout?.removeAllViews()
             layout_list[pos].relative_layout?.
             addView(WidgetNewsList.getWidgetNewsListBeing(this,item,list,adapter),item.frame_w,item.frame_h)
@@ -778,7 +794,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 return
             }
         }
-
         Log.d(TAG, "validateItem item type : ${item.type} ${item.duration} ${DateTimeUtil.getTimeSeconds()}")
         setWidget(position,item)
     }
@@ -787,7 +802,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     private fun setWidget(pos: Int, item: Item){
 
         var start_time = pref?.getStartTime()
-
         play_activate = true
         binding.rlBackground.visibility = View.GONE
         var layout = layout_list[pos].relative_layout
@@ -859,17 +873,22 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             layout?.addView(DateTimeWidget.getDateTimeWidget(this,item),item.frame_w,item.frame_h)
         }
         // quotes
-        else if(widget_type == Constant.CONTENT_WIDGET_QUOTES)
-            viewModel.getQuoteText(item.id.split("-")[2],pos)
+        else if(widget_type == Constant.CONTENT_WIDGET_QUOTES){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_QUOTES,pos))
+                viewModel.getQuoteText(item.id.split("-")[2],pos)
+        }
         // text
-        else if(widget_type == Constant.CONTENT_WIDGET_TEXT)
-            viewModel.getText(item.id.split("-")[2],pos)
+        else if(widget_type == Constant.CONTENT_WIDGET_TEXT){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_TEXT,pos))
+                viewModel.getText(item.id.split("-")[2],pos)
+        }
         // news
         else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
-            if(item.src.equals(""))
-                viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos)
-            else
-                viewModel.getNews(item.src,pos)
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos))
+                if(item.src.equals(""))
+                    viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos)
+                else
+                    viewModel.getNews(item.src,pos)
         }
         // live streaming
         else if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
@@ -885,6 +904,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
             layout?.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
             layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
+            layout?.setOnClickListener { WidgetCodButton.openCod(this,pref) }
         }
         // MESSAGE
         else if(widget_type == Constant.WIDGET_MESSAGE){

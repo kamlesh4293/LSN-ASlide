@@ -14,7 +14,6 @@ class MySharePrefernce(ctx: Context) {
     companion object{
         const val MY_PREFERNCE_NAME = "my_preference"
 
-        const val KEY_JSON_DATA = "json_data"
         const val KEY_VERSION_API_VERSION = "device_version"
         const val KEY_CONTENT_API_VERSION = "content_version"
 
@@ -28,6 +27,19 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_TIME_SIGNATURE = "time_signature"
         const val KEY_TIME_SIGNATURE_OVERRIDE = "time_signature_over"
         const val KEY_IDENTIFY_SIGNATURE = "identify_signature"
+
+        // local storage api response
+        const val KEY_JSON_DATA = "json_data"
+        const val KEY_DATA_EMERGENCY = "json_data_emergency"
+        const val KEY_DATA_QUOTE = "json_data_quote"
+        const val KEY_DATA_TEXT = "json_data_text"
+        const val KEY_DATA_NEWS = "json_data_news"
+
+        // local storage api response version
+        const val KEY_DATA_EMERGENCY_VERSION = "json_data_emergency_vesion"
+        const val KEY_DATA_QUOTE_VERSION = "json_data_quote_vesion"
+        const val KEY_DATA_TEXT_VERSION = "json_data_text_vesion"
+        const val KEY_DATA_NEWS_VERSION = "json_data_news_vesion"
 
     }
 

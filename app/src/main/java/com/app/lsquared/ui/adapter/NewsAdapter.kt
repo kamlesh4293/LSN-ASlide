@@ -12,11 +12,14 @@ import com.app.lsquared.R
 import com.app.lsquared.model.Item
 import com.app.lsquared.model.news_setting.News
 import com.app.lsquared.model.widget.RssItem
+import com.app.lsquared.ui.widgets.NewsListSettingData
+import com.app.lsquared.utils.FontUtil
 import org.json.JSONObject
 
-class NewsAdapter(var list: List<RssItem>,var item: Item,var ctx: Context) : RecyclerView.Adapter<NewsAdapter.NewsViewHolder>() {
+class NewsAdapter(var list: List<RssItem>,var item: Item,var ctx: Context,var setting : NewsListSettingData) : RecyclerView.Adapter<NewsAdapter.NewsViewHolder>() {
 
     var last_index = 0;
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NewsViewHolder {
         var view = LayoutInflater.from(parent.context).inflate(R.layout.item_news,parent,false)
@@ -55,9 +58,13 @@ class NewsAdapter(var list: List<RssItem>,var item: Item,var ctx: Context) : Rec
         if(position%2 ==0){
             holder.title_tv.setBackgroundColor(Color.parseColor(bg_color.toString()))
             holder.desc_tv.setBackgroundColor(Color.parseColor(bg_color.toString()))
+            FontUtil.setFonts(ctx,holder.title_tv,setting?.rowFont?.label!!)
+            FontUtil.setFonts(ctx,holder.desc_tv,setting?.rowFont?.label!!)
         }else{
             holder.title_tv.setBackgroundColor(Color.parseColor(bg_alt_color.toString()))
             holder.desc_tv.setBackgroundColor(Color.parseColor(bg_alt_color.toString()))
+            FontUtil.setFonts(ctx,holder.title_tv,setting?.altRowFont?.label!!)
+            FontUtil.setFonts(ctx,holder.desc_tv,setting?.altRowFont?.label!!)
         }
 
     }

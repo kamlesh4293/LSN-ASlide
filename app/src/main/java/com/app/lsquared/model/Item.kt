@@ -35,7 +35,7 @@ data class Item (
 data class ItemContent (
 
     @SerializedName("id"           ) var id           : String? = null,
-    @SerializedName("fileName"     ) var fileName     : String? = null,
+    @SerializedName("fileName"     ) var fileName     : String = "",
     @SerializedName("src"          ) var src          : String? = null,
     @SerializedName("filesize"     ) var filesize     : Int?    = null,
     @SerializedName("downloadable" ) var downloadable : String? = null,

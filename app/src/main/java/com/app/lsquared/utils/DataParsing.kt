@@ -27,6 +27,47 @@ class DataParsing @Inject constructor(
     private val prefernce: MySharePrefernce?
 ) {
 
+    // get device
+    fun getDevice(): Device? {
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            return data_obj.device[0]
+        }
+        return null
+    }
+
+    // get response object
+    fun getContent(): ResponseJsonData? {
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            return data_obj
+        }
+        return null
+    }
+
+
+    // check frames available
+    fun isFrameAvailable(): Boolean{
+        var data_obj = getContent()
+        if(data_obj!=null){
+            if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
+                if (data_obj.device[0].screenshotUploadInterval != 0){
+                    var ss_interval = if(data_obj.device[0].screenshotUploadInterval!=0)data_obj.device[0].screenshotUploadInterval else 300
+                    prefernce?.putIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL,ss_interval)
+                }
+                if (data_obj.device[0].wcoditime != 0){
+                    var cod_ideal_time = if(data_obj.device[0].wcoditime!=null)data_obj.device[0].wcoditime else 0
+                    prefernce?.putIntData(MySharePrefernce.KEY_COD_IDEAL_TIME,cod_ideal_time)
+                }
+                return true
+            }
+        }
+        return false
+    }
+
+
     // get downloadble list
     fun getDownloableList(): List<Downloadable>{
         var list = mutableListOf<Downloadable>()
@@ -73,39 +114,22 @@ class DataParsing @Inject constructor(
         return ""
     }
 
-    // get device
-    fun getDevice(): Device? {
-        var data = prefernce?.getContentData()
-        if(data!=null && !data.equals("")){
-            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-            return data_obj.device[0]
-        }
-        return null
+
+    // check identify request
+    fun isIdentityRequest():Boolean{
+        if(getDevice()!=null)
+            return if(!getDevice()?.identify!!.equals("true")) true else false
+        else
+            return false
     }
 
+    // identify duration
+    fun getIdentifyRequestDuration(): Int{
+        return if(getDevice()!=null) getDevice()?.identifyDuration!! else return 60
+    }
 
-    companion object{
+     companion object{
 
-
-        // check identify requesr
-        fun isIdentifyRequestAvailable(prefernce: MySharePrefernce?): Boolean{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                return if (!data_obj.device[0].identify.equals("true")) true else false
-            }
-            return false
-        }
-
-        // identify duration
-        fun getIdentifyRequestDuration(prefernce: MySharePrefernce?): Int{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                return data_obj.device[0].identifyDuration
-            }
-            return 60
-        }
 
         // check watermark available
         fun isWatermarkAvailable(prefernce: MySharePrefernce?): Boolean{
@@ -160,27 +184,6 @@ class DataParsing @Inject constructor(
             return "#000000"
         }
 
-        // check frames available
-        fun isFrameAvailable(prefernce: MySharePrefernce?): Boolean{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout!=null && data_obj.layout.size>0 && data_obj.layout.get(0).frame!=null && data_obj.layout.get(0).frame.size>0 ){
-
-                    if (data_obj.device[0].screenshotUploadInterval != 0){
-                        var ss_interval = if(data_obj.device[0].screenshotUploadInterval!=0)data_obj.device[0].screenshotUploadInterval else 300
-                        prefernce?.putIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL,ss_interval)
-                    }
-                    if (data_obj.device[0].wcoditime != 0){
-                        var cod_ideal_time = if(data_obj.device[0].wcoditime!=null)data_obj.device[0].wcoditime else 0
-                        prefernce?.putIntData(MySharePrefernce.KEY_COD_IDEAL_TIME,cod_ideal_time)
-                    }
-
-                    return true
-                }
-            }
-            return false
-        }
 
         // check frames available
         fun isOverrideAvailable(prefernce: MySharePrefernce?): Boolean{
@@ -651,7 +654,29 @@ class DataParsing @Inject constructor(
             }
             return false
         }
-    }
+
+        // check identify requesr
+        fun isIdentifyRequestAvailable(prefernce: MySharePrefernce?): Boolean{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                return if (!data_obj.device[0].identify.equals("true")) true else false
+            }
+            return false
+        }
+
+        // identify duration
+        fun getIdentifyRequestDuration(prefernce: MySharePrefernce?): Int{
+            var data = prefernce?.getContentData()
+            if(data!=null && !data.equals("")){
+                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+                return data_obj.device[0].identifyDuration
+            }
+            return 60
+        }
+
+
+        }
 
 
 }

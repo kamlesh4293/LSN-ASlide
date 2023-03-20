@@ -32,6 +32,10 @@ class UiUtils {
             return "$opacity$color_code"
         }
 
+        fun getColor(color: String): Int {
+            return Color.parseColor(color)
+        }
+
         fun getRoundedFilled(color: String): Drawable {
             return DrawableBuilder()
                 .rectangle()

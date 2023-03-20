@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.app.lsquared.R
 import com.app.lsquared.model.Item
+import com.app.lsquared.ui.UiUtils
 import com.app.lsquared.utils.FontUtil
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -28,7 +29,7 @@ class WidgetText {
 
             // setting
             var settings = Gson().fromJson(item.settings,TextStaticWidgetSetting::class.java)
-            layout.setBackgroundColor(Color.parseColor(settings.bg))
+            layout.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings.bg?:"#000000",settings.bga.toString())))
             textview.textSize = settings.size!!.toFloat()
             textview.setTextColor(Color.parseColor(settings.titleText))
             FontUtil.setFonts(ctx,textview,settings.font?.label!!)

@@ -180,14 +180,16 @@ class ImageUtil {
         }
 
         fun loadLocalImage(fileName:String,imageView: ImageView){
-            imageView.visibility = View.VISIBLE
-            val options = BitmapFactory.Options()
-            options.inSampleSize = 1
-            options.inPreferredConfig = Bitmap.Config.ARGB_8888
-            options.inJustDecodeBounds = false
+            if(!fileName.equals("")){
+                imageView.visibility = View.VISIBLE
+                val options = BitmapFactory.Options()
+                options.inSampleSize = 1
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888
+                options.inJustDecodeBounds = false
 
-            val path = DataManager.getDirectory()+ File.separator+fileName
-            imageView.setImageBitmap(BitmapFactory.decodeFile(path,options))
+                val path = DataManager.getDirectory()+ File.separator+fileName
+                imageView.setImageBitmap(BitmapFactory.decodeFile(path,options))
+            }
         }
 
 

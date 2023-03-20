@@ -26,10 +26,6 @@ class ImageWidget {
             var image = ImageView(ctx)
             val params = RelativeLayout.LayoutParams(width,height)
             image.layoutParams = params
-//            val options = BitmapFactory.Options()
-//            options.inSampleSize = 1
-//            options.inPreferredConfig = Bitmap.Config.ARGB_8888
-//            options.inJustDecodeBounds = false
 
             val path = DataManager.getDirectory()+ File.separator+fileName
             if(Utility.isFileCompleteDownloaded(fileName,filesize)){
