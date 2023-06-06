@@ -3,6 +3,7 @@ package com.app.lsquared.utils;
 import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class StringToByteArray {
@@ -49,6 +50,17 @@ public class StringToByteArray {
         }
         Log.d("TAG", "hexToByteArray: "+ Arrays.toString(bytes));
         return bytes;
+    }
+
+    public static byte[] hexStringToByteArray2(){
+        byte[] values = new byte[6];
+        values[0] = (byte) 170;
+        values[1] = 17;
+        values[2] = (byte) 254;
+        values[3] = 1;
+        values[4] = 0;
+        values[5] = 16;
+        return values;
     }
 
 }

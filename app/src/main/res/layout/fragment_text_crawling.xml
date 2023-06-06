@@ -2,23 +2,52 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:orientation="vertical"
     android:id="@+id/ll_text_main"
+    android:orientation="vertical"
     android:layout_height="match_parent">
 
+    <RelativeLayout
+        android:visibility="gone"
+        android:id="@+id/rl_parent_rv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_text_crawling"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <LinearLayout
+            android:id="@+id/ll_rv_over"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+
     <TextView
-        android:singleLine="true"
-        android:ellipsize="marquee"
-        android:marqueeRepeatLimit ="marquee_forever"
-        android:focusable="true"
+        android:visibility="gone"
         android:textColor="@color/white"
-        android:focusableInTouchMode="true"
-        android:scrollHorizontally="true"
+        android:id="@+id/tv_text_crawling_vetical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:lineSpacingExtra="20dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/tv_text_crawling"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="10dp"
-        android:visibility="gone"
+        android:layout_alignParentRight="true"
+        android:singleLine="true"
+        android:ellipsize="marquee"
         android:gravity="center"
-        android:id="@+id/tv_text_crawling"/>
+        android:fadingEdge="horizontal"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"/>
 
 </LinearLayout>

@@ -2,6 +2,8 @@ package com.app.lsquared.utils
 
 import android.util.Log
 import com.app.lsquared.model.Downloadable
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.FileWriter
 
@@ -101,9 +103,29 @@ class DataManager {
             }
         }
 
+        // download content confirmation data
+        fun getContentConfirmationData(downloads_list: List<Downloadable>): JSONObject {
+            var data_obj = JSONObject()
+            var array = JSONArray()
+            var time = DateTimeUtil.createTimeForContentConfirmationUTC()
+            if (downloads_list!=null && downloads_list.size>0){
+                for (item in downloads_list){
+                    var id = item.id.split("-")
+                    if(id.size>1){
+                        var obj = JSONObject()
+                        obj.put("ctime",time)
+                        obj.put("id",id[2].toInt())
+                        obj.put("label",item.name)
+                        obj.put("type",item.type)
+                        array.put(obj)
+                    }
+                }
+                data_obj.put("items",array)
+            }
+            return data_obj
+        }
+
 
     }
-
-
 
 }

@@ -6,6 +6,28 @@
     android:id="@+id/ll_main_rss"
     android:layout_height="match_parent">
 
+    <RelativeLayout
+        android:visibility="gone"
+        android:id="@+id/rl_parent_newsrv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_news_crawling"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <LinearLayout
+            android:id="@+id/ll_rv_newsover"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+
     <TextView
         android:visibility="gone"
         android:textStyle="bold"
@@ -21,6 +43,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+
     <TextView
         android:id="@+id/tv_rss_fragment_crawl"
         android:singleLine="true"
@@ -35,7 +58,6 @@
         android:padding="10dp"
         android:visibility="gone"
         android:gravity="center"/>
-
 
 
 </LinearLayout>

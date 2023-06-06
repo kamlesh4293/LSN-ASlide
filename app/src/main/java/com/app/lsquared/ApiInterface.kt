@@ -7,6 +7,7 @@ import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Url
 
 interface ApiInterface {
@@ -30,6 +31,10 @@ interface ApiInterface {
     // 5. Identify acknowlegde
     @GET
     fun getIdentifyAcknowledge(@Url url:String) : Call<ResponseBody>
+
+    // 5. relaunch acknowlegde
+    @GET
+    fun getRelaunchAcknowledge(@Url url:String) : Call<ResponseBody>
 
 
     companion object {

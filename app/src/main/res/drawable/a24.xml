@@ -5,15 +5,19 @@
     android:viewportHeight="48">
   <path
       android:pathData="M0,0h48v48h-48z"
-      android:fillColor="#385CE0"/>
-  <path
-      android:pathData="M8.9,11l5.8,-8.7l5.5,9.2l-5.6,8.8z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
-  <path
-      android:pathData="M23,32.1l8.1,-13.5l8,13.5l-8.1,13.6z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
+      android:fillColor="@color/transparent"/>
+
+  <group android:name="stroke_g1">
+    <path
+        android:pathData="M8.9,11l5.8,-8.7l5.5,9.2l-5.6,8.8z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+    <path
+        android:pathData="M23,32.1l8.1,-13.5l8,13.5l-8.1,13.6z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+  </group>
+
 </vector>

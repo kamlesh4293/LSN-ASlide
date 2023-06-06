@@ -27,6 +27,9 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_TIME_SIGNATURE = "time_signature"
         const val KEY_TIME_SIGNATURE_OVERRIDE = "time_signature_over"
         const val KEY_IDENTIFY_SIGNATURE = "identify_signature"
+        const val KEY_FEED_RESTRICTION = "feed_restriction"
+        const val KEY_RELAUNCH_ONDEMAND = "relaunch_ondemand"
+        const val KEY_ODSS_ACTIVE = "odss_active"
 
         // local storage api response
         const val KEY_JSON_DATA = "json_data"
@@ -34,12 +37,16 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_DATA_QUOTE = "json_data_quote"
         const val KEY_DATA_TEXT = "json_data_text"
         const val KEY_DATA_NEWS = "json_data_news"
+        const val KEY_DATA_STOCK = "json_data_stock"
+        const val KEY_DATA_RSS = "json_data_rss"
 
         // local storage api response version
         const val KEY_DATA_EMERGENCY_VERSION = "json_data_emergency_vesion"
         const val KEY_DATA_QUOTE_VERSION = "json_data_quote_vesion"
         const val KEY_DATA_TEXT_VERSION = "json_data_text_vesion"
         const val KEY_DATA_NEWS_VERSION = "json_data_news_vesion"
+        const val KEY_DATA_RSS_VERSION = "json_data_rss_vesion"
+        const val KEY_DATA_STOCK_VERSION = "json_data_rss_vesion"
 
     }
 
@@ -174,12 +181,24 @@ class MySharePrefernce(ctx: Context) {
     }
 
     fun setLocalStorage(response: String) {
+        Log.d("TAG", "setLocalStorage: store - $response")
         if (response != null && !response.equals("")) {
-            var data_obj = Gson().fromJson(response, ResponseJsonData::class.java)
-            if(data_obj.device[0] != null){
-                putVersionFromContentAPI(data_obj.device[0].version)
-                setContentData(response)
+            try {
+                var data_obj = Gson().fromJson(response, ResponseJsonData::class.java)
+                Log.d("TAG", "setLocalStorage: store data1 - ${data_obj.device[0].version}")
+                if(data_obj.device[0] != null){
+                    Log.d("TAG", "setLocalStorage: store data2 - $response")
+                    setContentData(response)
+                    var data = getContentData()
+                    Log.d("TAG", "setLocalStorage: store data2 - $data")
+                    putVersionFromContentAPI(data_obj.device[0].version)
+                    putStringData(KEY_FEED_RESTRICTION,data_obj.device[0].feedRestriction)
+                    putStringData(KEY_RELAUNCH_ONDEMAND,data_obj.device[0].relaunchRequestedOn)
+                }
+            }catch (ex:Exception){
+                Log.d("TAG", "setLocalStorage: exception $ex")
             }
+
         }
     }
 

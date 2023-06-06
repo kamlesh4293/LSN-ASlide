@@ -130,6 +130,7 @@ class FontUtil {
         const val FONT_Trebuchet_MS = "Trebuchet MS"
         const val FONT_TwoDots = "TwoDots"
         const val FONT_Verdana = "Verdana"
+        const val FONT_Dogica_Pixel = "Dogica-Pixel"
 
 
         fun setFonts(ctx:Context, textView: TextView, font_label:String){
@@ -334,6 +335,8 @@ class FontUtil {
                     typeface = ctx.getResources().getFont(com.app.lsquared.R.font.neutrafacetext_book)
                 else if(font_label.equals(FONT_Neutraface_Text_Alt))
                     typeface = ctx.getResources().getFont(com.app.lsquared.R.font.neutratext_bookalt)
+                else if(font_label.equals(FONT_Dogica_Pixel))
+                    typeface = ctx.getResources().getFont(com.app.lsquared.R.font.dogica_pixel)
 
                 textView.setTypeface(typeface)
             }else{

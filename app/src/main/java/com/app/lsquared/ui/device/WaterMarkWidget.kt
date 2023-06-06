@@ -41,6 +41,8 @@ class WaterMarkWidget {
             binding.ivMainWatermark.visibility = View.VISIBLE
             binding.ivMainWatermark.setImageBitmap(BitmapFactory.decodeFile(path,ImageUtil.getImageOption()))
             layout.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity( watermark.bg!!,watermark.bga!!)))
+
+            layout.setOnClickListener {  }
         }
 
     }

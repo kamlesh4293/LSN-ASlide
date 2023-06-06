@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:orientation="horizontal"
-    android:background="@color/color_grey"
     android:gravity="center"
-    android:id="@+id/ll_main_weat4_h"
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:background="@drawable/bg_rounded_white"
-        android:layout_width="0dp"
-        android:layout_weight="4"
+        android:id="@+id/ll_waether4day_main_h"
+        android:background="@color/white"
+        android:layout_width="wrap_content"
+        android:layout_marginLeft="10sp"
         android:orientation="vertical"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:id="@+id/ll_main_bg"
-            android:background="@drawable/bg_rounded_filled_blue"
+            android:background="@color/bg_color_mid"
             android:layout_width="match_parent"
             android:orientation="vertical"
             android:layout_height="0dp"
-            android:layout_weight="9">
+            android:layout_weight="1">
 
             <LinearLayout
                 android:orientation="horizontal"
@@ -31,13 +31,13 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
+                    android:paddingLeft="10sp"
                     android:orientation="vertical"
                     android:layout_height="match_parent">
 
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4h_main_temp"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="35dp"
                         android:text="-7 °C"
@@ -46,7 +46,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4h_main_desc"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="25dp"
                         android:text="Plutot nuagex"
@@ -55,7 +54,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4h_main_tempminmax"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="18dp"
                         android:text="-2 °C /-2 °C"
@@ -65,8 +63,8 @@
                 </LinearLayout>
 
                 <ImageView
+                    app:srcCompat="@drawable/icw_partly_sunny"
                     android:id="@+id/iv_weat4h_main_image"
-                    android:src="@drawable/icw_partly_sunny"
                     android:layout_width="100dp"
                     android:layout_height="100dp"/>
 
@@ -75,8 +73,9 @@
             <TextView
                 android:id="@+id/tv_weat4h_main_city"
                 android:textColor="@color/white"
-                android:layout_margin="10dp"
-                android:padding="5dp"
+                android:layout_margin="10sp"
+                android:paddingHorizontal="5sp"
+                android:paddingVertical="2sp"
                 android:gravity="center_vertical"
                 android:text="Indore, IN"
                 android:background="@color/bg_color"
@@ -87,11 +86,11 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/ll_main_bottomview"
             android:gravity="center"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="2">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:gravity="center"
@@ -152,15 +151,14 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_marginHorizontal="5dp"
-        android:layout_width="0dp"
-        android:layout_weight="3"
+        android:gravity="center"
+        android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/ll_waether4day_day1_h"
-            android:background="@drawable/bg_rounded_white_bor_blue"
+            android:background="@color/white"
             android:layout_marginHorizontal="5dp"
             android:layout_width="match_parent"
             android:layout_weight="1"
@@ -169,7 +167,7 @@
             android:layout_height="0dp">
 
             <LinearLayout
-                android:padding="10dp"
+                android:padding="5sp"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="4">
@@ -185,7 +183,7 @@
                         android:id="@+id/tv_weat4h_day1_minmax"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
-                        android:text="-7 °C / -7 °C"
+                        android:text="-7°C/-7°C"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"/>
 
@@ -214,17 +212,16 @@
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
                 android:layout_margin="2dp"
-                android:background="@drawable/bg_bot_rounded_filled_grey"
+                android:background="@color/color_bluegrey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"/>
 
         </LinearLayout>
 
-
         <LinearLayout
             android:id="@+id/ll_waether4day_day3_h"
-            android:background="@drawable/bg_rounded_white_bor_blue"
+            android:background="@color/white"
             android:layout_marginHorizontal="5dp"
             android:layout_width="match_parent"
             android:layout_weight="1"
@@ -233,7 +230,7 @@
             android:layout_height="0dp">
 
             <LinearLayout
-                android:padding="10dp"
+                android:padding="5sp"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="4">
@@ -249,7 +246,7 @@
                         android:id="@+id/tv_weat4h_day3_minmax"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
-                        android:text="-7 °C / -7 °C"
+                        android:text="-7°C/-7°C"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"/>
 
@@ -268,7 +265,6 @@
                     android:layout_width="70dp"
                     android:layout_height="70dp"/>
 
-
             </LinearLayout>
 
             <TextView
@@ -278,29 +274,24 @@
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
                 android:layout_margin="2dp"
-                android:background="@drawable/bg_bot_rounded_filled_grey"
+                android:background="@color/color_bluegrey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"/>
 
         </LinearLayout>
 
-
-
-
-
     </LinearLayout>
 
     <LinearLayout
-        android:layout_marginHorizontal="5dp"
-        android:layout_width="0dp"
-        android:layout_weight="3"
+        android:gravity="center"
+        android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/ll_waether4day_day2_h"
-            android:background="@drawable/bg_rounded_white_bor_blue"
+            android:background="@color/white"
             android:layout_marginHorizontal="5dp"
             android:layout_width="match_parent"
             android:layout_weight="1"
@@ -309,7 +300,7 @@
             android:layout_height="0dp">
 
             <LinearLayout
-                android:padding="10dp"
+                android:padding="5sp"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="4">
@@ -325,7 +316,7 @@
                         android:id="@+id/tv_weat4h_day2_minmax"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
-                        android:text="-7 °C / -7 °C"
+                        android:text="-7°C/-7°C"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"/>
 
@@ -354,7 +345,7 @@
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
                 android:layout_margin="2dp"
-                android:background="@drawable/bg_bot_rounded_filled_grey"
+                android:background="@color/color_bluegrey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"/>
@@ -364,7 +355,7 @@
 
         <LinearLayout
             android:id="@+id/ll_waether4day_day4_h"
-            android:background="@drawable/bg_rounded_white_bor_blue"
+            android:background="@color/white"
             android:layout_marginHorizontal="5dp"
             android:layout_width="match_parent"
             android:layout_weight="1"
@@ -373,7 +364,7 @@
             android:layout_height="0dp">
 
             <LinearLayout
-                android:padding="10dp"
+                android:padding="5sp"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="4">
@@ -389,7 +380,7 @@
                         android:id="@+id/tv_weat4h_day4_minmax"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
-                        android:text="-7 °C / -7 °C"
+                        android:text="-7°C/-7°C"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"/>
 
@@ -418,7 +409,7 @@
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
                 android:layout_margin="2dp"
-                android:background="@drawable/bg_bot_rounded_filled_grey"
+                android:background="@color/color_bluegrey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"/>

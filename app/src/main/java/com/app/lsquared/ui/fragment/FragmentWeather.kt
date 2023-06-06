@@ -45,7 +45,6 @@ class FragmentWeather(var item: Item) : Fragment() {
         var forecast = item.forecast
 
         // get Weather Data From API
-        viewModel.getWeather(item,forecast,lang)
 
         if(forecast == Constant.TEMPLATE_WEATHER_CURRENT_DATE){
             if(template.equals(Constant.TEMPLATE_TIME_T1))
@@ -76,29 +75,6 @@ class FragmentWeather(var item: Item) : Fragment() {
     }
 
     private fun initObserver(forecast: Int, orientation: String, template: String) {
-        viewModel.weather_api_result.observe(requireActivity(), Observer {
-            response ->
-            if(response.status == Status.SUCCESS){
-
-                // current date
-                if(forecast == Constant.TEMPLATE_WEATHER_CURRENT_DATE){
-                    if(template.equals(Constant.TEMPLATE_TIME_T1)) setCurrentTemplate1(response)
-                    if(template.equals(Constant.TEMPLATE_TIME_T2)) setCurrentTemplate2(response)
-                    if(template.equals(Constant.TEMPLATE_TIME_T3)) setCurrentTemplate3(response)
-                }
-
-                // 4 day data
-                if(forecast == Constant.TEMPLATE_WEATHER_FOUR_DAY){
-                    if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL)) setData4v(response)
-                    else setData4h(response)
-                }
-                // 5 day data
-                if(forecast == Constant.TEMPLATE_WEATHER_FIVE_DAY){
-                    if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL)) setData5v(response)
-                    else setData5h(response)
-                }
-            }
-        })
     }
 
     private fun setCurrentTemplate1(response: ApiResponse?) {

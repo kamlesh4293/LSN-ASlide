@@ -1,7 +1,5 @@
 package com.app.lsquared.utils
 
-import com.app.lsquared.model.Frame
-
 class DimensionUtils {
 
     companion object{
@@ -36,6 +34,10 @@ class DimensionUtils {
 
         fun getMediumSize(hight: Int): Int{
             return hight/9
+        }
+
+        fun getMediumSize2(hight: Int, frameW: Int): Int{
+            return hight/20
         }
 
         fun getMainImageSize(hight: Int): Int{

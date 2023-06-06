@@ -12,7 +12,6 @@ import com.app.lsquared.model.Content
 import com.app.lsquared.utils.*
 import java.io.File
 
-
 class CODHoriContentAdapter(
     var list: MutableList<Content>,
     var item_cat:Cat,

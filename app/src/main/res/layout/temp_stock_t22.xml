@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ll_stocktemp2_bg"
+    android:layout_width="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/ll_stocktemp2_symbol"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_gravity="left"
+            android:id="@+id/tv_stocktemp2_symbol"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="ARTI"
+            android:textColor="@color/white"
+            android:textSize="25dp" />
+
+
+        <TextView
+            android:layout_gravity="right"
+            android:id="@+id/tv_stocktemp2_changes"
+            android:layout_width="0dp"
+            android:gravity="right"
+            android:layout_weight="1"
+            android:text="2.45"
+            android:textSize="25dp"
+            android:textColor="@color/red"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_stocktemp2_price"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="435.34"
+        android:textColor="@color/white"
+        android:textSize="50dp" />
+
+    <LinearLayout
+        android:layout_gravity="center"
+        android:id="@+id/ll_stocktemp2_high"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_gravity="left"
+            android:id="@+id/tv_stocktemp2_hi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="High" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_gravity="right"
+            android:id="@+id/tv_stocktemp2_hivalue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_stocktemp2_low"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_gravity="left"
+            android:id="@+id/tv_stocktemp2_low"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Low" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_gravity="right"
+            android:id="@+id/tv_stocktemp2_lowvalue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+
+    </LinearLayout>
+
+
+</LinearLayout>

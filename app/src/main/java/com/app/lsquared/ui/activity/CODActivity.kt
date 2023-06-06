@@ -1,9 +1,11 @@
 package com.app.lsquared.ui.activity
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.*
 import android.util.Log
 import android.view.View
@@ -11,18 +13,24 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager.widget.ViewPager
+import com.app.lsquared.R
 import com.app.lsquared.databinding.ActivityCodBinding
 import com.app.lsquared.model.CodItem
+import com.app.lsquared.model.ResponseCheckDeviceData
+import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
+import com.app.lsquared.ui.DialogView
 import com.app.lsquared.ui.MainActivity
 import com.app.lsquared.ui.MainViewModel
 import com.app.lsquared.ui.adapter.CODViewPagerAdapter
 import com.app.lsquared.ui.adapter.CodTabAdapter
 import com.app.lsquared.ui.fragment.FragmentPager
 import com.app.lsquared.utils.*
+import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_cod.view.*
 import kotlinx.coroutines.Job
@@ -34,6 +42,12 @@ class CODActivity : AppCompatActivity() {
     private lateinit var binding : ActivityCodBinding
     private lateinit var viewModel: MainViewModel
     var job: Job? = null
+
+    lateinit var checkVersionHandler: Handler
+    lateinit var od_screenshot_handler: Handler
+
+    @Inject
+    lateinit var dataParsing: DataParsing
 
     @Inject
     lateinit var myPerf: MySharePrefernce
@@ -49,13 +63,89 @@ class CODActivity : AppCompatActivity() {
     var screenshot_handler: Handler = Handler()
     var screenshot_runnable: Runnable? = null
 
+
+    private val versionTask = object : Runnable {
+        override fun run() {
+            checkDeviceVersion()
+            checkVersionHandler.postDelayed(this, viewModel.delay.toLong())
+        }
+    }
+
+    private val odssTask = object : Runnable {
+        override fun run() {
+            checkDemandScreenShot()
+            od_screenshot_handler.postDelayed(this, 10* 1000.toLong())
+        }
+    }
+
+
+    private fun checkDeviceVersion() {
+        Log.d("TAG", "checkDeviceVersion: from cod")
+        if(packageManager.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,getPackageName())== PackageManager.PERMISSION_GRANTED)
+            if(isConnected) viewModel.isDeviceRegistered(this,DeviceInfo.getDeviceId(this,myPerf))
+    }
+
+    private fun checkDemandScreenShot() {
+        if(myPerf.getBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE)){
+            captureScreen()
+        }else{
+            od_screenshot_handler.removeCallbacks(odssTask)
+        }
+    }
+
+    private fun captureScreen() {
+        val file = ImageUtil.screenshot(binding.consCodRoot,"Screen_final_"+Utility.getCurrentdate())
+        if(file!=null)
+            viewModel.submitScreenShot(
+                Utility.getScreenshotJson(DeviceInfo.getDeviceId(this,myPerf),Utility.getFileToByte(file?.absolutePath),Constant.SS_TYPE_OD),
+                Constant.SS_TYPE_OD
+            )
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initXml()
+        initObserver()
+    }
+
+    private fun initObserver() {
+        // device registred observer
+        viewModel.device_register_api_result.observe(this, Observer { response ->
+            if (response.status == Status.SUCCESS) {
+                var device_obj = Gson().fromJson(response.data, ResponseCheckDeviceData::class.java)
+                if (!device_obj.desc.equals(Constant.DEVICE_NOT_FOUND)) {
+                    var device_version = device_obj.desc.toInt()
+                    var content_version = myPerf?.getVersionOfConytentAPI()
+                    if (device_version != content_version) {
+                        Log.d("TAG", "initObserver: fetch content from cod - if")
+                        viewModel.internet = isConnected
+                        viewModel.device_id = DeviceInfo.getDeviceId(this,myPerf)
+                        viewModel.fetchContentData()
+                    }else{
+                        Log.d("TAG", "initObserver: fetch content from cod - else")
+                    }
+                }
+            }
+        })
+
+        // content result observer
+        viewModel.content_api_result.observe(this, Observer { response ->
+            if (response.status == Status.SUCCESS) {
+                Log.d("TAG", "initObserver: COD ${dataParsing.checkDemandSs()}")
+                myPerf?.setLocalStorage(response.data!!)
+                myPerf.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,dataParsing.checkDemandSs())
+            }
+        })
+
     }
 
     override fun onResume() {
         super.onResume()
+
+        checkVersionHandler.post(versionTask)
+        od_screenshot_handler.post(odssTask)
+
         initCountDownTimer()
         viewModel.internet = isConnected
         viewModel.is_device_registered = true
@@ -78,8 +168,8 @@ class CODActivity : AppCompatActivity() {
             var file = ImageUtil.screenshot(binding.consCodRoot, "Screen_final_" + Utility.getCurrentdate())
             viewModel.submitScreenShot(
                 Utility.getScreenshotJson(DeviceInfo.getDeviceId(this,myPerf),
-                    Utility.getFileToByte(file?.absolutePath)
-                )
+                    Utility.getFileToByte(file?.absolutePath),Constant.SS_TYPE_SS
+                ), Constant.SS_TYPE_SS
             )
         }.also { screenshot_runnable = it }, viewModel.screen_delay * 1000.toLong())
 
@@ -97,6 +187,8 @@ class CODActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         window.decorView.systemUiVisibility = flags
 
+        checkVersionHandler = Handler(Looper.getMainLooper())
+        od_screenshot_handler = Handler(Looper.getMainLooper())
 
         binding = ActivityCodBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -165,6 +257,8 @@ class CODActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         screenshot_handler.removeCallbacks(screenshot_runnable!!)
+        checkVersionHandler.removeCallbacks(versionTask)
+        od_screenshot_handler.removeCallbacks(odssTask)
     }
 
 

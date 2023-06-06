@@ -3,17 +3,24 @@
     android:height="25dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
+
+
+  <group android:name="stroke_fill_g3">
+    <path
+        android:pathData="M20,12.4c3.1,6.7 -1.5,10.8 -5.4,10.8S6,19.8 9.2,12.4c2.5,-5.8 5.4,-10.1 5.4,-10.1S17.5,7 20,12.4z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#385CE0"/>
+    <path
+        android:pathData="M39.1,32.6c3.9,8.6 -1.9,13.8 -7,13.8s-11,-4.3 -6.8,-13.8c3.3,-7.4 6.9,-13 6.9,-13S35.9,25.7 39.1,32.6z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#385CE0"/>
+
+  </group>
+
+
   <path
       android:pathData="M0,0h48v48h-48z"
-      android:fillColor="#ffffff"/>
-  <path
-      android:pathData="M20,12.4c3.1,6.7 -1.5,10.8 -5.4,10.8S6,19.8 9.2,12.4c2.5,-5.8 5.4,-10.1 5.4,-10.1S17.5,7 20,12.4z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#385CE0"/>
-  <path
-      android:pathData="M39.1,32.6c3.9,8.6 -1.9,13.8 -7,13.8s-11,-4.3 -6.8,-13.8c3.3,-7.4 6.9,-13 6.9,-13S35.9,25.7 39.1,32.6z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#385CE0"/>
+      android:fillColor="@color/transparent"/>
 </vector>

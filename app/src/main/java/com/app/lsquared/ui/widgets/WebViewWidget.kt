@@ -16,6 +16,7 @@ class WebViewWidget {
             web.setWebChromeClient(WebChromeClient())
             web.settings.javaScriptEnabled = true
             web.settings.useWideViewPort = true
+            web.setVerticalScrollBarEnabled(true)
             try {
                 Log.d("TAG", "getWebViewWidget: src - $src")
                 web.loadUrl(src)
@@ -62,6 +63,7 @@ class WebViewWidget {
             web.setWebChromeClient(WebChromeClient())
             web.getSettings().setJavaScriptEnabled(true)
             web.loadData(src, "text/html", null);
+
             return web
         }
 

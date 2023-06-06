@@ -5,37 +5,54 @@
     android:viewportHeight="48">
   <path
       android:pathData="M0,0h48v48h-48z"
-      android:fillColor="#385CE0"/>
-  <path
-      android:pathData="M2.4,28c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
-  <path
-      android:pathData="M2.7,35.4c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
-  <path
-      android:pathData="M2.7,43.2c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
-  <path
-      android:pathData="M17.6,20.9a8,7.8 0,1 0,16 0a8,7.8 0,1 0,-16 0z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
-  <path
-      android:pathData="M24.2,1.5h2.5v7.6h-2.5z"
-      android:fillColor="#FFFFFF"/>
-  <path
-      android:pathData="M37.9,20.9h7.8v2.5h-7.8z"
-      android:fillColor="#FFFFFF"/>
-  <path
-      android:pathData="M40.594,6.641l1.614,1.909l-5.957,5.036l-1.614,-1.909z"
-      android:fillColor="#FFFFFF"/>
-  <path
-      android:pathData="M10.8,8.1l1.8,-1.7l5.5,5.4l-1.8,1.7z"
-      android:fillColor="#FFFFFF"/>
+      android:fillColor="@color/transparent"/>
+
+  <group android:name="fill_g1">
+    <path
+        android:name="fill1"
+        android:pathData="M24.2,1.5h2.5v7.6h-2.5z"
+        android:fillColor="#FFFFFF"/>
+    <path
+        android:name="fill2"
+        android:pathData="M37.9,20.9h7.8v2.5h-7.8z"
+        android:fillColor="#FFFFFF"/>
+    <path
+        android:name="fill3"
+        android:pathData="M40.594,6.641l1.614,1.909l-5.957,5.036l-1.614,-1.909z"
+        android:fillColor="#FFFFFF"/>
+    <path
+        android:name="fill4"
+        android:pathData="M10.8,8.1l1.8,-1.7l5.5,5.4l-1.8,1.7z"
+        android:fillColor="#FFFFFF"/>
+
+  </group>
+
+  <group android:name="stroke_g1">
+    <path
+        android:name="stroke1"
+        android:pathData="M2.4,28c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+    <path
+        android:name="stroke2"
+        android:pathData="M2.7,35.4c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+    <path
+        android:name="stroke3"
+        android:pathData="M2.7,43.2c4,-1.1 12.6,-4.1 19.2,-0.1c2.4,1.4 15.9,6.9 20.7,-0.1"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+    <path
+        android:name="stroke4"
+        android:pathData="M17.6,20.9a8,7.8 0,1 0,16 0a8,7.8 0,1 0,-16 0z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+
+  </group>
+
 </vector>

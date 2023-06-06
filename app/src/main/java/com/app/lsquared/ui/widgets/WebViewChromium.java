@@ -2,6 +2,8 @@ package com.app.lsquared.ui.widgets;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -10,17 +12,45 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.LinearLayout;
 
 import androidx.annotation.RequiresApi;
+
+import com.app.lsquared.model.cod.Settings;
+import com.app.lsquared.ui.UiUtils;
+import com.app.lsquared.utils.DataParsing;
+import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class WebViewChromium {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static WebView getWebChromeWidget(Context ctx,String src){
+    public static LinearLayout getWebChromeWidget(Context ctx, String src, GradientDrawable shape,String settings){
+
+        LinearLayout layout = new LinearLayout(ctx);
+
+        try {
+            JSONObject obj = new JSONObject(settings);
+            int x = obj.getInt("x");
+            int y = obj.getInt("y");
+            layout.setX(-1*x);
+            layout.setY(-1*y);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         WebView webView = new WebView(ctx);
         setUpWebViewDefaults(webView);
         webView.loadUrl(src);
+
+        Log.d("TAG", "getWebChromeWidget: loading 1");
+
+        webView.setBackgroundColor(0);
+        webView.getSettings().setUseWideViewPort(true);
+        webView.setBackground(shape);
+        webView.setVerticalScrollBarEnabled(true);
 
         webView.setWebChromeClient(new WebChromeClient() {
 
@@ -41,7 +71,8 @@ public class WebViewChromium {
             }
 
         });
-        return webView;
+        layout.addView(webView);
+        return layout;
     }
 
 

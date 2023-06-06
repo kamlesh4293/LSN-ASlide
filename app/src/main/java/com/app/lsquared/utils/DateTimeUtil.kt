@@ -32,6 +32,11 @@ class DateTimeUtil {
             return f.format(Date())
         }
 
+        fun getShortDayName():String{
+            var f = SimpleDateFormat("EEE")
+            return f.format(Date())
+        }
+
         fun getTime():String{
             val cal = Calendar.getInstance()
             val month_date = SimpleDateFormat("HH:mm")
@@ -42,6 +47,16 @@ class DateTimeUtil {
             val cal = Calendar.getInstance()
             val month_date = SimpleDateFormat("HH")
             return month_date.format(cal.time)
+        }
+
+        fun getHour(format:String):String{
+            val cal = Calendar.getInstance()
+            val month_date = SimpleDateFormat("HH")
+            var hours = month_date.format(cal.time).toInt()
+            if(format.equals("12")) {
+                hours = if(hours>12) hours-12 else hours
+            }
+            return if(hours<0) "${hours*-1}" else "$hours"
         }
 
         fun getMinutes():String{
@@ -78,6 +93,35 @@ class DateTimeUtil {
             return date
         }
 
+        fun createDateForCustomTimeForDeviceOnOff(): Date {
+            val df = SimpleDateFormat("hh:mm:ss a", Locale.US)
+            val time = df.format(Date())
+            val date = df.parse(time)
+            Log.d("TAG", "craeteDateForCustomTime: $time")
+            return date
+        }
+
+        fun createDateForCustomTimeForDeviceOnOffString(): String {
+            val df = SimpleDateFormat("HH:mm:ss", Locale.US)
+            val time = df.format(Date())
+            Log.d("TAG", "createDateForCustomTimeForDeviceOnOffString: $time")
+            return time.substring(0,5)
+        }
+
+        fun createTimeForContentConfirmation(): String {
+            val df = SimpleDateFormat("yyyy/MM/dd hh:mm:ss", Locale.US)
+            val time = df.format(Date())
+            return time
+        }
+
+        fun createTimeForContentConfirmationUTC(): String {
+//            val df = SimpleDateFormat("yyyy/MM/dd hh:mm:ss", Locale.US)
+//            df.setTimeZone(TimeZone.getTimeZone("UTC"))
+            val df = SimpleDateFormat("yyyy/MM/dd kk:mm:ss")
+            val time = df.format(Date())
+            return time
+        }
+
         fun isValidWithTime(frame: Frame): Boolean {
             val df = SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.US)
             val start_time = df.parse(frame.st)
@@ -86,6 +130,32 @@ class DateTimeUtil {
             Log.d("TAG", "isValidWithTime current ${df.format(current_time)}")
             var check = if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
             return check
+        }
+
+        fun isValidDownloadingTime(start: String,end: String,): Boolean {
+            val df = SimpleDateFormat("HH:mm:ss", Locale.US)
+            val start_time = df.parse("$start:00")
+            val end_time = df.parse("$end:00")
+            val current_time = df.parse(df.format(Date()))
+            var check = if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
+            return check
+        }
+
+        fun isValidWithTimeForDeviceOnOff(st: String,et:String): Boolean {
+            val df = SimpleDateFormat("hh:mm:ss", Locale.US)
+            val start_time = df.parse(st)
+            val end_time = df.parse(et)
+            val current_time = createDateForCustomTimeForDeviceOnOff()
+            Log.d("TAG", "isValidWithTime current ${df.format(current_time)}")
+            var check = if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
+            return check
+        }
+
+        fun isValidDeviceOnTime(st: String,et:String): Boolean {
+            val df = SimpleDateFormat("hh:mm:ss", Locale.US)
+            val start_time = df.parse(st)
+            val current_time = createDateForCustomTimeForDeviceOnOff()
+            return true
         }
 
         fun setTimeZone(timeZone: String) {

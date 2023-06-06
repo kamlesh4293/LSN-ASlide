@@ -1,5 +1,6 @@
 package com.app.lsquared.ui
 
+import WeatherFive
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
@@ -31,12 +32,13 @@ import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.network.NetworkConnectivity
 import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
-import com.app.lsquared.ui.adapter.BeingNewsAdapter
-import com.app.lsquared.ui.adapter.NewsAdapter
 import com.app.lsquared.ui.device.WaterMarkWidget
 import com.app.lsquared.ui.viewmodel.CodViewModel
 import com.app.lsquared.ui.widgets.*
-import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAll
+import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAllFixContent
+import com.app.lsquared.usbserialconnection.ResponseStatus
+import com.app.lsquared.usbserialconnection.USBSerialConnector
+import com.app.lsquared.usbserialconnection.USBSerialListener
 import com.app.lsquared.utils.*
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.StyledPlayerView
@@ -50,10 +52,11 @@ import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-
+import kotlin.collections.ArrayList
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
+class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialListener{
 
     var TAG = "MainActivity"
 
@@ -65,6 +68,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     var items: MutableList<Item> = mutableListOf()
 
     var current_size_list : MutableList<Int> = mutableListOf()
+    var content_confirmation_list : MutableList<Downloadable> = mutableListOf()
 
     // downloading count
     var downloading = 0
@@ -77,11 +81,11 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     @Inject
     lateinit var dataParsing: DataParsing
 
-
     // view  binding
     private lateinit var binding: ActivityMainMultifameBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var vimeoViewModel: CodViewModel
+
 
     @Inject
     lateinit var vimeo_retro: Retrofit
@@ -96,10 +100,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     lateinit var checkVersionHandler: Handler
     lateinit var timeScehdulerHandler: Handler
     lateinit var screenshot_handler: Handler
+    lateinit var od_screenshot_handler: Handler
     lateinit var temp_handler: Handler
     lateinit var report_handler: Handler
 
     var time = 0
+
+    // fpg method
+    lateinit var mConnector: USBSerialConnector
 
     private val timeSchedularTask = object : Runnable {
         override fun run() {
@@ -117,13 +125,41 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             Log.d(TAG, "run: current sig - $current_signature , running sig - $running_signature")
             if(!running_signature.equals("") && !current_signature.equals("") && !running_signature.equals(current_signature)){
                 changeContent()
+            }else{
+                // check content restriction
+                checkValidDownloadable()
             }
+
             timeScehdulerHandler.postDelayed(this, viewModel.customtimedelay.toLong())
+        }
+    }
+
+    private fun checkValidDownloadable() {
+        var list = dataParsing.getDownloableList(pref)
+        if(list.size>0 && downloading==0) {
+            Log.d(TAG, "checkValidDownloadable: if")
+            changeContent()
+        }else{
+            Log.d(TAG, "checkValidDownloadable: else")
         }
     }
 
     private val versionTask = object : Runnable {
         override fun run() {
+            // device on-off
+            if(viewModel.is_device_registered){
+                var days = dataParsing.getOnOffDays()
+                if(days!=null && days.label!=null && days.st!!.contains(":") && days.et!!.contains(":") && days!!.st!!.length==8 && days.et!!.length==8){
+                    var current_time = DateTimeUtil.createDateForCustomTimeForDeviceOnOffString()
+                    var st = days!!.st!!.substring(0,5)
+                    var et = days!!.et!!.substring(0,5)
+//                    if(current_time.equals(st)) mConnector.writeAsync(UsbUtilities.getDeviceONByteArray())
+//                    if(current_time.equals(et)) mConnector.writeAsync(UsbUtilities.getDeviceOffByteArray())
+                    if(current_time.equals(st)) mConnector.writeAsync(RSUtility.hexDecimalToByteArray(dataParsing.getDeviceONCode()))
+                    if(current_time.equals(et)) mConnector.writeAsync(RSUtility.hexDecimalToByteArray(dataParsing.getDeviceOffCode()))
+                }
+            }
+
             checkDeviceVersion()
             checkVersionHandler.postDelayed(this, viewModel.delay.toLong())
         }
@@ -131,40 +167,59 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private val ssTask = object : Runnable {
         override fun run() {
-//            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
-//            if(file!=null)
-//                viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
-//            screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
-
-            // for video
-            var isVideo = DataParsing.isVideoPlaying(layout_list)
-            if(isVideo){
-                for(i in 0..layout_list.size-1){
-                    if(layout_list[i].active_widget.equals(Constant.CONTENT_VIDEO)){
-                        Log.d(TAG, "run: active widget - video")
-                        val currentPosition: Int? = layout_list[i].videoView?.getCurrentPosition() //in millisecond
-                        val pos = currentPosition?.times(1000) //unit in microsecond
-                        val bmFrame = layout_list[i].myMediaMetadataRetriever?.getFrameAtTime(pos!!.toLong())
-                        screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
-                    }else{
-                        Log.d(TAG, "run: active widget - other")
-                        val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
-//                        val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
-                        if(file!=null)
-                            screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,BitmapFactory.decodeFile(file?.absolutePath)))
-                    }
-                }
-                val file = ImageUtil.screenshot(binding.screenRootLayout,"Screen_final_"+Utility.getCurrentdate())
-                if(file!=null)
-                    viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
-                screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
-            }else{
-                val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
-                if(file!=null)
-                    viewModel.submitScreenShot(Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath)))
-                screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
-            }
+            captureScreen(Constant.SS_TYPE_SS)
+            screenshot_handler.postDelayed(this, viewModel.screen_delay* 1000.toLong())
         }
+    }
+
+    private val odssTask = object : Runnable {
+        override fun run() {
+            checkDemandScreenShot()
+            od_screenshot_handler.postDelayed(this, 10* 1000.toLong())
+        }
+    }
+
+    fun captureScreen(type:String){
+        Log.d(TAG, "captureScreen: $type")
+
+        var is_frames = dataParsing.isFrameAvailable()
+        var is_override = DataParsing.isOverrideAvailable(pref)
+        var isVideo = DataParsing.isVideoPlaying(layout_list)
+        if(!is_frames && !is_override){
+            val file = ImageUtil.screenshot(binding.mainLayout,"Screen_final_"+Utility.getCurrentdate())
+            if(file!=null)
+                viewModel.submitScreenShot(
+                    Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath),type),
+                    type
+                )
+        }else if(isVideo){
+            for(i in 0..layout_list.size-1){
+                if(layout_list[i].active_widget.equals(Constant.CONTENT_VIDEO)){
+                    val currentPosition: Int? = layout_list[i].videoView?.getCurrentPosition() //in millisecond
+                    val pos = currentPosition?.times(1000) //unit in microsecond
+                    val bmFrame = layout_list[i].myMediaMetadataRetriever?.getFrameAtTime(pos!!.toLong())
+                    screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
+                }else{
+                    val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
+                    if(file!=null)
+                        screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,BitmapFactory.decodeFile(file?.absolutePath)))
+                }
+            }
+            val file = ImageUtil.screenshot(binding.screenRootLayout,"Screen_final_"+Utility.getCurrentdate())
+            if(file!=null)
+                viewModel.submitScreenShot(
+                    Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath),type),
+                    type
+                )
+        }else{
+            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+            if(file!=null)
+                viewModel.submitScreenShot(
+                    Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath),type),
+                    type
+                )
+        }
+
     }
 
     private val tempTask = object : Runnable {
@@ -181,13 +236,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         }
     }
 
+
+
     private val broadcastreceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10
             setIdentifyRequest()
         }
     }
-
 
     override fun onStart() {
         super.onStart()
@@ -198,7 +254,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
         ctx = this
         initXml()
-        initObserver()
+        Handler(Looper.getMainLooper()).postDelayed(Runnable { initObserver() },2000)
         // broadcast reciver for temp
         val intentfilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         registerReceiver(broadcastreceiver,intentfilter)
@@ -206,6 +262,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         checkVersionHandler = Handler(Looper.getMainLooper())
         timeScehdulerHandler = Handler(Looper.getMainLooper())
         screenshot_handler = Handler(Looper.getMainLooper())
+        od_screenshot_handler = Handler(Looper.getMainLooper())
         temp_handler = Handler(Looper.getMainLooper())
         report_handler = Handler(Looper.getMainLooper())
     }
@@ -220,8 +277,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         timeScehdulerHandler.post(timeSchedularTask)
         checkVersionHandler.post(versionTask)
         screenshot_handler.post(ssTask)
+        od_screenshot_handler.post(odssTask)
         temp_handler.post(tempTask)
         report_handler.post(reportTask)
+
+        // dvice on -off
+        mConnector.setUsbSerialListener(this)
+        mConnector.init(this,9600)
+
         changeContent()
     }
 
@@ -245,7 +308,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         vimeoViewModel = ViewModelProvider(this).get(CodViewModel::class.java)
 
         setContentView(binding.root)
-//        pref = MySharePrefernce(ctx)
+
+        mConnector = USBSerialConnector.getInstance()
+
         Utility.checkAllPermissionGranted(this)
         @RequiresApi(Build.VERSION_CODES.R)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -291,7 +356,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             }
         })
 
-
         // device registred observer
         viewModel.device_register_api_result.observe(this, Observer { response ->
             if (response.status == Status.SUCCESS) {
@@ -327,6 +391,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         viewModel.content_api_result.observe(this, Observer { response ->
             if (response.status == Status.SUCCESS) {
                 try {
+                    Log.d(TAG, "initObserver: content_api_result ${response.data!!}")
                     pref?.setLocalStorage(response.data!!)
                     changeContent()
                 } catch (ex: Exception) {
@@ -334,7 +399,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 }
             }
         })
-
 
 
         // submit device info
@@ -351,6 +415,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
         // submit screenshot
         viewModel.screenshot_api_result.observe(this, Observer { response ->
+
         })
 
         // Widget API Observer
@@ -359,25 +424,27 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         viewModel.quote_api_result.observe(this, Observer {
                 response ->
             if(response.status == Status.SUCCESS){
+                if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
                 layout_list[pos].relative_layout?.removeAllViews()
                 layout_list[pos].relative_layout?.
-                addView(WidgetQuotes.getWidgetQuotes(this,item,response.data),item.frame_w,item.frame_h)
+                    addView(WidgetQuotes.getWidgetQuotes(this,item,response.data),item.frame_w,item.frame_h)
                 setQuoteRotation(pos,item)
             }
         })
 
-
         // news api
         viewModel.rss_api_result.observe(this, Observer { response ->
             if (response.status == Status.SUCCESS) {
+                if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
-
+                Log.d(TAG, "initObserver: rss ${response.data}")
                 if(item.dType.equals(Constant.CONTENT_WIDGET_NEWS_CRAWL)){
                     // crowling
                     var builder  = StringBuilder()
+                    var list_title = mutableListOf<String>()
                     if(!item.src.equals("")){
                         val inputStream: InputStream = response.data!!.byteInputStream()
                         var list = DataParsing.parse(inputStream)
@@ -385,6 +452,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                             for (i in list){
                                 builder.append(i.title)
                                 builder.append("        ")
+                                list_title.add(i.title!!)
                             }
                         }
                     }else{
@@ -393,12 +461,13 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                             for (i in being_news.news){
                                 builder.append(i.title)
                                 builder.append("        ")
+                                list_title.add(i.title!!)
                             }
                         }
                     }
                     layout_list[pos].relative_layout?.removeAllViews()
                     layout_list[pos].relative_layout?.
-                    addView(WidgetNewsCrowling.getWidgetNewsCrowling(this,item,builder.toString()),item.frame_w,item.frame_h)
+                    addView(WidgetNewsCrowling.getWidgetNewsCrowling(this,item,builder.toString(), list_title),item.frame_w,item.frame_h)
                 }else{
                     // listview
                     if(!item.src.equals("")){
@@ -406,11 +475,61 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                         val inputStream2: InputStream = response.data!!.byteInputStream()
                         var list = DataParsing.parse(inputStream)
                         var title = DataParsing.parse2(inputStream2)
-                        setAllNewsListRotation(pos,list,item,title)
+                        setAllNewsListRotationRSS(pos,list,item,title,0)
                     }else{
                         // being news
                         var being_news = Gson().fromJson(response.data,BeingNewsData::class.java)
-                        setBeingNewsListRotation(pos,being_news.news,item)
+                        setBeingNewsListRotationRSS(pos,being_news.news,item,0)
+                    }
+                }
+            }
+        })
+
+        // Rss api
+        viewModel.news_api_result.observe(this, Observer { response ->
+            if (response.status == Status.SUCCESS) {
+                if(multiframe_items.size==0) return@Observer
+                var pos = response.pos
+                var item = multiframe_items[pos].get(current_size_list[pos])
+                if(item.dType.equals(Constant.CONTENT_WIDGET_NEWS_CRAWL)){
+                    // crowling
+                    var builder  = StringBuilder()
+                    var list_title = mutableListOf<String>()
+                    if(!item.src.equals("")){
+                        val inputStream: InputStream = response.data!!.byteInputStream()
+                        var list = DataParsing.parse(inputStream)
+                        if(list!=null && list.size>0){
+                            for (i in list){
+                                builder.append(i.title)
+                                builder.append("        ")
+                                list_title.add(i.title!!)
+                            }
+                        }
+                    }else{
+                        var being_news = Gson().fromJson(response.data, BeingNewsData::class.java)
+                        if(being_news!=null && being_news.news!=null && being_news.news.size>0){
+                            for (i in being_news.news){
+                                builder.append(i.title)
+                                builder.append("        ")
+                                list_title.add(i.title!!)
+                            }
+                        }
+                    }
+                    layout_list[pos].relative_layout?.removeAllViews()
+                    layout_list[pos].relative_layout?.
+                    addView(WidgetNewsCrowling.getWidgetNewsCrowling(this,item,builder.toString(), list_title),item.frame_w,item.frame_h)
+                }else{
+                    // listview
+                    if(!item.src.equals("")){
+                        val inputStream: InputStream = response.data!!.byteInputStream()
+                        val inputStream2: InputStream = response.data!!.byteInputStream()
+                        var list = DataParsing.parse(inputStream)
+                        var title = DataParsing.parse2(inputStream2)
+                        setAllNewsListRotation(pos,list,list,item,title,0)
+                    }else{
+                        // being news
+                        var being_news = Gson().fromJson(response.data,BeingNewsData::class.java)
+                        setBeingNewsListRotation(pos,being_news.news,being_news.news,item,0)
                     }
                 }
             }
@@ -420,16 +539,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         viewModel.text_api_result.observe(this, Observer {
                 response ->
             if(response.status == Status.SUCCESS){
+                if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
                 var layout = layout_list[pos].relative_layout
                 layout?.removeAllViews()
-                Log.d(TAG, "initObserver: item id - ${item.id}")
                 if(item.dType.equals(Constant.TEXT_CROWLING))
                     layout?.addView(WidgetText.getWidgetTextCrowling(this,item,response.data),item.frame_w,item.frame_h)
                 else
                     setStaticTextWithRotate(pos,item,response.data,0)
-//                10286-2694-41659
             }
         })
 
@@ -442,10 +560,38 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             }
         })
 
+        // STOCK result
+        viewModel.stock_api_result.observe(this, Observer { response ->
+            if(response.status==Status.SUCCESS){
+                if(multiframe_items.size==0) return@Observer
+                var pos = response.pos
+                var layout = layout_list[pos].relative_layout
+                var item = multiframe_items[pos].get(current_size_list[pos])
+                var item_ids  = item.id.split("-")
+                layout?.removeAllViews()
+                if(item.dType.equals("s"))
+                    layout?.addView(WidgetStocks.getSingleStockWidget(this,item,response.data),item.frame_w,item.frame_h)
+                else{
+                    if(UtilitySetting.getTemplate(item.settings).equals("t1"))
+                        layout?.addView(WidgetStocks.getWidgetStockCrowling(this,item,response.data!!),item.frame_w,item.frame_h)
+                    else
+                        setStockWebView(pos,item,Constant.API_STOCK_TABLE_HTML+item_ids[2])
+                }
+            }
+        })
+
         // file downloading observer
         viewModel.download_file_result.observe(this, Observer { response ->
             if(response.status == Status.SUCCESS){
                 changeContent()
+            }
+        })
+
+        // re-launch observer
+        viewModel.relaunch_result.observe(this, Observer { response ->
+            if(response.status == Status.SUCCESS){
+                finishAffinity()
+                startActivity(intent)
             }
         })
 
@@ -458,20 +604,37 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             layout_list[response.pos].exoPlayer?.play()
         }
 
-    }
+        // weather
+        viewModel.weather_api_result.observe(this){ response->
+            Log.d("TAG", "onResponse: obser weather data result")
+            if(response.status==Status.SUCCESS){
 
-    fun setQuoteRotation(pos: Int, item: Item) {
-        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
-            delay(TimeUnit.SECONDS.toMillis(WidgetQuotes.getRotation(item).toLong()))
-            withContext(Dispatchers.Main) {
-                if(play_activate){
-                    WidgetQuotes.pos = WidgetQuotes.pos+1
-                    WidgetQuotes.setText()
-                }
+                var weather_obj = Gson().fromJson(response.data,WeatherFive::class.java)
+                setWatherFragment(response.pos,response.item!!,weather_obj)
+
+//                if(weather_item_list.size>0 && response.item!=null){
+//                    for(i in 0..weather_item_list.size-1){
+//                        var weather_item = weather_item_list.get(i)
+//                        setWatherFragment(weather_item.pos,weather_item.item!!,weather_obj)
+//                    }
+//                    weather_item_list.clear()
+//                }
             }
         }
     }
 
+    fun setQuoteRotation(pos: Int, item: Item) {
+        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+            delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
+            withContext(Dispatchers.Main) {
+                if(play_activate){
+                    WidgetQuotes.pos = WidgetQuotes.pos+1
+                    WidgetQuotes.setText()
+                    setQuoteRotation(pos,item)
+                }
+            }
+        }
+    }
 
     private fun setWaterMark() {
         Log.d("TAG", "setWaterMark: ${DataParsing.isWatermarkAvailable(pref)}")
@@ -481,26 +644,45 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     }
 
     private fun changeContent() {
+        Log.d(TAG, "changeContent: device version - ${pref.getVersionOfConytentAPI()}")
         if(!pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) {
             showNotRegisterDialog()
             return
         }
-        var list = dataParsing.getDownloableList()
+        if(!pref.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals("false")
+            && !pref.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals(""))
+            viewModel.getRelaunchAcknowledge()
+        var list = dataParsing.getDownloableList(pref)
         if(list.size>0 && isConnected){
+            Log.d("TAG", "changeContent: download start")
             downloading = 1
             binding.rlDownloading.visibility = View.VISIBLE
             viewModel.downloadFile(list[0])
+            content_confirmation_list.add(list[0])
             ImageUtil.loadGifImage(this,binding.ivDownloading)
         }else{
+            var downloaded_list = dataParsing.getDownloadedList()
             binding.rlDownloading.visibility = View.GONE
+            if(downloading==1) viewModel.submitContentConfirmation(viewModel.device_id,downloaded_list)
+            content_confirmation_list = mutableListOf()
             downloading = 0
             removeData()
             setWaterMark()
             setIdentifyRequest()
             isEmergencyMessage()
+            pref.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,dataParsing.checkDemandSs())
             var is_frames = dataParsing.isFrameAvailable()
             var is_override = DataParsing.isOverrideAvailable(pref)
             if(is_frames || is_override) contentPlaying(is_frames,is_override) else loadWaiting()
+
+        }
+    }
+
+    private fun checkDemandScreenShot() {
+        if(pref.getBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE)){
+            captureScreen(Constant.SS_TYPE_OD)
+        }else{
+            od_screenshot_handler.removeCallbacks(odssTask)
         }
     }
 
@@ -520,7 +702,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     private fun isEmergencyMessage(){
         var device = DataParsing.getDevice(pref)
         if(device?.em ==1)
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.WIDGET_EMERGENCY_MESSAGE,0))
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.WIDGET_EMERGENCY_MESSAGE,0,""))
                 viewModel.getEmergencyMessagedata(DeviceInfo.getDeviceIdFromDevice(this))
     }
 
@@ -563,6 +745,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         items = mutableListOf()
         multiframe_items = mutableListOf()
         current_size_list = mutableListOf()
+        WidgetNewsCrowling.mHandler.removeCallbacks(WidgetNewsCrowling.SCROLLING_RUNNABLE)
+        WidgetText.mHandler.removeCallbacks(WidgetText.SCROLLING_RUNNABLE)
+
         if(layout_list!=null && layout_list.size>0){
             for(i in 0..layout_list.size-1){
                 if(layout_list[i].exoPlayer != null && layout_list[i].exoPlayer!!.isPlaying){
@@ -573,6 +758,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                     layout_list[i].exoPlayerView?.player?.stop()
                 }
                 if(layout_list[i].job != null) layout_list[i].job?.cancel()
+                if(layout_list[i].rotate_job != null) layout_list[i].rotate_job?.cancel()
             }
         }
         layout_list = mutableListOf()
@@ -609,14 +795,13 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                 var child_items: MutableList<Item> = mutableListOf()
                 var items_array = all_frames.get(0).item
                 for (j in 0..items_array.size - 1) {
-
                     var item = items_array[j]
                     item.frame_h = DeviceInfo.getScreenHeight(this)
                     item.frame_w = DeviceInfo.getScreenWidth(this)
                     item.frame_setting = all_frames.get(0).settings
                     items.add(item)
                     items.get(items.size-1).pos = 0
-                    child_items.add(item)
+                    if(Validation.isItemDownloaded(item)) child_items.add(item)
                 }
                 multiframe_items?.add(child_items)
                 current_size_list.add(0)
@@ -666,7 +851,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                         item.frame_setting = all_frames.get(i).settings
                         items.add(item)
                         items.get(items.size-1).pos = i
-                        child_items.add(item)
+                        if(Validation.isItemDownloaded(item)) child_items.add(item)
                     }
                     multiframe_items?.add(child_items)
                     current_size_list.add(0)
@@ -680,32 +865,23 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     }
 
 
-    private fun setAllNewsListRotation(pos: Int, list: List<RssItem>, item: Item, title: String?) {
+
+    private fun setAllNewsListRotation(pos: Int, list: List<RssItem>,all_list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
         if(list!=null && list.size>0){
 
-            var setting_obj = Gson().fromJson(item.settings, NewsListSettingData::class.java)
-
-            var adapter = NewsAdapter(list,item,ctx!!,setting_obj)
             layout_list[pos].relative_layout?.removeAllViews()
-            layout_list[pos].relative_layout?.
-            addView(getWidgetNewsListAll(this,item,list,adapter,title),item.frame_w,item.frame_h)
+            layout_list[pos].relative_layout?.addView(getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
+
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            var newlist = ArrayList<RssItem>()
-                            var position = adapter.getlastIndex()+pos
-                            Log.d("TAG", "list pos : $position")
-
-                            if(position == list.size-1)position=0
-                            list.forEachIndexed{
-                                    index,item -> if(index>=position)newlist.add(item)
-                            }
-                            adapter.updateAdapter(newlist)
-                            if(layout_list[pos].active_widget.equals(Constant.CONTENT_WIDGET_NEWS)){
-                                setAllNewsListRotation(pos, newlist, item, title)
-                            }
+                            WidgetNewsList.lastView = null
+                            var position = WidgetNewsList.getLastPosition()
+                            var nextlist = getNextList(list,all_list,position)
+                            if(nextlist.size==0) setAllNewsListRotation(pos, all_list, all_list, item,title,0)
+                            else setAllNewsListRotation(pos, getNextList(list,all_list,position),all_list, item,title,0)
                         }
                     }
                 }
@@ -713,31 +889,79 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         }
     }
 
-    private fun setBeingNewsListRotation(pos: Int, list: ArrayList<News>, item: Item) {
-        if(list!=null && list.size>0){
-            var setting_obj = Gson().fromJson(item.settings, NewsListSettingData::class.java)
+    private fun getNextList(list: List<RssItem>, all_list: List<RssItem>, pos: Int): List<RssItem> {
+//        if(list.size==0 && all_list.size>0) return all_list
+        var nextlist = mutableListOf<RssItem>()
+        for (item in pos..list.size-1){
+            nextlist.add(list[item])
+        }
+        return nextlist
+    }
 
-            var adapter = BeingNewsAdapter(list,item,ctx!!,setting_obj)
+
+    private fun setBeingNewsListRotation(pos: Int,list : ArrayList<News>,all_list : ArrayList<News>, item: Item,start_pos:Int) {
+
+        if(list!=null && list.size>0){
             layout_list[pos].relative_layout?.removeAllViews()
             layout_list[pos].relative_layout?.
-            addView(WidgetNewsList.getWidgetNewsListBeing(this,item,list,adapter),item.frame_w,item.frame_h)
+            addView(WidgetNewsList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos,item.fileName),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            var newlist = ArrayList<News>()
-                            var position = adapter.getlastIndex()+pos
-                            Log.d("TAG", "list pos : $position")
+                            var position = WidgetNewsList.getLastPositionBeing()
+                            if(position == list.size) setBeingNewsListRotation(pos, all_list,all_list, item,0)
+                            else setBeingNewsListRotation(pos, getNextBeingList(list,position),all_list, item,0)
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-                            if(position == list.size-1)position=0
-                            list.forEachIndexed{
-                                    index,item -> if(index>=position)newlist.add(item)
-                            }
-                            adapter.updateAdapter(newlist)
-                            if(layout_list[pos].active_widget.equals(Constant.CONTENT_WIDGET_NEWS)){
-                                setBeingNewsListRotation(pos,newlist,item)
-                            }
+    private fun getNextBeingList(list: java.util.ArrayList<News>, position: Int): java.util.ArrayList<News> {
+        var next_list = java.util.ArrayList<News>()
+        for (item in position..list.size-1)next_list.add(list[item])
+        return next_list
+    }
+
+    private fun setAllNewsListRotationRSS(pos: Int, list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
+        if(list!=null && list.size>0){
+
+            layout_list[pos].relative_layout?.removeAllViews()
+            layout_list[pos].relative_layout?.addView(
+                WidgetRssList.getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
+
+            if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
+                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                    delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
+                    withContext(Dispatchers.Main) {
+                        if(play_activate){
+                            var position = WidgetRssList.getLastPosition()
+                            Log.d(TAG, "setAllNewsListRotationRSS: $position")
+                            if(position == list.size) setAllNewsListRotationRSS(pos, list, item,title,0)
+                            else setAllNewsListRotationRSS(pos, list, item,title,position)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setBeingNewsListRotationRSS(pos: Int,list : ArrayList<News>, item: Item,start_pos:Int) {
+        if(list!=null && list.size>0){
+            layout_list[pos].relative_layout?.removeAllViews()
+            layout_list[pos].relative_layout?.
+            addView(WidgetRssList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos),item.frame_w,item.frame_h)
+            if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
+                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                    delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
+                    withContext(Dispatchers.Main) {
+                        if(play_activate){
+                            var position = WidgetNewsList.getLastPositionBeing()
+                            if(position == list.size) setBeingNewsListRotationRSS(pos, list, item,0)
+                            else setBeingNewsListRotationRSS(pos, list, item,position-1)
                         }
                     }
                 }
@@ -783,18 +1007,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     private fun validateItem(item: Item, position: Int) {
 
-        Log.d(TAG, "validateItem")
-
         val path = DataManager.getDirectory()+File.separator+ item.fileName
         if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
             if(!File(path).exists()){
-                Log.d(TAG, "nextPlay: current - from 2")
+                Log.d(TAG, "nextPlay: current item")
                 current_size_list[position] = current_size_list[position]+1
                 nextPlay(position)
                 return
             }
         }
-        Log.d(TAG, "validateItem item type : ${item.type} ${item.duration} ${DateTimeUtil.getTimeSeconds()}")
         setWidget(position,item)
     }
 
@@ -821,12 +1042,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             widget_type.equals(Constant.CONTENT_POWERPOINT) ||
             widget_type.equals(Constant.CONTENT_WORD) ) {
             layout?.removeAllViews()
-            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize))
+            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
         }
         // QR-Code
         else if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
             layout?.removeAllViews()
-            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize))
+            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
         }
         // video
         else if(widget_type.equals(Constant.CONTENT_VIDEO)){
@@ -871,24 +1092,44 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         else if(widget_type == Constant.CONTENT_WIDGET_DATE_TIME){
             layout?.removeAllViews()
             layout?.addView(DateTimeWidget.getDateTimeWidget(this,item),item.frame_w,item.frame_h)
+            var view = layout?.getChildAt(0)
+            DateTimeWidget.setData(view!!,item)
         }
         // quotes
         else if(widget_type == Constant.CONTENT_WIDGET_QUOTES){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_QUOTES,pos))
-                viewModel.getQuoteText(item.id.split("-")[2],pos)
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_QUOTES,pos,item.id))
+                viewModel.getQuoteText(item.id.split("-")[2],pos,item.id)
         }
         // text
         else if(widget_type == Constant.CONTENT_WIDGET_TEXT){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_TEXT,pos))
-                viewModel.getText(item.id.split("-")[2],pos)
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_TEXT,pos,item.id))
+                viewModel.getText(item.id.split("-")[2],pos,item.id)
+        }
+        // stock
+        else if(widget_type == Constant.CONTENT_WIDGET_STOCK){
+            if(item.dType.equals("m") && UtilitySetting.getTemplate(item.settings).equals("t2")){
+                var item_ids = item.id.split("-")
+                setStockWebView(pos,item,Constant.API_STOCK_TABLE_HTML+item_ids[2])
+            }else if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_STOCK,pos,item.id))
+                viewModel.getStockData(item.id.split("-")[2],pos,item.id)
         }
         // news
         else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos))
+            Log.d(TAG, "setWidget: loading $widget_type id - ${item.id}")
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos,item.id)){
                 if(item.src.equals(""))
-                    viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos)
+                    viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
                 else
-                    viewModel.getNews(item.src,pos)
+                    viewModel.getNews(item.src,pos,item.id)
+            }
+        }
+        // RSS
+        else if(widget_type == Constant.CONTENT_WIDGET_RSS){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_RSS,pos,item.id))
+                if(item.src.equals(""))
+                    viewModel.getRss(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
+                else
+                    viewModel.getRss(item.src,pos,item.id)
         }
         // live streaming
         else if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
@@ -902,7 +1143,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         else if(widget_type == Constant.CONTENT_WIDGET_COD){
             layout?.removeAllViews()
             var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
-            layout?.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
+            layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)),item.frame_setting)
             layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
             layout?.setOnClickListener { WidgetCodButton.openCod(this,pref) }
         }
@@ -912,16 +1153,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
             var image = dataParsing.getImageName(WidgetMessage.getData(item.data).contentid)
             layout?.addView(WidgetMessage.getMessageWidget(this,item,image))
         }
+        // weather
+        else if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
+            viewModel.getWeather(item,pos)
 
         // not implemetated
         else {
             layout?.removeAllViews()
             layout?.addView(WidgetText.getBlankView(this),item.frame_w,item.frame_h)
         }
-
-        // weather
-//        if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
-//            setWatherFragment(pos,item)
 
         if(multiframe_items[pos].size>1){
             var job = CoroutineScope(Dispatchers.IO).launch {
@@ -940,10 +1180,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
                         exoPlayerView?.player!!.release()
                         exoPlayerView?.player = null
                     }
+
                     if(play_activate){
                         pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
-                        Log.d(TAG, "nextPlay: current - from 1")
                         nextPlay(pos)
                     }
                 }
@@ -959,16 +1199,39 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
     }
 
+    fun reSize(view: View,scaleX :Float,scaleY :Float){
+        var layoutparam = view.layoutParams
+        layoutparam.height = (150*scaleY).roundToInt()
+        layoutparam.width = (200*scaleX).roundToInt()
+        Log.d("TAG", "reSize: wi - ${view.width} & hi - ${view.height}")
+        view.layoutParams = layoutparam
+    }
+
+
+    // stock table view with webview
+    private fun setStockWebView(pos: Int, item: Item,url:String) {
+
+        var layout = layout_list[pos].relative_layout
+        layout?.removeAllViews()
+        layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
+        layout?.addView(WebViewWidget.getWebViewWidget(this,url),item.frame_w,item.frame_h)
+    }
+
     // web view with reloading
     private fun setWebViewWithReload(pos: Int, item: Item) {
 
         var layout = layout_list[pos].relative_layout
         if(layout_list[pos].active_widget.equals(Constant.CONTENT_WEB)){
             layout?.removeAllViews()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-                layout?.addView(WebViewChromium.getWebChromeWidget(this,item.src),item.frame_w,item.frame_h)
-            else
+            layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                var shape = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
+                layout?.background = shape
+                layout?.addView(WebViewChromium.getWebChromeWidget(this,item.src,shape,item.settings),item.frame_w,item.frame_h)
+            } else
                 layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
+
             if(DataParsing.getWebInterval(item) !=0 && DataParsing.getWebInterval(item) < item.duration){
                 layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getWebInterval(item).toLong()))
@@ -987,35 +1250,44 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
         var layout = layout_list[pos].relative_layout
         if(layout_list[pos].active_widget.equals(Constant.CONTENT_WIDGET_TEXT)){
+
             layout?.removeAllViews()
 
             var list = mutableListOf<String>()
             var json_data = JSONObject(data)
             var channel_array = json_data.getJSONArray("channel")
-            for (i in 0 until channel_array.length()){
-                var title_obj = channel_array.getJSONObject(i).getString("title")
-                list.add(title_obj)
-            }
-            layout?.addView(WidgetText.getWidgetTextStatic(this,item,list[text_pos]),item.frame_w,item.frame_h)
-            if (item.dType.equals(Constant.TEXT_STATIC)){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
-                    delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
-                    withContext(Dispatchers.Main) {
-                        if(play_activate){
-                            var new_pos = text_pos+1
-                            if(list.size>new_pos)
-                                setStaticTextWithRotate(pos,item,data,new_pos)
-                            else
-                                setStaticTextWithRotate(pos,item,data,0)
+            if(channel_array.length()>0){
+                for (i in 0 until channel_array.length()){
+                    var title_obj = channel_array.getJSONObject(i).getString("title")
+                    list.add(title_obj)
+                }
+                if(list.size>0){
+                    layout?.addView(WidgetText.getWidgetTextStatic(this,item,list[text_pos]),item.frame_w,item.frame_h)
+                    if (item.dType.equals(Constant.TEXT_STATIC)){
+                        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                            delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
+                            withContext(Dispatchers.Main) {
+                                if(play_activate){
+                                    var new_pos = text_pos+1
+                                    if(list.size>new_pos)
+                                        setStaticTextWithRotate(pos,item,data,new_pos)
+                                    else
+                                        setStaticTextWithRotate(pos,item,data,0)
+                                }
+                            }
                         }
                     }
+                }else{
+                    layout?.addView(WidgetText.getWidgetTextStaticLayout(this,item),item.frame_w,item.frame_h)
                 }
+            }else{
+                layout?.addView(WidgetText.getWidgetTextStaticLayout(this,item),item.frame_w,item.frame_h)
             }
         }
     }
 
 
-    private fun setWatherFragment(pos: Int, item: Item) {
+    private fun setWatherFragment(pos: Int, item: Item, weather_data: WeatherFive) {
         var setting_obj = JSONObject(item.settings)
         var template = setting_obj.getString("template")
         var lang = setting_obj.getString("lang")
@@ -1028,32 +1300,30 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
 
         if(forecast == Constant.TEMPLATE_WEATHER_CURRENT_DATE){
             if(template.equals(Constant.TEMPLATE_TIME_T1))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp1(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp1(this,item,weather_data),item.frame_w,item.frame_h)
             if(template.equals(Constant.TEMPLATE_TIME_T2))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp2(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp2(this,item,weather_data),item.frame_w,item.frame_h)
             if(template.equals(Constant.TEMPLATE_TIME_T3))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp3(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp3(this,item,weather_data),item.frame_w,item.frame_h)
         }
         if(forecast == Constant.TEMPLATE_WEATHER_FIVE_DAY){
             if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL))
-                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayVerti(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
             else
-                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayHori(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayHori(this,item,weather_data),item.frame_w,item.frame_h)
         }
         if(forecast == Constant.TEMPLATE_WEATHER_FOUR_DAY){
             if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL))
-                layout?.addView(WidgetWeather.getWidgetWeatherFourDayVerti(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherFourDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
             else
-                layout?.addView(WidgetWeather.getWidgetWeatherFourDayHori(this,item),item.frame_w,item.frame_h)
+                layout?.addView(WidgetWeather.getWidgetWeatherFourDayHori(this,item,weather_data),item.frame_w,item.frame_h)
         }
     }
 
     private fun nextPlay(pos:Int){
-        Log.d(TAG, "nextPlay: current - ${current_size_list[pos]} , multi - ${multiframe_items.get(pos).size}")
         if(current_size_list[pos] < multiframe_items.get(pos).size){
             validateItem(multiframe_items.get(pos)[current_size_list[pos]],pos)
         }else{
-            Log.d(TAG, "nextPlay: current - from 0")
             current_size_list[pos] = 0
             nextPlay(pos)
         }
@@ -1071,6 +1341,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         checkVersionHandler.removeCallbacks(versionTask)
         timeScehdulerHandler.removeCallbacks(timeSchedularTask)
         screenshot_handler.removeCallbacks(ssTask)
+        od_screenshot_handler.removeCallbacks(odssTask)
         temp_handler.removeCallbacks(tempTask)
         report_handler.removeCallbacks(reportTask)
         removeData()
@@ -1156,6 +1427,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
         Log.d(TAG, "deviceNotRegistered: success")
         play_activate = false
         removeData()
+        binding.llEmergencyMsg.visibility = View.GONE
         binding.rlBackground.visibility = View.VISIBLE
         binding.ivMainDefaultimg.visibility = View.GONE
         pref?.putBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED,false)
@@ -1228,6 +1500,40 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         savedInstanceState.getBundle("newBundy")
+    }
+
+    fun getHeight(view: View): Int {
+        var hi = -1
+        view.post(Runnable() {
+            var width = view.getWidth()
+            var height = view.getHeight()
+            hi = height
+            Log.d(TAG, "getHeight: cal - $height")
+        })
+        return hi
+    }
+
+    fun getHeightDes(view: View): Int {
+        var hi = -1
+        view.post(Runnable() {
+            var width = view.getWidth()
+            var height = view.getHeight()
+            hi = height
+            Log.d(TAG, "getHeight: desc cal - $height")
+        })
+        return hi
+    }
+
+    override fun onDataReceived(data: ByteArray?) {
+    }
+
+    override fun onErrorReceived(data: String?) {
+    }
+
+    override fun onDeviceReady(responseStatus: ResponseStatus?) {
+    }
+
+    override fun onDeviceDisconnected() {
     }
 
 }

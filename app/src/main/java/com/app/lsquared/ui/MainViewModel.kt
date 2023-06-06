@@ -2,6 +2,8 @@ package com.app.lsquared.ui
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.*
 import com.app.lsquared.ApiInterface
@@ -20,6 +22,8 @@ import com.androidnetworking.interfaces.DownloadProgressListener
 import com.androidnetworking.interfaces.JSONObjectRequestListener
 import com.androidnetworking.interfaces.StringRequestListener
 import com.app.lsquared.model.Downloadable
+import com.app.lsquared.model.Item
+import com.app.lsquared.pasring.DataParsingSetting
 import com.app.lsquared.utils.*
 import java.io.File
 import com.test.RetrofitClient
@@ -83,13 +87,31 @@ class MainViewModel @Inject constructor(
     private val _rss_data = MutableLiveData<ApiResponse>()
     val rss_api_result : LiveData<ApiResponse> get() = _rss_data
 
+    // 3. news - feed data
+    private val _news_data = MutableLiveData<ApiResponse>()
+    val news_api_result : LiveData<ApiResponse> get() = _news_data
+
     // 4. text data
     private val text_data = MutableLiveData<ApiResponse>()
     val text_api_result : LiveData<ApiResponse> get() = text_data
 
+    // 5. stock -  data
+    private val _stock_data = MutableLiveData<ApiResponse>()
+    val stock_api_result : LiveData<ApiResponse> get() = _stock_data
+
+    // 6. Wather -  data
+    private val weather_data = MutableLiveData<ApiResponse>()
+    val weather_api_result : LiveData<ApiResponse> get() = weather_data
+
+
     // 5. file downloading
     private val _downloadfile_data = MutableLiveData<ApiResponse>()
     val download_file_result : LiveData<ApiResponse> get() = _downloadfile_data
+
+//    other feature
+    // 1. Relaunch on demand
+    private val _relaunch_data = MutableLiveData<ApiResponse>()
+    val relaunch_result : LiveData<ApiResponse> get() = _relaunch_data
 
 
 
@@ -229,11 +251,16 @@ class MainViewModel @Inject constructor(
     }
 
     // 5 submit screen shot
-    fun submitScreenShot(body: JSONObject){
+    fun submitScreenShot(body: JSONObject,type:String){
         if(internet && is_device_registered){
-            Log.d("TAG","submitScreenShot - ${body.toString()}")
+            var url = Constant.BASE_URL+"api/v1/feed/deviceSaveScreenshotBase64"
+            if(type.equals(Constant.SS_TYPE_OD)) url = url+"?did="+dataParsing.getDevice()?.id
+            else url = url+".php?did="+dataParsing.getDevice()?.id
+
+            Log.d("submitScreenShot url - ",url)
+            Log.d("TAG","body "+body.toString())
             viewModelScope.launch(Dispatchers.IO) {
-                    AndroidNetworking.post(Constant.BASE_URL+"api/v1/feed/deviceSaveScreenshotBase64")
+                    AndroidNetworking.post(url)
                         .addJSONObjectBody(body) // posting json
                         .setOkHttpClient(RetrofitClient.getOkhttpClient())
                         .setTag("test")
@@ -241,6 +268,10 @@ class MainViewModel @Inject constructor(
                         .build()
                         .getAsString(object : StringRequestListener{
                             override fun onResponse(response: String?) {
+                                if(type.equals(Constant.SS_TYPE_OD)){
+                                    Log.d("TAG","device_screen_success- type OD ${response.toString()}")
+                                    pref.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,false)
+                                }
                                 Log.d("device_screen_success-",response.toString())
                                 _screenshot_data.postValue(ApiResponse(Status.SUCCESS,response.toString(),"success"))
                             }
@@ -312,7 +343,7 @@ class MainViewModel @Inject constructor(
     }
 
     // 2. quote data request
-    fun getQuoteText(id :String,frame_pos :Int) {
+    fun getQuoteText(id :String,frame_pos :Int,item_id: String) {
         var url = Constant.API_WIDGET_QUOTE+"$id?format=json"
         Log.d("TAG", "getQuoteText: url - $url")
         viewModelScope.launch(Dispatchers.IO) {
@@ -322,7 +353,7 @@ class MainViewModel @Inject constructor(
                         var res = response?.body()!!.string()
                         Log.d("TAG", "getQuoteText: onResponse - $res")
                         if(response?.body() != null){
-                            setDataWithVersion(MySharePrefernce.KEY_DATA_QUOTE,res,MySharePrefernce.KEY_DATA_QUOTE_VERSION)
+                            setDataWithVersion(MySharePrefernce.KEY_DATA_QUOTE+item_id,res,MySharePrefernce.KEY_DATA_QUOTE_VERSION)
                             quote_data.postValue(ApiResponse(Status.SUCCESS,res,"success",frame_pos))
                         }else{
                             var error = response?.errorBody()!!.toString()
@@ -338,7 +369,7 @@ class MainViewModel @Inject constructor(
     }
 
     // 3. Rss - feed data
-    fun getNews(url: String, pos: Int){
+    fun getRss(url: String, pos: Int,item_id: String){
         Log.d("TAG", "fetchxmlData: $url")
         viewModelScope.launch(Dispatchers.IO) {
 
@@ -349,20 +380,44 @@ class MainViewModel @Inject constructor(
                 .build()
                 .getAsString(object : StringRequestListener {
                     override fun onResponse(response: String?) {
-                        Log.d("device_info_success-",response.toString())
-                        setDataWithVersion(MySharePrefernce.KEY_DATA_NEWS,response?:"",MySharePrefernce.KEY_DATA_NEWS_VERSION)
+                        Log.d("getRss_success-",response.toString())
+                        setDataWithVersion(MySharePrefernce.KEY_DATA_RSS+item_id,response?:"",MySharePrefernce.KEY_DATA_RSS_VERSION)
                         _rss_data.postValue(ApiResponse(Status.SUCCESS,response,"success",pos))
                     }
                     override fun onError(anError: ANError?) {
-                        Log.d("device_info_failed-",anError.toString())
+                        Log.d("getRss_failed-",anError.toString())
                         _rss_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
                     }
                 })
         }
     }
 
+    // 3. News - feed data
+    fun getNews(url: String, pos: Int,item_id: String){
+        Log.d("TAG", "fetchxmlData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+
+            AndroidNetworking.get(url)
+                .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                .setTag("test")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsString(object : StringRequestListener {
+                    override fun onResponse(response: String?) {
+                        Log.d("getNews_success-",response.toString())
+                        setDataWithVersion(MySharePrefernce.KEY_DATA_NEWS+item_id,response?:"",MySharePrefernce.KEY_DATA_NEWS_VERSION)
+                        _news_data.postValue(ApiResponse(Status.SUCCESS,response,"success",pos))
+                    }
+                    override fun onError(anError: ANError?) {
+                        Log.d("getNews_failed-",anError.toString())
+                        _news_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
     // 4. text data
-    fun getText(id: String, pos: Int) {
+    fun getText(id: String, pos: Int,item_id: String) {
         var url = Constant.API_WIDGET_TEXT+"$id?format=json"
         viewModelScope.launch(Dispatchers.IO) {
             ApiInterface.create().checkIsDeviceRegister(url)
@@ -371,7 +426,7 @@ class MainViewModel @Inject constructor(
                         if(response?.body() != null){
                             var res = response?.body()!!.string()
                             Log.d("TAG", "text api onResponse: $res")
-                            setDataWithVersion(MySharePrefernce.KEY_DATA_TEXT,res,MySharePrefernce.KEY_DATA_TEXT_VERSION)
+                            setDataWithVersion(MySharePrefernce.KEY_DATA_TEXT+item_id,res,MySharePrefernce.KEY_DATA_TEXT_VERSION)
                             text_data.postValue(ApiResponse(Status.SUCCESS,res,"success",pos))
                         }else{
                             var error = response?.errorBody()!!.toString()
@@ -385,7 +440,55 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // 5. file downloading
+    // 5. STOCK WIDGET - data
+    fun getStockData(widget_id :String, pos: Int,item_id: String){
+        var url = Constant.API_WIDGET_STOCKS+widget_id
+        Log.d("TAG", "fetchxmlData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            AndroidNetworking.get(url)
+                .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                .setTag("test")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsString(object : StringRequestListener {
+                    override fun onResponse(response: String?) {
+                        Log.d("getNews_success-",response.toString())
+                        setDataWithVersion(MySharePrefernce.KEY_DATA_STOCK+item_id,response?:"",MySharePrefernce.KEY_DATA_STOCK_VERSION)
+                        _stock_data.postValue(ApiResponse(Status.SUCCESS,response,"success",pos))
+                    }
+                    override fun onError(anError: ANError?) {
+                        Log.d("getNews_failed-",anError.toString())
+                        _stock_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+    fun getWeather(item: Item,pos: Int) {
+        Log.d("TAG", "getWeather: pos - $pos")
+        var lang = DataParsingSetting.getLang(item.settings)
+        var unit = DataParsingSetting.getUnit(item.settings)
+        var wsu = DataParsingSetting.getWsu(item.settings)
+        var url = Constant.API_WIDGET_WEATHER+"${item.src}?forecast=${item.forecast}&lang=$lang&unit=$unit&wsu=$wsu"
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        Log.d("TAG", "onResponse: obser weather data")
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            weather_data.value = ApiResponse(Status.SUCCESS,res,"success",pos,item)
+                        }else weather_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        weather_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+
+    // 6. file downloading
     fun downloadFile(downloadable: Downloadable) {
 
         var url = if(downloadable.type.equals(Constant.CONTENT_THUMB)) downloadable.src else Constant.BASE_FILE_URL + downloadable.src
@@ -399,8 +502,8 @@ class MainViewModel @Inject constructor(
             .build()
             .setDownloadProgressListener(object : DownloadProgressListener {
                 override fun onProgress(bytesDownloaded: Long, totalBytes: Long) {
+                    Log.d("TAG", "onProgress: $totalBytes -  $bytesDownloaded")
                     // do anything with progress
-                    Log.d("TAG", "onProgress: $totalBytes/ $bytesDownloaded")
                 }
             })
             .startDownload(object : DownloadListener {
@@ -416,6 +519,7 @@ class MainViewModel @Inject constructor(
                 }
             })
     }
+
 
     // not notifying apis
 
@@ -496,6 +600,60 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // relaunch request acknowledge
+    fun getRelaunchAcknowledge() {
+        var url = Constant.getApiRelaunchAcknowledge(device_id)
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().getRelaunchAcknowledge(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            pref.putStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND,"")
+                            _relaunch_data.postValue(ApiResponse(Status.SUCCESS,"","success"))
+                            Log.d("TAG", "getRelaunchAcknowledge onResponse: $res")
+                        }else{
+                            var error = response?.errorBody()!!.toString()
+                            Log.d("TAG", "getRelaunchAcknowledge onResponse error: $error")
+                        }
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Log.d("TAG", "getRelaunchAcknowledge onFailure: $t")
+                    }
+                })
+        }
+    }
+
+    // Submit download Confirmation
+    fun submitContentConfirmation(device_id: String, downloads_list: List<Downloadable>){
+        if(downloads_list==null || downloads_list.size==0) {
+            Log.d("TAG", "submitContentConfirmation: no data available")
+            return
+        }
+        var data  = DataManager.getContentConfirmationData(downloads_list)
+        if(internet && is_device_registered ){
+            Log.d("TAG", "submitContentConfirmation: api - ${Constant.getApiDownloadConfirmation(device_id)}")
+            Log.d("TAG", "submitContentConfirmation: body - ${data.toString()}")
+            viewModelScope.launch(Dispatchers.IO) {
+                AndroidNetworking.post(Constant.getApiDownloadConfirmation(device_id))
+                    .addJSONObjectBody(data)
+                    .setOkHttpClient(RetrofitClient.getOkhttpClient())
+                    .setTag("test")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .setUploadProgressListener { bytesUploaded, totalBytes ->}
+                    .getAsJSONObject(object : JSONObjectRequestListener {
+                        override fun onResponse(response: JSONObject?) {
+                            Log.d("TAG", "submitContentConfirmation: onResponse - $response")
+                        }
+                        override fun onError(anError: ANError?) {
+                            Log.d("TAG", "submitContentConfirmation: onError - ${anError.toString()}")
+                        }
+                    })
+            }
+        }
+    }
+
     // Submit records
     fun submitRecords(device_id: String){
 
@@ -535,34 +693,63 @@ class MainViewModel @Inject constructor(
     }
 
     // check external api calling
-    fun isDataStoredForCurrentVersion(type:String,frame_pos: Int):Boolean{
+    fun isDataStoredForCurrentVersion(type:String,frame_pos: Int,item_id: String):Boolean{
 
         var content_version = dataParsing.getDevice()?.version?:0
         if(type.equals(Constant.CONTENT_WIDGET_QUOTES)){
             var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_QUOTE_VERSION)
             if(data_version==content_version){
-                var data = pref.getStringData(MySharePrefernce.KEY_DATA_QUOTE)
-                quote_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
-                return true
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_QUOTE+"$item_id")
+                if(data.equals("")) return false
+                else{
+                    quote_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
+                    return true
+                }
             }
         }else if(type.equals(Constant.CONTENT_WIDGET_TEXT)){
             var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_TEXT_VERSION)
             if(data_version==content_version){
-                var data = pref.getStringData(MySharePrefernce.KEY_DATA_TEXT)
-                text_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
-                return true
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_TEXT+"$item_id")
+                if(data.equals("")) return false
+                else{
+                    text_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
+                    return true
+                }
             }
         }else if(type.equals(Constant.CONTENT_WIDGET_NEWS)){
             var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_NEWS_VERSION)
             if(data_version==content_version){
-                var data = pref.getStringData(MySharePrefernce.KEY_DATA_NEWS)
-                _rss_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
-                return true
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_NEWS+"$item_id")
+                if(data.equals("")) return false
+                else{
+                    _news_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
+                    return true
+                }
+            }
+        }else if(type.equals(Constant.CONTENT_WIDGET_RSS)){
+            var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_RSS_VERSION)
+            if(data_version==content_version){
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_RSS+"$item_id")
+                if(data.equals("")) return false
+                else{
+                    _rss_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
+                    return true
+                }
+            }
+        }else if(type.equals(Constant.CONTENT_WIDGET_STOCK)){
+            var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_STOCK_VERSION)
+            if(data_version==content_version){
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_STOCK+"$item_id")
+                if(data.equals("")) return false
+                else{
+                    _stock_data.postValue(ApiResponse(Status.SUCCESS,data,"success",frame_pos))
+                    return true
+                }
             }
         }else if(type.equals(Constant.WIDGET_EMERGENCY_MESSAGE)){
             var data_version = pref.getIntData(MySharePrefernce.KEY_DATA_EMERGENCY_VERSION)
             if(data_version==content_version){
-                var data = pref.getStringData(MySharePrefernce.KEY_DATA_EMERGENCY)
+                var data = pref.getStringData(MySharePrefernce.KEY_DATA_EMERGENCY+"$item_id")
                 emergenncy_req_data.postValue(ApiResponse(Status.SUCCESS,data,"success"))
                 return true
             }

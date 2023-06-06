@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.Gravity
+import android.view.ViewOutlineProvider
 import android.view.WindowManager.LayoutParams
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -12,7 +13,7 @@ import com.app.lsquared.model.*
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.ui.UiUtils
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
+import org.json.JSONArray
 import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -34,6 +35,16 @@ class DataParsing @Inject constructor(
             return data_obj.device[0]
         }
         return null
+    }
+
+    // get device relaunch
+    fun getDeviceRelaunch(): String {
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            return data_obj.device[0].relaunchRequestedOn
+        }
+        return ""
     }
 
     // get response object
@@ -66,25 +77,55 @@ class DataParsing @Inject constructor(
         return false
     }
 
-
     // get downloadble list
-    fun getDownloableList(): List<Downloadable>{
+    fun getDownloableList(pref: MySharePrefernce): List<Downloadable>{
         var list = mutableListOf<Downloadable>()
-        var data = prefernce?.getContentData()
+        var data = pref?.getContentData()
+        Log.d("TAG", "getDownloableList: $data")
         if(data!=null && !data.equals("")){
             var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
             DateTimeUtil.setTimeZone(data_obj.device.get(0).timeZone)
             if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
                 for(i in 0..data_obj.downloadable.size-1){
-                    Log.d("TAG", "getDownloableList: $i - ${data_obj.downloadable[i].name}")
-                    if(!DataManager.fileIsExist(data_obj.downloadable[i])){
+                    if(!DataManager.fileIsExist(data_obj.downloadable[i]) && isValidDownload(data_obj.downloadable[i])){
                         Log.d("TAG", "getDownloableList: not exist $i - ${data_obj.downloadable[i].name}")
+                        list.add(data_obj.downloadable[i])
+                    }else{
+                        Log.d("TAG", "getDownloableList: not valid $i - ${data_obj.downloadable[i].name}")
+                    }
+                }
+            }
+        }
+        return list
+    }
+
+    // get downloaded list
+    fun getDownloadedList(): List<Downloadable>{
+        var list = mutableListOf<Downloadable>()
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            if (data_obj.downloadable!=null && data_obj.downloadable.size>0){
+                for(i in 0..data_obj.downloadable.size-1){
+                    if(DataManager.fileIsExist(data_obj.downloadable[i])){
                         list.add(data_obj.downloadable[i])
                     }
                 }
             }
         }
         return list
+    }
+
+    private fun isValidDownload(downloadable: Downloadable): Boolean {
+        var time_frame = prefernce?.getStringData(MySharePrefernce.KEY_FEED_RESTRICTION)
+        if(downloadable.d) return true
+        else if(time_frame.equals("false")) return true
+        else if(downloadable.id.equals("0-0-0")) return true
+        else{
+            var times = time_frame!!.split("-")
+            return DateTimeUtil.isValidDownloadingTime(times[0],times[1])
+        }
+        return false
     }
 
     fun getAllDownloadingList(): List<Downloadable> {
@@ -127,7 +168,71 @@ class DataParsing @Inject constructor(
         return if(getDevice()!=null) getDevice()?.identifyDuration!! else return 60
     }
 
-     companion object{
+    // get on-off days
+    fun getOnOffDays(): Days {
+
+        var dayname = DateTimeUtil.getShortDayName()
+
+        var weboss = getDevice()?.weboss
+        if(weboss!=null && !weboss.equals("")){
+            var days = JSONObject(weboss).getJSONObject("gs").getJSONObject("as").getJSONArray("days")
+            if(days==null ) return Days()
+            for (i in 0..days.length()-1){
+                var day = days.getJSONObject(i)
+                var label = day.getInt("label")
+                var name = day.getString("name")
+                var valu = day.getBoolean("val")
+                var st = day.getString("st")
+                var et = day.getString("et")
+                if(name.equals(dayname)){
+                    return Days(label,name,valu,st,et)
+                    break
+                }
+            }
+        }
+        return Days()
+    }
+
+    // get OFF device code
+    fun getDeviceOffCode(): String{
+        var prop = getDevice()?.prop
+        var array = JSONArray(prop)
+        if(array!=null && array.length()>0){
+            for(i in 0..array.length()){
+                var label = array.getJSONObject(i).getString("label")
+                if(label.equals("RS232 off")) {
+                    var value = array.getJSONObject(i).getString("value").replace(" ","")
+                    return value
+                    break
+                }
+            }
+        }
+        return "AA11FE010010"
+    }
+
+    // get ON device code
+    fun getDeviceONCode(): String{
+        var prop = getDevice()?.prop
+        var array = JSONArray(prop)
+        if(array!=null && array.length()>0){
+            for(i in 0..array.length()){
+                var label = array.getJSONObject(i).getString("label")
+                if(label.equals("RS232 on")) {
+                    var value = array.getJSONObject(i).getString("value").replace(" ","")
+                    return value
+                    break
+                }
+            }
+        }
+        return "AA11FE010111"
+    }
+
+    fun checkDemandSs(): Boolean {
+        return getDevice()?.odss!!
+    }
+
+
+    companion object{
 
 
         // check watermark available
@@ -441,8 +546,13 @@ class DataParsing @Inject constructor(
 
         // setting rotate
         fun getSettingRotate(item: Item):Int{
-            var setting_obj = JSONObject(item.settings)
-            return setting_obj.getInt("rotate")
+            try {
+                var obj = JSONObject(item.settings)
+                return  if(obj.getString("rotationOpt").equals("a")) 12 else obj.getInt("rotate")
+            }catch (ex:Exception){
+                var obj = JSONObject(item.settings)
+                return obj.getInt("rotate")
+            }
         }
 
         // override frame
@@ -452,6 +562,7 @@ class DataParsing @Inject constructor(
             ll_frame.id = id
             val params = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
             ll_frame.layoutParams = params
+            ll_frame.orientation = LinearLayout.VERTICAL
             return ll_frame
         }
 
@@ -488,11 +599,15 @@ class DataParsing @Inject constructor(
             ll_frame.background =  getShape(color,frame.settings)
             ll_frame.rotation = frame.r.toFloat()
 
+            ll_frame.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+            ll_frame.setClipToOutline(true);
+
             return ll_frame
         }
 
+         fun getFrameSetting(frame_setting:String) = Gson().fromJson(frame_setting,FrameSetting::class.java)
 
-        private fun getShape(color: Int, settings: String): GradientDrawable {
+         fun getShape(color: Int, settings: String): GradientDrawable {
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.RECTANGLE
             var frame_setting = Gson().fromJson(settings,FrameSetting::class.java)
@@ -506,6 +621,14 @@ class DataParsing @Inject constructor(
                     bl!!.toFloat(), bl.toFloat(), br!!.toFloat(), br.toFloat())
             }
             shape.setColor(color)
+            return shape
+        }
+
+         fun getDateTimeShape(color: Int): GradientDrawable {
+            val shape = GradientDrawable()
+            shape.shape = GradientDrawable.RECTANGLE
+             shape.cornerRadii = floatArrayOf(20f, 20f,20f,20f, 20f,20f, 20f,20f)
+             shape.setColor(color)
             return shape
         }
 
@@ -584,9 +707,9 @@ class DataParsing @Inject constructor(
             var data = prefernce?.getContentData()
             if(data!=null && !data.equals("")){
                 var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.layout.get(0).cod != null &&data_obj.layout.get(0).cod!!.get(0).item != null
-                    && data_obj.layout.get(0).cod!!.get(0).item.size > 0  ){
-
+                Log.d("TAG", "isCodItemContentAvailable: ${data_obj.layout.get(0).cod.toString()}")
+                if (data_obj.layout.get(0).cod != null && data_obj.layout.get(0).cod!!.get(0).item.size > 0){
+                    Log.d("TAG", "isCodItemContentAvailable: item 123")
                     var items =  data_obj.layout.get(0).cod!!.get(0).item
                     for (item in items) {
                         Log.d("TAG", "isCodItemContentAvailable: item - ${item.name}")
@@ -607,6 +730,8 @@ class DataParsing @Inject constructor(
                     Log.d("TAG", "isCodItemContentAvailable: cod item ${cate.label}")
                     return true
                     break
+                }else{
+                    Log.d("TAG", "isCodItemContentAvailable: size 0 ${cate.label}")
                 }
             }
             return false
@@ -635,6 +760,7 @@ class DataParsing @Inject constructor(
         fun isItemvailable(allFrames: List<Frame>?): Boolean {
             var items = false
             allFrames?.forEach { frame ->
+                Log.d("TAG", "isItemvailable: items - ${frame.item.size}")
                 if (frame.item!= null && frame.item.size>0){
                     items = true
                 }
@@ -675,6 +801,6 @@ class DataParsing @Inject constructor(
         }
 
 
-        }
+    }
 
 }

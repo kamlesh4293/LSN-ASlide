@@ -45,19 +45,12 @@ class FragmentWeatherDay4Vertical(var item: Item) : Fragment() {
         var forecast = item.forecast
 
         // get Weather Data From API
-        viewModel.getWeather(item,forecast,lang)
         initObserver(forecast,orientation,template)
 
         return binding.root
     }
 
     private fun initObserver(forecast: Int, orientation: String, template: String) {
-        viewModel.weather_api_result.observe(requireActivity(), Observer {
-            response ->
-            if(response.status == Status.SUCCESS){
-                setData4v(response)
-            }
-        })
     }
 
     private fun setData4v(response: ApiResponse?) {

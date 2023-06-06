@@ -3,23 +3,23 @@ package com.app.lsquared.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
-import android.os.Handler
-import android.os.HandlerThread
+import android.os.Build
 import android.text.format.DateFormat
-import android.transition.Transition
-import android.view.PixelCopy
-import android.view.SurfaceView
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import androidx.annotation.RequiresApi
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.app.lsquared.R
+import com.app.lsquared.model.FrameSetting
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterInside
+import com.bumptech.glide.load.resource.bitmap.GranularRoundedCorners
 import com.bumptech.glide.request.target.BitmapImageViewTarget
-import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.gson.Gson
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -73,7 +73,10 @@ class ImageUtil {
 
         // relative layout
         fun screenshot(view: RelativeLayout, filename: String): File? {
-            if(view==null) return null
+            if(view==null){
+                Log.d("TAG", "screenshot: view is null")
+                return null
+            }
             val date = Date()
             val format = DateFormat.format("yyyy-MM-dd_hh:mm:ss", date)
             try {
@@ -94,10 +97,16 @@ class ImageUtil {
                 return imageurl
             } catch (io: FileNotFoundException) {
                 io.printStackTrace()
+                Log.d("TAG", "screenshot exception 1: $io")
             } catch (e: IOException) {
                 e.printStackTrace()
+                Log.d("TAG", "screenshot exception 2: $e")
             }catch (e: NullPointerException) {
                 e.printStackTrace()
+                Log.d("TAG", "screenshot exception 3: $e")
+                return null
+            }catch (ex:Exception){
+                Log.d("TAG", "screenshot exception 4: $ex")
             }
             return null
         }
@@ -141,9 +150,8 @@ class ImageUtil {
             try {
                 val dirpath = DataManager.getScreenShotDirectory()
                 val file = File(dirpath)
-                if (!file.exists()) {
-                    val mkdir = file.mkdir()
-                }
+                if (!file.exists()) file.mkdir()
+
                 val path = "$dirpath/$filename-$format.jpeg"
                 view.isDrawingCacheEnabled = true
                 val bitmap = Bitmap.createBitmap(view.drawingCache)
@@ -158,6 +166,8 @@ class ImageUtil {
                 io.printStackTrace()
             } catch (e: IOException) {
                 e.printStackTrace()
+            } catch (exp:NullPointerException){
+                exp.toString()
             }
             return null
         }
@@ -198,6 +208,32 @@ class ImageUtil {
                 .load(R.raw.download)
                 .into(imageView)
         }
+
+        @RequiresApi(Build.VERSION_CODES.S)
+        fun loadRoundedLocalImage(
+            context: Context,
+            imageView: ImageView,
+            bitmap: Bitmap,
+            frame_setting: String
+        ){
+
+            var frame_setting = DataParsing.getFrameSetting(frame_setting)
+            var border = frame_setting.br
+            if(border!=null && border.br!=null&& border.bl!=null&& border.tr!=null&& border.tl!=null){
+                var tl = border.tl
+                var tr = border.tr
+                var bl = border.bl
+                var br = border.br
+                Glide.with(context)
+                    .load(bitmap)
+                    .transform(CenterInside(),GranularRoundedCorners(tl!!.toFloat(),tr!!.toFloat(),br!!.toFloat(),bl!!.toFloat()))
+                    .into(imageView)
+            }else{
+                imageView.setImageBitmap(bitmap)
+            }
+
+        }
+
 
     }
 }

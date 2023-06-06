@@ -31,9 +31,6 @@ class WidgetQuotes {
         var textView: TextView? = null
         var auther_tv: TextView? = null
 
-        val handler: Handler = Handler(Looper.getMainLooper())
-
-
         fun getWidgetQuotes(ctx: Context, item: Item, data: String?) :View{
 
             var view = (ctx as Activity).layoutInflater.inflate(R.layout.fragment_quotes, null)
@@ -79,9 +76,11 @@ class WidgetQuotes {
         }
 
         fun setText() {
-            if(pos >= quote!!.size) pos = 0
-            textView!!.setText(quote!![pos].quote)
-            auther_tv!!.setText(quote!![pos].author)
+            if(quote!!.size>0){
+                if(pos >= quote!!.size) pos = 0
+                textView!!.setText(quote!![pos].quote)
+                auther_tv!!.setText(quote!![pos].author)
+            }
         }
 
         fun getRotation(item: Item): Int {

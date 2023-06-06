@@ -1,8 +1,6 @@
 package com.app.lsquared.ui.activity
 
-import android.app.Activity
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -18,6 +16,8 @@ import com.app.lsquared.databinding.ActivityCodContentBinding
 import com.app.lsquared.model.Caption
 import com.app.lsquared.model.Cat
 import com.app.lsquared.model.Content
+import com.app.lsquared.model.ResponseCheckDeviceData
+import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
 import com.app.lsquared.ui.MainViewModel
 import com.app.lsquared.ui.viewmodel.CodViewModel
@@ -26,6 +26,7 @@ import com.app.lsquared.utils.*
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Runnable
 import retrofit2.Retrofit
@@ -50,6 +51,8 @@ class CodContentActivity : AppCompatActivity() {
     lateinit var myPerf: MySharePrefernce
     @Inject
     lateinit var vimeo_retro: Retrofit
+    @Inject
+    lateinit var dataParsing: DataParsing
 
 
     var item : Content? = null
@@ -59,6 +62,8 @@ class CodContentActivity : AppCompatActivity() {
 
     lateinit var checkVersionHandler: Handler
     lateinit var screenshot_handler: Handler
+    lateinit var od_screenshot_handler: Handler
+
 
     private val versionTask = object : Runnable {
         override fun run() {
@@ -66,6 +71,30 @@ class CodContentActivity : AppCompatActivity() {
             checkVersionHandler.postDelayed(this, viewModel.delay.toLong())
         }
     }
+
+    private val odssTask = object : java.lang.Runnable {
+        override fun run() {
+            checkDemandScreenShot()
+            od_screenshot_handler.postDelayed(this, 10* 1000.toLong())
+        }
+    }
+
+    private fun checkDemandScreenShot() {
+        if(myPerf.getBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE)){
+            captureScreen()
+        }else{
+            od_screenshot_handler.removeCallbacks(odssTask)
+        }
+    }
+
+    private fun captureScreen() {
+        val file = ImageUtil.screenshot(binding.rootCodContent,"Screen_final_"+Utility.getCurrentdate())
+        if(file!=null)
+            viewModel.submitScreenShot(
+                Utility.getScreenshotJson(DeviceInfo.getDeviceId(this,myPerf),Utility.getFileToByte(file?.absolutePath),Constant.SS_TYPE_OD),
+                Constant.SS_TYPE_OD)
+    }
+
 
     private val ssTask = object : Runnable {
         override fun run() {
@@ -122,6 +151,7 @@ class CodContentActivity : AppCompatActivity() {
 
         checkVersionHandler = Handler(Looper.getMainLooper())
         screenshot_handler = Handler(Looper.getMainLooper())
+        od_screenshot_handler = Handler(Looper.getMainLooper())
 
         //
         binding.ivNext.setOnClickListener{
@@ -155,6 +185,30 @@ class CodContentActivity : AppCompatActivity() {
             player!!.setMediaItem(mediaItem)
             player?.play()
         }
+
+        // device registred observer
+        viewModel.device_register_api_result.observe( this, androidx.lifecycle.Observer { response ->
+            if (response.status == Status.SUCCESS) {
+                var device_obj = Gson().fromJson(response.data, ResponseCheckDeviceData::class.java)
+                if (!device_obj.desc.equals(Constant.DEVICE_NOT_FOUND)) {
+                    var device_version = device_obj.desc.toInt()
+                    var content_version = myPerf?.getVersionOfConytentAPI()
+                    if (device_version != content_version) {
+                        viewModel.internet = isConnected
+                        viewModel.device_id = DeviceInfo.getDeviceId(this,myPerf)
+                        viewModel.fetchContentData()
+                    }
+                }
+            }
+        })
+
+        // content result observer
+        viewModel.content_api_result.observe(this, androidx.lifecycle.Observer { response ->
+            if (response.status == Status.SUCCESS) {
+                myPerf?.setLocalStorage(response.data!!)
+                myPerf.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,dataParsing.checkDemandSs())
+            }
+        })
     }
 
     private fun setContent() {
@@ -163,7 +217,6 @@ class CodContentActivity : AppCompatActivity() {
         var width = DeviceInfo.getScreenWidth(this)
         var height = DeviceInfo.getScreenHeight(this)
 
-        Log.d(TAG, "setContent: widget - ${item?.type}")
         // image
         if(item!!.type.equals(Constant.CONTENT_IMAGE))
             binding.rlCodContent.addView(ImageWidget.getImageWidget(this,width,height,item!!.fileName!!,item!!.filesize!!))
@@ -175,10 +228,6 @@ class CodContentActivity : AppCompatActivity() {
         /// webview
         if(item?.type.equals(Constant.CONTENT_WEB)|| item?.type.equals(Constant.CONTENT_WIDGET_GOOGLE))
             setWebView(item?.src)
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-//                binding.rlCodContent.addView(WebViewChromium.getWebChromeWidget(this,item?.src!!))
-//            else
-//                binding.rlCodContent.addView(WebViewWidget.getWebViewWidget(this,item?.src!!))
         /// iframe
         if(item?.type.equals(Constant.CONTENT_WIDGET_IFRAME))
             binding.rlCodContent.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!),width,height)
@@ -208,7 +257,6 @@ class CodContentActivity : AppCompatActivity() {
             image_list = getItemGrouping()
             setImageList()
         }
-
     }
 
     private fun setImageList() {
@@ -234,8 +282,8 @@ class CodContentActivity : AppCompatActivity() {
         viewModel.submitScreenShot(
             Utility.getScreenshotJson(
                 DeviceInfo.getDeviceId(this,myPerf),
-                Utility.getFileToByte(file?.absolutePath)
-            )
+                Utility.getFileToByte(file?.absolutePath),Constant.SS_TYPE_SS
+            ), Constant.SS_TYPE_SS
         )
     }
 
@@ -272,12 +320,14 @@ class CodContentActivity : AppCompatActivity() {
 
         checkVersionHandler.post(versionTask)
         screenshot_handler.post(ssTask)
+        od_screenshot_handler.post(odssTask)
     }
 
     override fun onPause() {
         super.onPause()
         checkVersionHandler.removeCallbacks(versionTask)
         screenshot_handler.removeCallbacks(ssTask)
+        od_screenshot_handler.removeCallbacks(odssTask)
         releasePlayer()
     }
 
@@ -292,7 +342,6 @@ class CodContentActivity : AppCompatActivity() {
     }
 
     fun setWebView(src: String?) {
-        Log.d(TAG, "setWebView: src = $src")
         binding.wvCodContent.visibility = View.VISIBLE
         val webView = binding.wvCodContent
         WebViewChromium.setUpWebViewDefaults(webView)
@@ -300,7 +349,6 @@ class CodContentActivity : AppCompatActivity() {
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
-                Log.d("TAG", "onPermissionRequest")
                 runOnUiThread {
                     if (request.origin.toString() == src) {
                         request.grant(request.resources)

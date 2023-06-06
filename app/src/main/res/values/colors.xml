@@ -17,10 +17,15 @@
     <color name="tab_selected_color">#6b6767</color>
     <color name="tab_inactive_color">#666666</color>
 
+    <color name="tab_inactive_color12">#990000</color>
+
+<!--    <color name="testing _color">#ffffff</color>-->
+
 
     <color name="red">#F44336</color>
     <color name="green">#0f5132</color>
     <color name="trans_green">#d1e7dd</color>
+    <color name="transparent">#00000000</color>
     <color name="border_green">#badbcc</color>
     <color name="border_green111">#0c69af</color>
 
@@ -34,6 +39,6 @@
     <color name="dialog_color_col1">#a5d9fd</color>
     <color name="dialog_color_col2">#80c9fb</color>
 
-
+    <color name="weather_all_path">#000000</color>
 
 </resources>

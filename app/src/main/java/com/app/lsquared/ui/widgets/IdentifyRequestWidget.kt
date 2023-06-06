@@ -2,6 +2,7 @@ package com.app.lsquared.ui.widgets
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import com.app.lsquared.BuildConfig
 import com.app.lsquared.databinding.ActivityMainMultifameBinding
 import com.app.lsquared.utils.Constant
@@ -21,7 +22,18 @@ class IdentifyRequestWidget {
 
             if(device_reg){
                 binding.tvMainIdentifyName.text = "Name:  ${device?.name}"
-                binding.tvMainIdentifyServer.text = "Server:  ${device?.server}"
+
+                Log.d("TAG", "setIdentifyRequest: ${device?.server}")
+                if(device?.server!!.contains("-")){
+                    var string_arry = device?.server?.split("-")
+                    var stringBuilder = StringBuilder()
+                    for(i in 0..string_arry!!.size-1){
+                        Log.d("TAG", "setIdentifyRequest array: ${string_arry[i]}")
+                        if(i!=0) stringBuilder.append(string_arry[i])
+                    }
+                    binding.tvMainIdentifyServer.text = "Server:  $stringBuilder"
+                }else binding.tvMainIdentifyServer.text = "Server:  ${device?.server}"
+
             }else{
                 binding.tvMainIdentifyName.text = "Name:  "
                 binding.tvMainIdentifyServer.text = "Server:  "

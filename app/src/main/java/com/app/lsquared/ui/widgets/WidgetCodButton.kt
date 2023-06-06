@@ -41,10 +41,9 @@ class WidgetCodButton {
             // setting
             var settings = Gson().fromJson(item.settings, Settings::class.java)
             cod_bt.text = settings?.text
-            cod_bt.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
+//            cod_bt.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)))
             cod_bt.setTextColor(Color.parseColor(settings?.textColor))
             cod_bt.textSize = settings?.textSize!!.toFloat()
-
 
             var text_style = settings?.textStyle
             // deafult
@@ -91,12 +90,10 @@ class WidgetCodButton {
                 iv_right.visibility =  View.GONE
             }
 
-//            ll_main_cod.setOnClickListener { openCod(ctx,pref) }
-//            cod_bt.setOnClickListener { openCod(ctx,pref) }
-//            iv_bottom.setOnClickListener { openCod(ctx,pref) }
-//            iv_left.setOnClickListener { openCod(ctx,pref) }
-//            iv_right.setOnClickListener { openCod(ctx,pref) }
-//            iv_top.setOnClickListener { openCod(ctx,pref) }
+            var color = Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!))
+//            ll_main_cod.background = DataParsing.getShape(color, item.frame_setting)
+//            cod_bt.background = DataParsing.getShape(color, item.frame_setting)
+
             return view
         }
 

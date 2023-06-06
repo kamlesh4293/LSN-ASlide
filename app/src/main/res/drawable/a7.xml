@@ -5,10 +5,16 @@
     android:viewportHeight="48">
   <path
       android:pathData="M0,0h48v48h-48z"
-      android:fillColor="#385CE0"/>
-  <path
-      android:pathData="M38.6,22.5c-0.3,-8.2 -6,-11.8 -12,-11.8c-7.1,0 -10.3,7.5 -10.8,9.1c-1.9,-1.4 -5.3,-1.8 -6.3,-1.7c-3.7,0.2 -7.4,3.1 -8.2,8.4c-0.8,5.4 3,10.9 8.2,10.9l30.7,0C48.5,37.5 49.9,21.4 38.6,22.5z"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#FFFFFF"/>
+      android:fillColor="@color/transparent"/>
+
+  <group android:name="stroke_g1">
+    <path
+        android:name="stroke1"
+        android:pathData="M38.6,22.5c-0.3,-8.2 -6,-11.8 -12,-11.8c-7.1,0 -10.3,7.5 -10.8,9.1c-1.9,-1.4 -5.3,-1.8 -6.3,-1.7c-3.7,0.2 -7.4,3.1 -8.2,8.4c-0.8,5.4 3,10.9 8.2,10.9l30.7,0C48.5,37.5 49.9,21.4 38.6,22.5z"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"/>
+
+  </group>
+
 </vector>

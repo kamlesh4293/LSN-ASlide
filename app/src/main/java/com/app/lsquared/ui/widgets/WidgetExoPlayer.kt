@@ -3,6 +3,7 @@ package com.app.lsquared.ui.widgets
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
+import android.view.TextureView
 import android.widget.RelativeLayout
 import com.app.lsquared.model.Content
 import com.app.lsquared.model.Item
@@ -29,6 +30,7 @@ class WidgetExoPlayer {
                 RelativeLayout.LayoutParams.MATCH_PARENT
             )
             exoPlayer?.layoutParams = params
+            exoPlayer.player?.setVideoTextureView(TextureView(ctx))
             return exoPlayer
         }
 
@@ -93,6 +95,7 @@ class WidgetExoPlayer {
                 if (item?.sound=="no") player?.volume = 0f
                 else player?.volume = 100f
 
+                exoPlayer?.controllerAutoShow = false
                 player?.prepare()
                 player?.repeatMode = Player.REPEAT_MODE_ONE //repeating the video from start after it's over
                 player?.play()
@@ -111,6 +114,7 @@ class WidgetExoPlayer {
                 player?.setAudioAttributes(audioAttributes, false)
 
                 exoPlayer?.player = player
+                exoPlayer?.controllerAutoShow = false
 
                 //hiding all the ui StyledPlayerView comes with
                 exoPlayer?.setShowNextButton(false)
@@ -189,6 +193,9 @@ class WidgetExoPlayer {
                 if (item?.sound=="no") player?.volume = 0f
                 else player?.volume = 100f
 
+
+                exoPlayer?.controllerAutoShow = false
+                player?.setVideoTextureView(TextureView(ctx))
                 player?.prepare()
                 player?.repeatMode = Player.REPEAT_MODE_OFF //repeating the video from start after it's over
                 player?.play()
@@ -199,18 +206,21 @@ class WidgetExoPlayer {
                     .setSeekBackIncrementMs(10000)
                     .setSeekForwardIncrementMs(10000)
                     .build()
+                player?.setVideoTextureView(TextureView(ctx))
+
                 //set up audio attributes
                 val audioAttributes = AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(C.CONTENT_TYPE_MOVIE)
                     .build()
                 player?.setAudioAttributes(audioAttributes, false)
-
                 exoPlayer?.player = player
 
                 //hiding all the ui StyledPlayerView comes with
                 exoPlayer?.setShowNextButton(false)
                 exoPlayer?.setShowPreviousButton(false)
+
+                exoPlayer?.controllerAutoShow = false
 
                 //setting the scaling mode to scale to fit
                 player?.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT

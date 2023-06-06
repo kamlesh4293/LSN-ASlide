@@ -18,30 +18,6 @@ import retrofit2.Callback
 class ViewModelWeather : ViewModel() {
 
 
-    private val weather_data = MutableLiveData<ApiResponse>()
-    val weather_api_result : LiveData<ApiResponse> get() = weather_data
-
-    fun getWeather(item: Item, forecast: Int, lang: String) {
-
-        var url = Constant.API_WIDGET_WEATHER+"${item.src}?forecast=$forecast&lang=$lang"
-        viewModelScope.launch(Dispatchers.IO) {
-            ApiInterface.create().checkIsDeviceRegister(url)
-                .enqueue( object : Callback<ResponseBody> {
-                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
-                        if(response?.body() != null){
-                            var res = response?.body()!!.string()
-                            weather_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
-                        }else{
-                            var error = response?.errorBody()!!.toString()
-                            weather_data.postValue(ApiResponse(Status.ERROR,null,"error"))
-                        }
-                    }
-                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
-                        weather_data.postValue(ApiResponse(Status.ERROR,null,"error"))
-                    }
-                })
-        }
-    }
 
 
 }

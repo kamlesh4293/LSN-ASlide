@@ -151,11 +151,13 @@ class Utility {
 
 
         // submit screenshot
-        fun getScreenshotJson(mac:String,base_64:String): JSONObject {
+        fun getScreenshotJson(mac:String,base_64:String,type:String): JSONObject {
             val rootObject = JSONObject()
             rootObject.put("mac",mac)
             rootObject.put("base64",base_64)
-            rootObject.put("type","ss")
+//            rootObject.put("type","ss")
+//            rootObject.put("type","od")
+            rootObject.put("type",type)
             return rootObject
         }
 
@@ -246,6 +248,7 @@ class Utility {
             }
             return false
         }
+
 
 
     }

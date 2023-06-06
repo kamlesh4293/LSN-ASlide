@@ -9,7 +9,7 @@ data class Downloadable (
 	@SerializedName("type") val type : String,
 	@SerializedName("name") val name : String,
 	@SerializedName("src") val src : String,
-//	@SerializedName("d") val d : Boolean,
+	@SerializedName("d") val d : Boolean,
 //	@SerializedName("w") val w : Int,
 //	@SerializedName("h") val h : Int,
 //	@SerializedName("scale") val scale : String
