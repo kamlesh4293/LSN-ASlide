@@ -592,10 +592,8 @@ class DataParsing @Inject constructor(
             var  color = if(frame.bg.equals(""))Color.TRANSPARENT else Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga))
 
             if(frame.bg.equals(""))ll_frame.setBackgroundColor(Color.TRANSPARENT)
-            else{
-//                relative_frame.setBackgroundColor(Color.parseColor(frame.bg))
-                ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
-            }
+            else ll_frame.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity(frame.bg!!,frame.bga)))
+
             ll_frame.background =  getShape(color,frame.settings)
             ll_frame.rotation = frame.r.toFloat()
 

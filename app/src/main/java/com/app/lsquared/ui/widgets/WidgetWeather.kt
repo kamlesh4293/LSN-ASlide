@@ -15,9 +15,7 @@ import com.app.lsquared.model.Item
 import com.app.lsquared.pasring.DataParsingSetting
 import com.app.lsquared.ui.UiUtils
 import com.app.lsquared.utils.FontUtil
-import com.sdsmdg.harjot.vectormaster.VectorMasterDrawable
-import com.sdsmdg.harjot.vectormaster.VectorMasterView
-import com.sdsmdg.harjot.vectormaster.models.PathModel
+import java.text.DecimalFormat
 
 
 class WidgetWeather {
@@ -47,9 +45,9 @@ class WidgetWeather {
 
             var unit = DataParsingSetting.getUnit(item.settings)
 
-            temp_tv.text = "${weather_data.current?.temp}°$unit"
-            temp_desc_tv.text = "${weather_data.current?.desc}"
-            temp_city_tv.text = "${weather_data.current?.city},${weather_data.current?.country}"
+            temp_tv.text = "${weather_data.current?.temp.toString().substringBefore(".")}°$unit"
+            temp_desc_tv.text = UiUtils.convertCamelCaps("${weather_data.current?.desc}")
+            temp_city_tv.text = "${weather_data.current?.city}, ${weather_data.current?.country}"
             UiUtils.setWeatherVecotImage(iv,weather_data.current?.icon,color,ctx)
 
             var font_label = DataParsingSetting.getFontLabel(item.settings)
@@ -92,9 +90,9 @@ class WidgetWeather {
 
             var unit = DataParsingSetting.getUnit(item.settings)
 
-            tv_temp.text = "${weather_data.current?.temp}°$unit"
-            tv_temp_min.text = "L: ${weather_data.current?.tempMin}°$unit"
-            tv_temp_max.text = "H: ${weather_data.current?.tempMax}°$unit"
+            tv_temp.text = "${weather_data.current?.temp.toString().substringBefore(".")}°$unit"
+            tv_temp_min.text = "L: ${weather_data.current?.tempMin.toString().substringBefore(".")}°$unit"
+            tv_temp_max.text = "H: ${weather_data.current?.tempMax.toString().substringBefore(".")}°$unit"
             UiUtils.setWeatherVecotImage(iv,weather_data.current?.icon,color,ctx)
 
 
@@ -136,9 +134,9 @@ class WidgetWeather {
 
             var unit = DataParsingSetting.getUnit(item.settings)
 
-            temp_tv.text = "${weather_data.current?.temp}°$unit"
-            temp_low_tv.text = "${weather_data.current?.tempMin}°$unit"
-            temp_high_tv.text = "${weather_data.current?.tempMax}°$unit"
+            temp_tv.text = "${weather_data.current?.temp.toString().substringBefore(".")}°$unit"
+            temp_low_tv.text = "${weather_data.current?.tempMin.toString().substringBefore(".")}°$unit"
+            temp_high_tv.text = "${weather_data.current?.tempMax.toString().substringBefore(".")}°$unit"
             UiUtils.setWeatherVecotImage(iv,weather_data.current?.icon,color,ctx)
             UiUtils.setWeatherVecotImage(up_iv,1000,color,ctx)
             UiUtils.setWeatherVecotImage(down_iv,1001,color,ctx)
@@ -222,14 +220,13 @@ class WidgetWeather {
             ll_day3.layoutParams = child_size
             ll_day4.layoutParams = child_size
 
-
             var temp_size = (getDay4HMainBoxHight(item) /15).toFloat()
             var main_desc_size = (getDay4HMainBoxHight(item)/20).toFloat()
             var desc_size = (getDay4HMainBoxHight(item)/27).toFloat()
-            var icon_size = (getDay4HMainBoxHight(item)/20).toFloat()
+            var icon_size = (getDay4HMainBoxHight(item)/17).toFloat()
 
-            main_humidity_iv.layoutParams = getLayoutParam(icon_size.toInt(),icon_size.toInt())
-            main_wind_iv.layoutParams = getLayoutParam(icon_size.toInt(),icon_size.toInt())
+            main_humidity_iv.layoutParams = getLayoutParam((icon_size*1.5).toInt(),(icon_size*1.5).toInt())
+            main_wind_iv.layoutParams = getLayoutParam((icon_size*1.5).toInt(),(icon_size*1.5).toInt())
             main_humidity_tv.textSize = desc_size
             main_wind_tv.textSize = desc_size
 
@@ -322,35 +319,42 @@ class WidgetWeather {
 
 
             // set dynamic data
-            var unit = DataParsingSetting.getUnit(item.settings)
+            var unit = DataParsingSetting.getUnit(item.settings).toUpperCase()
             UiUtils.setWeatherVecotImage(main_iv,weather_data?.current?.icon!!,ctx.resources.getColor(R.color.white),ctx)
 
-            main_temp_tv.text = "${weather_data?.current?.temp}°${unit.toUpperCase()}"
-            main_desc_tv.text = "${weather_data?.current?.desc}"
-            main_minmax_tv.text = "${weather_data?.current?.tempMax}°$unit/${weather_data?.current?.tempMin}°$unit"
+            main_temp_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.temp) }°${unit.toUpperCase()}"
+
+            main_desc_tv.text = UiUtils.convertCamelCaps("${weather_data?.current?.desc}")
+            main_minmax_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.tempMax)}°$unit / " +
+                    "${DecimalFormat("0.#").format(weather_data?.current?.tempMin)}°$unit"
             main_city_tv.text = "${weather_data?.current?.city}, ${weather_data?.current?.country}"
             main_humidity_tv.text = "${weather_data?.current?.humidity}%"
-            main_wind_tv.text = "${weather_data?.current?.wind} m/s"
+            main_wind_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.wind)} ${UiUtils.getWindUnit(item.settings)}"
 
+            if(weather_data?.forecast?.size==0) return view
             // day 1
             date_day1.text = "${weather_data?.forecast?.get(0)?.dt}"
-            temp_day1.text = "${weather_data?.forecast?.get(0)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day1.text = "${"%.0f".format(weather_data?.forecast?.get(0)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(0)?.tempMin)}°$unit"
             desc_day1.text = "${weather_data?.forecast?.get(0)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day1,weather_data?.forecast?.get(0)?.icon,color,ctx)
             // day 2
             date_day2.text = "${weather_data?.forecast?.get(1)?.dt}"
-            temp_day2.text = "${weather_data?.forecast?.get(1)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day2.text = "${"%.0f".format(weather_data?.forecast?.get(1)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(1)?.tempMin)}°$unit"
             desc_day2.text = "${weather_data?.forecast?.get(1)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day2,weather_data?.forecast?.get(1)?.icon,color,ctx)
             // day 3
             date_day3.text = "${weather_data?.forecast?.get(2)?.dt}"
-            temp_day3.text = "${weather_data?.forecast?.get(2)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day3.text = "${"%.0f".format(weather_data?.forecast?.get(2)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(2)?.tempMin)}°$unit"
             desc_day3.text = "${weather_data?.forecast?.get(2)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day3,weather_data?.forecast?.get(2)?.icon,color,ctx)
             // day 4
-            date_day4.text = "${weather_data?.forecast?.get(2)?.dt}"
-            temp_day4.text = "${weather_data?.forecast?.get(2)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
-            desc_day4.text = "${weather_data?.forecast?.get(2)?.desc}"
+            date_day4.text = "${weather_data?.forecast?.get(3)?.dt}"
+            temp_day4.text = "${"%.0f".format(weather_data?.forecast?.get(3)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(3)?.tempMin)}°$unit"
+            desc_day4.text = "${weather_data?.forecast?.get(3)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day4,weather_data?.forecast?.get(3)?.icon,color,ctx)
 
             return view
@@ -445,10 +449,10 @@ class WidgetWeather {
             // main box
             var temp_size = (main_box_hi /15).toFloat()
             var desc_size = (main_box_hi/25).toFloat()
-            var icon_size = (main_box_hi/20).toFloat()
+            var icon_size = (main_box_hi/17).toFloat()
 
-            main_humidity_iv.layoutParams = getLayoutParam(icon_size.toInt(),icon_size.toInt())
-            main_wind_iv.layoutParams = getLayoutParam(icon_size.toInt(),icon_size.toInt())
+            main_humidity_iv.layoutParams = getLayoutParam((icon_size*1.5).toInt(),(icon_size*1.5).toInt())
+            main_wind_iv.layoutParams = getLayoutParam((icon_size*1.5).toInt(),(icon_size*1.5).toInt())
             main_humidity_tv.textSize = desc_size
             main_wind_tv.textSize = desc_size
 
@@ -534,15 +538,16 @@ class WidgetWeather {
             FontUtil.setFonts(ctx,date_day4,label)
 
             // set dynamic data
-            var unit = DataParsingSetting.getUnit(item.settings)
+            var unit = DataParsingSetting.getUnit(item.settings).toUpperCase()
             UiUtils.setWeatherVecotImage(main_iv,weather_data?.current?.icon!!,ctx.resources.getColor(R.color.white),ctx)
 
-            main_temp_tv.text = "${weather_data?.current?.temp}°${unit.toUpperCase()}"
-            main_desc_tv.text = "${weather_data?.current?.desc}"
-            main_minmax_tv.text = "${weather_data?.current?.tempMax}°$unit/${weather_data?.current?.tempMin}°$unit"
+            main_temp_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.temp) }°${unit.toUpperCase()}"
+            main_desc_tv.text = UiUtils.convertCamelCaps("${weather_data?.current?.desc}")
+            main_minmax_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.tempMax)}°$unit / " +
+                    "${DecimalFormat("0.#").format(weather_data?.current?.tempMin)}°$unit"
             main_city_tv.text = "${weather_data?.current?.city}, ${weather_data?.current?.country}"
             main_humidity_tv.text = "${weather_data?.current?.humidity}%"
-            main_wind_tv.text = "${weather_data?.current?.wind} m/s"
+            main_wind_tv.text = "${DecimalFormat("0.#").format(weather_data?.current?.wind)} ${UiUtils.getWindUnit(item.settings)}"
 
             main_humidity_tv.setPadding(desc_size.toInt(),0,0,0)
             main_wind_tv.setPadding(desc_size.toInt(),0,0,0)
@@ -550,25 +555,31 @@ class WidgetWeather {
             UiUtils.setWeatherVecotImage(main_humidity_iv,1002,color, ctx)
             UiUtils.setWeatherVecotImage(main_wind_iv,1003,color, ctx)
 
+            if(weather_data?.forecast?.size==0) return view
             // day 1
+
             date_day1.text = "${weather_data?.forecast?.get(0)?.dt}"
-            temp_day1.text = "${weather_data?.forecast?.get(0)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day1.text = "${"%.0f".format(weather_data?.forecast?.get(0)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(0)?.tempMin)}°$unit"
             desc_day1.text = "${weather_data?.forecast?.get(0)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day1,weather_data?.forecast?.get(0)?.icon,color,ctx)
             // day 2
             date_day2.text = "${weather_data?.forecast?.get(1)?.dt}"
-            temp_day2.text = "${weather_data?.forecast?.get(1)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day2.text = "${"%.0f".format(weather_data?.forecast?.get(1)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(1)?.tempMin)}°$unit"
             desc_day2.text = "${weather_data?.forecast?.get(1)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day2,weather_data?.forecast?.get(1)?.icon,color,ctx)
             // day 3
             date_day3.text = "${weather_data?.forecast?.get(2)?.dt}"
-            temp_day3.text = "${weather_data?.forecast?.get(2)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
+            temp_day3.text = "${"%.0f".format(weather_data?.forecast?.get(2)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(2)?.tempMin)}°$unit"
             desc_day3.text = "${weather_data?.forecast?.get(2)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day3,weather_data?.forecast?.get(2)?.icon,color,ctx)
             // day 4
-            date_day4.text = "${weather_data?.forecast?.get(2)?.dt}"
-            temp_day4.text = "${weather_data?.forecast?.get(2)?.tempMax}°$unit/${weather_data?.forecast?.get(0)?.tempMin}°$unit"
-            desc_day4.text = "${weather_data?.forecast?.get(2)?.desc}"
+            date_day4.text = "${weather_data?.forecast?.get(3)?.dt}"
+            temp_day4.text = "${"%.0f".format(weather_data?.forecast?.get(3)?.tempMax)}°$unit / " +
+                    "${"%.0f".format(weather_data?.forecast?.get(3)?.tempMin)}°$unit"
+            desc_day4.text = "${weather_data?.forecast?.get(3)?.desc}"
             UiUtils.setWeatherVecotImage(iv_day4,weather_data?.forecast?.get(3)?.icon,color,ctx)
 
             return view
@@ -617,38 +628,42 @@ class WidgetWeather {
             day_tv_4_temp.textSize = text_size
             day_tv_5_temp.textSize = text_size
 
-            var unit = DataParsingSetting.getUnit(item.settings)
+            var unit = DataParsingSetting.getUnit(item.settings).toUpperCase()
             var color = DataParsingSetting.getTintColor(item.settings)
 
             var forcast = weather_data.forecast
+            if(forcast.size==0) return view
             if(forcast[0].dt!=null) {
-                var names = forcast[0].dt?.split(",")
-                day_tv_1.text = "${names!![0]}"
-                day_tv_1_temp.text = "${forcast[0].tempMin}°$unit/${forcast[0].tempMax}°$unit"
+                day_tv_1.text = "Today"
+                day_tv_1_temp.text = "${"%.0f".format(forcast[0].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[0].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_1,forcast[0].icon,color,ctx)
             }
             if(forcast[1].dt!=null) {
-                var names = forcast[1].dt?.split(",")
-                day_tv_2.text = "${names!![0]}"
-                day_tv_2_temp.text = "${forcast[1].tempMin}°$unit/${forcast[1].tempMax}°$unit"
+                day_tv_2.text = "Tomorrow"
+                day_tv_2_temp.text = "${"%.0f".format(forcast[1].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[1].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_2,forcast[1].icon,color,ctx)
             }
             if(forcast[2].dt!=null) {
                 var names = forcast[2].dt?.split(",")
                 day_tv_3.text = "${names!![0]}"
-                day_tv_3_temp.text = "${forcast[2].tempMin}°$unit/${forcast[2].tempMax}°$unit"
+                day_tv_3_temp.text = "${"%.0f".format(forcast[2].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[2].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_3,forcast[2].icon,color,ctx)
             }
             if(forcast[3].dt!=null) {
                 var names = forcast[3].dt?.split(",")
                 day_tv_4.text = "${names!![0]}"
-                day_tv_4_temp.text = "${forcast[3].tempMin}°$unit/${forcast[3].tempMax}°$unit"
+                day_tv_4_temp.text = "${"%.0f".format(forcast[3].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[3].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_4,forcast[3].icon,color,ctx)
             }
             if(forcast[4].dt!=null) {
                 var names = forcast[4].dt?.split(",")
                 day_tv_5.text = "${names!![0]}"
-                day_tv_5_temp.text = "${forcast[4].tempMin}°$unit/${forcast[4].tempMax}°$unit"
+                day_tv_5_temp.text = "${"%.0f".format(forcast[4].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[4].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_5,forcast[4].icon,color,ctx)
             }
 
@@ -745,38 +760,47 @@ class WidgetWeather {
             ll_4.layoutParams = size
             ll_5.layoutParams = size
 
-            var unit = DataParsingSetting.getUnit(item.settings)
+            var unit = DataParsingSetting.getUnit(item.settings).toUpperCase()
             var color = DataParsingSetting.getTintColor(item.settings)
 
             var forcast = weather_data.forecast
+            Log.d("TAG", "getWidgetWeatherFiveDayVerti: ${forcast.size}")
+
+            if(forcast.size==0) return view
             if(forcast[0].dt!=null) {
                 var names = forcast[0].dt?.split(",")
-                day_tv_1.text = "${names!![0]}"
-                day_tv_1_temp.text = "${forcast[0].tempMin}°$unit/${forcast[0].tempMax}°$unit"
+                day_tv_1.text = "Today"
+                "%.2f".format(forcast[0].tempMax)
+                day_tv_1_temp.text = "${"%.0f".format(forcast[0].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[0].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_1,forcast[0].icon,color,ctx)
             }
             if(forcast[1].dt!=null) {
                 var names = forcast[1].dt?.split(",")
-                day_tv_2.text = "${names!![0]}"
-                day_tv_2_temp.text = "${forcast[1].tempMin}°$unit/${forcast[1].tempMax}°$unit"
+                day_tv_2.text = "Tomorrow"
+                day_tv_2_temp.text = "${"%.0f".format(forcast[1].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[1].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_2,forcast[1].icon,color,ctx)
             }
             if(forcast[2].dt!=null) {
                 var names = forcast[2].dt?.split(",")
                 day_tv_3.text = "${names!![0]}"
-                day_tv_3_temp.text = "${forcast[2].tempMin}°$unit/${forcast[2].tempMax}°$unit"
+                day_tv_3_temp.text = "${"%.0f".format(forcast[2].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[2].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_3,forcast[2].icon,color,ctx)
             }
             if(forcast[3].dt!=null) {
                 var names = forcast[3].dt?.split(",")
                 day_tv_4.text = "${names!![0]}"
-                day_tv_4_temp.text = "${forcast[3].tempMin}°$unit/${forcast[3].tempMax}°$unit"
+                day_tv_4_temp.text = "${"%.0f".format(forcast[3].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[3].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_4,forcast[3].icon,color,ctx)
             }
             if(forcast[4].dt!=null) {
                 var names = forcast[4].dt?.split(",")
                 day_tv_5.text = "${names!![0]}"
-                day_tv_5_temp.text = "${forcast[4].tempMin}°$unit/${forcast[4].tempMax}°$unit"
+                day_tv_5_temp.text = "${"%.0f".format(forcast[4].tempMax)}°$unit / " +
+                        "${"%.0f".format(forcast[4].tempMin)}°$unit"
                 UiUtils.setWeatherVecotImage(iv_5,forcast[4].icon,color,ctx)
             }
 

@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.app.lsquared.R
+import com.app.lsquared.pasring.DataParsingSetting
 import com.sdsmdg.harjot.vectormaster.VectorMasterDrawable
 import top.defaults.drawabletoolbox.DrawableBuilder
 
@@ -86,6 +87,22 @@ class UiUtils {
             val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,(height*1.5).toInt())
             layoutParams.setMargins(height/2,height/2,height/2,height/2)
             textView.setLayoutParams(layoutParams)
+        }
+
+        fun convertCamelCaps(msg:String): String {
+            var msgs = msg.split(" ")
+            var builder = StringBuilder()
+            for (i in 0..msgs.size-1){
+                var myString = msgs[i]
+                val upperString: String = myString.substring(0, 1).toUpperCase() + myString.substring(1).toLowerCase()
+                builder.append(upperString+" ")
+            }
+            return builder.toString()
+        }
+
+        fun getWindUnit(settings: String): String {
+            var wku = DataParsingSetting.getWsu(settings)
+            return if(wku.equals("ms")) "m/s" else if(wku.equals("mh")) "m/h" else "Km/h"
         }
 
 

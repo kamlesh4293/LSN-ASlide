@@ -88,7 +88,6 @@ class DateTimeWidget {
             var colon_tv = view?.findViewById<TextView>(R.id.tv_timetemp1_colon)
             var format_tv = view?.findViewById<TextView>(R.id.tv_timetemp1_format)
             var month_year_yv = view?.findViewById<TextView>(R.id.tv_timetemp1_d_m_y)
-            var bg_ll = view?.findViewById<LinearLayout>(R.id.ll_timetemp1_bg)
 
             var setting_obj = Gson().fromJson(item.settings,DateTimeSettingTemp1::class.java)
 
@@ -214,7 +213,7 @@ class DateTimeWidget {
 
             hh_tv.setText("${DateTimeUtil.getHour(setting_obj.format!!)}")
             mm_tv.setText("${DateTimeUtil.getMinutes()}")
-            format_tv.setText("$format")
+            format_tv.setText("  $format")
 
             hh_tv?.textSize = (getBoxHightTemp3(item)/4 ).toFloat()
             mm_tv?.textSize = (getBoxHightTemp3(item)/4 ).toFloat()
@@ -228,7 +227,7 @@ class DateTimeWidget {
             hh_tv.setTextColor(UiUtils.getColor(setting_obj?.timeText!!))
             mm_tv.setTextColor(UiUtils.getColor(setting_obj?.timeText!!))
             format_tv.setTextColor(UiUtils.getColor(setting_obj?.timeText!!))
-            colon_tv.setTextColor(UiUtils.getColor(setting_obj.timeText!!))
+            colon_tv.setTextColor(UiUtils.getColor(setting_obj.bg!!))
 
             setBlinking(colon_tv)
 
@@ -403,7 +402,7 @@ class DateTimeWidget {
             if(DateTimeUtil.getHour().toInt() >= 12)format = "PM"
             if(setting_obj.format.equals("24"))format = ""
 
-            date_tv.setText(DateTimeUtil.getDate())
+            date_tv.setText(DateTimeUtil.getDateTemp8())
             day_tv.setText(DateTimeUtil.getDayName())
             starttime_tv.setText("${DateTimeUtil.getHour(setting_obj.format!!)}")
             endtime_tv.setText("${DateTimeUtil.getMinutes()} $format")

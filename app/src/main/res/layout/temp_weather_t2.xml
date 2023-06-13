@@ -53,7 +53,7 @@
             android:id="@+id/tv_weather_temp2_divide"
             android:layout_width="wrap_content"
             android:text="|"
-            android:layout_marginHorizontal="10sp"
+            android:layout_marginHorizontal="15sp"
             android:textColor="@color/white"
             android:background="@color/white"
             android:layout_height="wrap_content"/>

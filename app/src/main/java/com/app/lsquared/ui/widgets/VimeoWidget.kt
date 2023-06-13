@@ -41,12 +41,13 @@ class VimeoWidget {
             return web
         }
 
-        fun getVimeoWidget(ctx: Context,player: SimpleExoPlayer): StyledPlayerView {
+        fun getVimeoWidget(ctx: Context,player: SimpleExoPlayer,fullscreen:Boolean): StyledPlayerView {
             val configBuilder =
                 Configuration.Builder(Constant.VIMEO_ACCESS_TOKEN) //Pass app access token
                     .setCacheDirectory(ctx.cacheDir)
             VimeoClient.initialize(configBuilder.build())
             var exoPlayer = WidgetExoPlayer.getExoPlayerView(ctx)
+            if(fullscreen) player.volume = 0f
             exoPlayer.player = player
             return exoPlayer
         }

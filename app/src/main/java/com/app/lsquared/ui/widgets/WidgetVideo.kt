@@ -11,13 +11,14 @@ import android.view.View
 import android.widget.MediaController
 import android.widget.RelativeLayout
 import android.widget.VideoView
-import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
-import com.app.lsquared.ui.activity.CodContentActivity
-import com.app.lsquared.utils.Constant
+import com.app.lsquared.model.Item
 import com.app.lsquared.utils.DataManager
-import com.app.lsquared.utils.Utility
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.android.exoplayer2.util.MimeTypes
 import java.io.File
 
 
@@ -41,7 +42,7 @@ class WidgetVideo {
                 }catch (e :RuntimeException ){
                     var uri = FileProvider.getUriForFile(ctx,ctx.packageName+".provider",File(path))
                     media_data.setDataSource(ctx, uri)
-                    e.printStackTrace();
+                    e.printStackTrace()
                 }
             }
             video.setVideoPath(path)
@@ -87,6 +88,38 @@ class WidgetVideo {
             }
             return media_data
         }
+
+        fun playVideo(
+            exoPlayerView: StyledPlayerView,
+            exoPlayer: SimpleExoPlayer?,
+            item: Item,
+            fullScreen: Boolean
+        ) :View{
+
+            Log.d("TAG", "playVideo: $fullScreen")
+
+            var filename = item?.fileName
+            val path = DataManager.getDirectory()+ File.separator+ filename
+            var file = File(path)
+            val uri = Uri.fromFile(file)
+
+            val mediaItem = MediaItem.Builder()
+                .setUri(uri)
+                .setMimeType(MimeTypes.BASE_TYPE_VIDEO) // play local files
+                .build()
+            exoPlayer?.setMediaItem(mediaItem)
+            if(fullScreen){
+                exoPlayer?.volume = 0f
+            }
+
+            exoPlayerView.player = exoPlayer
+            exoPlayer?.repeatMode = Player.REPEAT_MODE_ONE //repeating the video from start after it's over
+            exoPlayer?.prepare()
+            exoPlayer?.play()
+
+            return exoPlayerView
+        }
+
 
     }
 }

@@ -56,6 +56,10 @@ class WidgetNewsList {
             var view = (ctx as Activity).layoutInflater.inflate(R.layout.news_list_view,null)
 
             cal_layout = view.findViewById<LinearLayout>(R.id.ll_main_listview_cal)
+
+            cal_layout?.x = -1000f
+            cal_layout?.y = -1000f
+
             layout = view.findViewById<LinearLayout>(R.id.ll_main_listview)
             var title_tv = view.findViewById<TextView>(R.id.tv_listview_title)
 
@@ -165,7 +169,6 @@ class WidgetNewsList {
                 ch_layout?.addView(desc_textview)
 
                 cal_layout?.addView(ch_layout)
-
                 lastView = ch_layout
 
                 ch_layout.post(Runnable() {

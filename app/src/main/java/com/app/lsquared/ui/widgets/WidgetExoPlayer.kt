@@ -52,7 +52,6 @@ class WidgetExoPlayer {
             return player
         }
 
-
         fun setExoPLayer(ctx: Context, item: Item, exoPlayer: StyledPlayerView): StyledPlayerView {
             setUpPlayer(ctx,exoPlayer,item)
             return exoPlayer
@@ -62,7 +61,6 @@ class WidgetExoPlayer {
             setUpPlayer(ctx,exoPlayer,item)
             return exoPlayer
         }
-
 
         private fun setUpPlayer(ctx: Context,exoPlayer: StyledPlayerView, item: Item) {
 
@@ -269,7 +267,6 @@ class WidgetExoPlayer {
             player?.prepare()
             player?.play()
         }
-
 
     }
 }

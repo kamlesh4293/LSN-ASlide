@@ -178,7 +178,7 @@ class CodContentActivity : AppCompatActivity() {
             || item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)
         ){
             player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_COD,item?.sound!!)
-            binding.rlCodContent?.addView(VimeoWidget.getVimeoWidget(this,player!!))
+            binding.rlCodContent?.addView(VimeoWidget.getVimeoWidget(this,player!!,false))
         }
         vimeoViewModel.vimeo_api_result.observe(this){ response->
             val mediaItem = MediaItem.fromUri(response?.url!!)

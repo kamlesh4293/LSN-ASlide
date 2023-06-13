@@ -53,6 +53,9 @@ class Constant {
         // api for relaunch acknowledge
         fun getApiRelaunchAcknowledge(mac:String) = "$BASE_FILE_FEED_URL/acknowledgements/relaunch/$mac"
 
+        // api for meeting event
+        fun getMeetingEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/meeting/$widget_id/$mac?did=$did&format=json"
+
         // device register response
         const val DEVICE_REGISTERED = 22001
         const val DEVICE_NOT_FOUND = "device not found"
@@ -91,6 +94,7 @@ class Constant {
         const val WIDGET_MESSAGE = "message"
         const val WIDGET_EMERGENCY_MESSAGE = "emergency_message"
         const val CONTENT_WIDGET_WEATHER = "weather"
+        const val CONTENT_WIDGET_MEETING = "meeting"
 
 
         // base url for other apis
@@ -148,6 +152,10 @@ class Constant {
         // submit screen shot type
         const val SS_TYPE_SS = "ss"
         const val SS_TYPE_OD = "od"
+
+        // meeting board type
+        const val MEETING_BOARD_ROOM = "rb"
+        const val MEETING_BOARD_WALL = "wb"
 
 
     }

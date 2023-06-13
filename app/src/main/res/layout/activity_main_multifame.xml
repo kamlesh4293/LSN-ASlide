@@ -205,6 +205,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <!--identify request-->
         <LinearLayout
             android:layout_margin="20dp"
             android:id="@+id/ll_identify_request"
@@ -444,6 +445,18 @@
             </LinearLayout>
 
 
+
+        </LinearLayout>
+
+        <!--Full screen content-->
+        <LinearLayout
+            android:gravity="center"
+            android:background="@color/black"
+            android:visibility="gone"
+            android:orientation="vertical"
+            android:id="@+id/ll_full_screen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
         </LinearLayout>
 

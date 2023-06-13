@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.*
@@ -17,6 +18,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.widget.*
+import android.widget.Toolbar.LayoutParams
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -28,6 +30,8 @@ import com.app.lsquared.databinding.ActivityMainMultifameBinding
 import com.app.lsquared.model.*
 import com.app.lsquared.model.news_setting.BeingNewsData
 import com.app.lsquared.model.news_setting.News
+import com.app.lsquared.model.widget.MeetingRoomBoardResponseData
+import com.app.lsquared.model.widget.MeetingWallBoardResponseData
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.network.NetworkConnectivity
 import com.app.lsquared.network.Status
@@ -41,8 +45,8 @@ import com.app.lsquared.usbserialconnection.USBSerialConnector
 import com.app.lsquared.usbserialconnection.USBSerialListener
 import com.app.lsquared.utils.*
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.StyledPlayerView
-import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -52,8 +56,7 @@ import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.collections.ArrayList
-import kotlin.math.roundToInt
+
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialListener{
@@ -105,6 +108,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     lateinit var report_handler: Handler
 
     var time = 0
+    var fullScreen = false
+    var aManager : AudioManager? = null
+    var volume = 0
 
     // fpg method
     lateinit var mConnector: USBSerialConnector
@@ -136,12 +142,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
     private fun checkValidDownloadable() {
         var list = dataParsing.getDownloableList(pref)
-        if(list.size>0 && downloading==0) {
-            Log.d(TAG, "checkValidDownloadable: if")
-            changeContent()
-        }else{
-            Log.d(TAG, "checkValidDownloadable: else")
-        }
+        if(list.size>0 && downloading==0) changeContent()
     }
 
     private val versionTask = object : Runnable {
@@ -159,7 +160,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     if(current_time.equals(et)) mConnector.writeAsync(RSUtility.hexDecimalToByteArray(dataParsing.getDeviceOffCode()))
                 }
             }
-
             checkDeviceVersion()
             checkVersionHandler.postDelayed(this, viewModel.delay.toLong())
         }
@@ -180,8 +180,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     fun captureScreen(type:String){
-        Log.d(TAG, "captureScreen: $type")
-
         var is_frames = dataParsing.isFrameAvailable()
         var is_override = DataParsing.isOverrideAvailable(pref)
         var isVideo = DataParsing.isVideoPlaying(layout_list)
@@ -198,7 +196,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     val currentPosition: Int? = layout_list[i].videoView?.getCurrentPosition() //in millisecond
                     val pos = currentPosition?.times(1000) //unit in microsecond
                     val bmFrame = layout_list[i].myMediaMetadataRetriever?.getFrameAtTime(pos!!.toLong())
-                    screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
+//                    screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
                 }else{
                     val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
                     if(file!=null)
@@ -315,7 +313,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         @RequiresApi(Build.VERSION_CODES.R)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             var d=hasAllFilesPermission()
-            Log.d("TAGXZ", d.toString())
             if (!d){
                 takePermissions()
             }
@@ -331,6 +328,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
         if (pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!! != 0)
             viewModel.screen_delay = pref?.getIntData(MySharePrefernce.KEY_SCREENSHOT_INTERVAL)!!
+
+        aManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+        volume = aManager?.getStreamVolume(AudioManager.STREAM_MUSIC)!!
     }
 
     private fun initObserver() {
@@ -348,7 +348,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             if (response.status == Status.SUCCESS) {
                 if(response.pos == Constant.DEVICE_REGISTERED){
                     DialogView.showSuccess()
-//                    showToast("Device Registered.")
                 }else{
                     pref.putStringData(MySharePrefernce.KEY_DEVICE_REGISTERED_ID,"")
                     DialogView.showError(response.message)
@@ -391,7 +390,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         viewModel.content_api_result.observe(this, Observer { response ->
             if (response.status == Status.SUCCESS) {
                 try {
-                    Log.d(TAG, "initObserver: content_api_result ${response.data!!}")
                     pref?.setLocalStorage(response.data!!)
                     changeContent()
                 } catch (ex: Exception) {
@@ -406,16 +404,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             viewModel.is_deviceinfo_submitted = true
 //                showSnackBar("Device info Result - ${response.status}")
 //                Log.d("device_info_result", response.message)
-        })
-
-        // submit temp
-        viewModel.temprature_api_result.observe(this, Observer { response ->
-//            showSnackBar("Device temp Result - ${response.status}")
-        })
-
-        // submit screenshot
-        viewModel.screenshot_api_result.observe(this, Observer { response ->
-
         })
 
         // Widget API Observer
@@ -440,7 +428,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
-                Log.d(TAG, "initObserver: rss ${response.data}")
                 if(item.dType.equals(Constant.CONTENT_WIDGET_NEWS_CRAWL)){
                     // crowling
                     var builder  = StringBuilder()
@@ -535,6 +522,20 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             }
         })
 
+        // Meeting
+        viewModel.meeting_api_result.observe(this){ response->
+            if(response.status==Status.SUCCESS){
+                if(response.item?.dType.equals(Constant.MEETING_BOARD_WALL)){
+                    var meeting_obj = Gson().fromJson(response.data,MeetingWallBoardResponseData::class.java)
+                    setMeetingWallBoardView(response.pos,response.item!!,meeting_obj)
+                }else{
+                    var meeting_obj = Gson().fromJson(response.data,MeetingRoomBoardResponseData::class.java)
+                    setMeetingRoomBoardView(response.pos,response.item!!,meeting_obj)
+                }
+            }
+        }
+
+
         // text api
         viewModel.text_api_result.observe(this, Observer {
                 response ->
@@ -598,7 +599,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         // vimeo
         vimeoViewModel.vimeo_api_result.observe(this){ response->
             val mediaItem = MediaItem.fromUri(response?.url!!)
-            layout_list[response.pos].relative_layout?.addView(VimeoWidget.getVimeoWidget(this,layout_list[response.pos].exoPlayer!!))
+            layout_list[response.pos].relative_layout?.addView(VimeoWidget.getVimeoWidget(this,layout_list[response.pos].exoPlayer!!,fullScreen))
 //            binding.rlCodContent?.addView()
             layout_list[response.pos].exoPlayer!!.setMediaItem(mediaItem)
             layout_list[response.pos].exoPlayer?.play()
@@ -606,21 +607,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
         // weather
         viewModel.weather_api_result.observe(this){ response->
-            Log.d("TAG", "onResponse: obser weather data result")
             if(response.status==Status.SUCCESS){
-
                 var weather_obj = Gson().fromJson(response.data,WeatherFive::class.java)
                 setWatherFragment(response.pos,response.item!!,weather_obj)
-
-//                if(weather_item_list.size>0 && response.item!=null){
-//                    for(i in 0..weather_item_list.size-1){
-//                        var weather_item = weather_item_list.get(i)
-//                        setWatherFragment(weather_item.pos,weather_item.item!!,weather_obj)
-//                    }
-//                    weather_item_list.clear()
-//                }
             }
         }
+
     }
 
     fun setQuoteRotation(pos: Int, item: Item) {
@@ -637,14 +629,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     private fun setWaterMark() {
-        Log.d("TAG", "setWaterMark: ${DataParsing.isWatermarkAvailable(pref)}")
         if(DataParsing.isWatermarkAvailable(pref)){
             WaterMarkWidget.getWaterMark(binding,DataParsing.getWatermark(pref))
         }else binding.llWatermark.visibility = View.GONE
     }
 
     private fun changeContent() {
-        Log.d(TAG, "changeContent: device version - ${pref.getVersionOfConytentAPI()}")
         if(!pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) {
             showNotRegisterDialog()
             return
@@ -654,7 +644,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             viewModel.getRelaunchAcknowledge()
         var list = dataParsing.getDownloableList(pref)
         if(list.size>0 && isConnected){
-            Log.d("TAG", "changeContent: download start")
             downloading = 1
             binding.rlDownloading.visibility = View.VISIBLE
             viewModel.downloadFile(list[0])
@@ -736,11 +725,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }.start()
     }
 
-
     fun removeData() {
         play_activate = false
+        fullScreen = false
+        setVolume()
         binding.rootLayout.visibility = View.GONE
         binding.llWatermark.visibility = View.GONE
+        binding.llFullScreen.visibility = View.GONE
+        binding.llFullScreen.removeAllViews()
         binding.rootLayout.removeAllViews()
         items = mutableListOf()
         multiframe_items = mutableListOf()
@@ -764,6 +756,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         layout_list = mutableListOf()
     }
 
+    fun setVolume(){
+        var vol = if(fullScreen) 0 else volume
+        aManager?.setStreamVolume(AudioManager.STREAM_MUSIC, vol, 0)
+
+//        if(layout_list!=null && layout_list.size>0){
+//            for(i in 0..layout_list.size-1){
+//                if(layout_list[i].exoPlayer != null && layout_list[i].exoPlayer!!.isPlaying)
+//                    layout_list[i].exoPlayer!!.volume = if(fullScreen) 0f else 50f
+//            }
+//        }
+    }
+
     @JvmName("getDownloading1")
     public fun getDownloading(): Int {
       return downloading
@@ -777,21 +781,20 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             var ss_frame = DataParsing.getOverrideFrame(ctx!!,1000)
             var videoView = VideoView(this)
             var exoPlayerView  = StyledPlayerView(ctx)
+            var player = SimpleExoPlayer.Builder(ctx).build()
             var myMediaMetadataRetriever = MediaMetadataRetriever()
 
             // add frame in layout list
-            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
+            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,player,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
             screen_layout_list.add(ss_frame)    // add frame in list
 
             binding.rootLayout.addView(frame)   // attach frame in root
             binding.screenRootLayout.addView(ss_frame)   // attach frame in root
-//            binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
 
             var all_frames = DataParsing.getOverrideFrames(pref)
             // add multi-fame items
             if (all_frames?.get(0)?.item != null && all_frames.get(0).item.size > 0) {
 
-                Log.d(TAG, "contentPlaying: frame tr - ${all_frames?.get(0)?.tr}")
                 var child_items: MutableList<Item> = mutableListOf()
                 var items_array = all_frames.get(0).item
                 for (j in 0..items_array.size - 1) {
@@ -812,6 +815,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             // start playing
             startPlayingContent()
         }else if(is_frames){
+
             var all_frames = DataParsing.getFilterdFrames(pref)
             var is_items = DataParsing.isItemvailable(all_frames)
             if(!is_items){
@@ -822,6 +826,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 // create availble frames with bg
                 var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,10)
                 var ss_frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,1000)
+
                 var videoView = VideoView(this)
                 var exoPlayerView  = StyledPlayerView(ctx)
                 var myMediaMetadataRetriever = MediaMetadataRetriever()
@@ -835,10 +840,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
                 binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
                 binding.screenRootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
-
-
-                // add frame for screen capture
-//                var image_frame = DataParsing.getScreenCaptureFrame(ctx!!,all_frames.get(i))
 
                 // add multi-fame items
                 if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
@@ -888,6 +889,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             }
         }
     }
+
+
 
     private fun getNextList(list: List<RssItem>, all_list: List<RssItem>, pos: Int): List<RssItem> {
 //        if(list.size==0 && all_list.size>0) return all_list
@@ -939,7 +942,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     withContext(Dispatchers.Main) {
                         if(play_activate){
                             var position = WidgetRssList.getLastPosition()
-                            Log.d(TAG, "setAllNewsListRotationRSS: $position")
                             if(position == list.size) setAllNewsListRotationRSS(pos, list, item,title,0)
                             else setAllNewsListRotationRSS(pos, list, item,title,position)
                         }
@@ -970,7 +972,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     fun loadWaiting() {
-        Log.d(TAG, "loadWaiting: start")
         if(layout_list!=null &&layout_list.size>0){
             for (i in 0..layout_list.size-1)
                 layout_list[i].relative_layout?.visibility = View.GONE
@@ -978,21 +979,17 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         binding.rlBackground.visibility = View.VISIBLE
         var fileName = DataParsing.isDefaultImageAvailable(pref)
         if(!fileName.equals("")){
-            Log.d(TAG, "loadWaiting: default showing")
             val path = DataManager.getDirectory()+ File.separator+fileName
             binding.ivMainDefaultimg.visibility = View.VISIBLE
             binding.llDefaultimgBg.visibility = View.VISIBLE
             binding.ivMainDefaultimg.setImageBitmap(BitmapFactory.decodeFile(path, ImageUtil.getImageOption()))
         }else {
-            Log.d(TAG, "loadWaiting: default not showing")
             binding.ivMainDefaultimg.visibility = View.GONE
             binding.llDefaultimgBg.visibility = View.GONE
         }
     }
 
     private fun startPlayingContent() {
-        Log.d(TAG, "startPlayingContent")
-
         if(multiframe_items != null && multiframe_items.size>0){
             for (i in 0..multiframe_items.size-1){
                 if(multiframe_items.get(i) != null && multiframe_items.get(i).size>0){
@@ -1010,7 +1007,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         val path = DataManager.getDirectory()+File.separator+ item.fileName
         if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
             if(!File(path).exists()){
-                Log.d(TAG, "nextPlay: current item")
                 current_size_list[position] = current_size_list[position]+1
                 nextPlay(position)
                 return
@@ -1041,8 +1037,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             widget_type.equals(Constant.CONTENT_VECTOR) ||
             widget_type.equals(Constant.CONTENT_POWERPOINT) ||
             widget_type.equals(Constant.CONTENT_WORD) ) {
-            layout?.removeAllViews()
-            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
+            if(item.fs.equals("yes")){
+                fullScreen = true
+                binding.llFullScreen.visibility = View.VISIBLE
+                binding.llFullScreen.removeAllViews()
+                binding.llFullScreen.addView(ImageWidget.getImageWidget(this,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.filesize,item.frame_setting))
+            }else{
+                layout?.removeAllViews()
+                layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
+            }
         }
         // QR-Code
         else if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
@@ -1051,9 +1054,23 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
         // video
         else if(widget_type.equals(Constant.CONTENT_VIDEO)){
-            layout?.removeAllViews()
-            layout_list[pos].myMediaMetadataRetriever = WidgetVideo.getMediaData(this,item.fileName,media_data!!)
-            layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,item.frame_w,item.frame_h,item.fileName,item.sound))
+            if(item.fs.equals("yes")){
+                fullScreen = true
+                binding.llFullScreen.visibility = View.VISIBLE
+                binding.llFullScreen.removeAllViews()
+                video?.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+                binding.llFullScreen.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.sound))
+            }else{
+                layout?.removeAllViews()
+                layout_list[pos].sound = item.sound
+//                layout_list[pos].myMediaMetadataRetriever = WidgetVideo.getMediaData(this,item.fileName,media_data!!)
+//                layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,item.frame_w,item.frame_h,item.fileName,item.sound))
+                layout_list[pos].exoPlayer = WidgetExoPlayer.getExoPlayer(ctx,Constant.PLAYER_SLIDE,item.sound)
+                var video_new = layout_list[pos].exoPlayerView
+                layout_list[pos].exoPlayerView = WidgetExoPlayer.getExoPlayerView(ctx)
+                video_new.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+                layout?.addView(WidgetVideo.playVideo(layout_list[pos].exoPlayerView,layout_list[pos].exoPlayer,item,fullScreen))
+            }
         }
         // webview
         else if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
@@ -1071,7 +1088,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
         // vimeo
         else if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
-            Log.d(TAG, "setWidget: vimeo duration ${item.duration}")
             layout?.removeAllViews()
             var player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_SLIDE,item?.sound!!)
             layout_list[pos].exoPlayer = player
@@ -1115,7 +1131,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
         // news
         else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
-            Log.d(TAG, "setWidget: loading $widget_type id - ${item.id}")
             if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos,item.id)){
                 if(item.src.equals(""))
                     viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
@@ -1153,6 +1168,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             var image = dataParsing.getImageName(WidgetMessage.getData(item.data).contentid)
             layout?.addView(WidgetMessage.getMessageWidget(this,item,image))
         }
+        // MEETING
+        else if(widget_type == Constant.CONTENT_WIDGET_MEETING)
+            viewModel.getMeetingData(dataParsing.getDevice(),item.id.split("-")[2],pos,item)
+
         // weather
         else if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
             viewModel.getWeather(item,pos)
@@ -1162,20 +1181,19 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             layout?.removeAllViews()
             layout?.addView(WidgetText.getBlankView(this),item.frame_w,item.frame_h)
         }
-
         if(multiframe_items[pos].size>1){
+            setVolume()
             var job = CoroutineScope(Dispatchers.IO).launch {
                 delay(TimeUnit.SECONDS.toMillis(item.duration.toLong()))
                 withContext(Dispatchers.Main) {
-//                    if(exoPlayerView.player != null && exoPlayerView.player!!.isPlaying) exoPlayerView.player?.stop()
-//                    if(video != null && video!!.isPlaying){
-//                        video!!.stopPlayback()
-//                        video = null
-//                    }
-                    if(exoPlayer != null && exoPlayer!!.isPlaying){
-                        exoPlayer!!.release()
-                        exoPlayer = null
+                    layout_list[pos].sound = ""
+
+                    if(layout_list[pos].active_widget.equals(Constant.CONTENT_VIDEO)){
+                        if(layout_list[pos].exoPlayer != null && layout_list[pos].exoPlayer!!.isPlaying){
+                            layout_list[pos].exoPlayer!!.release()
+                        }
                     }
+
                     if(exoPlayerView != null && exoPlayerView?.player != null && exoPlayerView?.player!!.isPlaying){
                         exoPlayerView?.player!!.release()
                         exoPlayerView?.player = null
@@ -1184,6 +1202,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     if(play_activate){
                         pref?.createReport(item.id,item.duration,start_time!!)
                         current_size_list[pos] = current_size_list[pos]+1
+                        if(item.fs.equals("yes") ){
+                            fullScreen = false
+                            setVolume()
+                            binding.llFullScreen.visibility = View.GONE
+                            binding.llFullScreen.removeAllViews()
+                        }
                         nextPlay(pos)
                     }
                 }
@@ -1198,15 +1222,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
 
     }
-
-    fun reSize(view: View,scaleX :Float,scaleY :Float){
-        var layoutparam = view.layoutParams
-        layoutparam.height = (150*scaleY).roundToInt()
-        layoutparam.width = (200*scaleX).roundToInt()
-        Log.d("TAG", "reSize: wi - ${view.width} & hi - ${view.height}")
-        view.layoutParams = layoutparam
-    }
-
 
     // stock table view with webview
     private fun setStockWebView(pos: Int, item: Item,url:String) {
@@ -1290,7 +1305,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     private fun setWatherFragment(pos: Int, item: Item, weather_data: WeatherFive) {
         var setting_obj = JSONObject(item.settings)
         var template = setting_obj.getString("template")
-        var lang = setting_obj.getString("lang")
         var orientation = setting_obj.getString("orientation")
         var forecast = item.forecast
 
@@ -1320,6 +1334,22 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
+    fun setMeetingWallBoardView(pos: Int, item: Item, meeting_obj: MeetingWallBoardResponseData) {
+        var layout = layout_list[pos].relative_layout
+        layout?.removeAllViews()
+        var meeting = WidgetMeeting()
+        if(meeting_obj.events.size>0) layout?.addView(meeting.getMeetingWallBoardWidget(ctx,item,meeting_obj,layout))
+        else meeting.getMeetingWallBoardWidget(ctx,item,meeting_obj,layout)
+    }
+
+    fun setMeetingRoomBoardView(pos: Int, item: Item, meeting_obj: MeetingRoomBoardResponseData) {
+        var layout = layout_list[pos].relative_layout
+        layout?.removeAllViews()
+        var meeting = WidgetMeeting()
+        if(meeting_obj.event !=null) layout?.addView(meeting.getMeetingRoomBoardWidget(ctx,item,meeting_obj,layout))
+        else meeting.getMeetingRoomBoardWidget(ctx,item,meeting_obj,layout)
+    }
+
     private fun nextPlay(pos:Int){
         if(current_size_list[pos] < multiframe_items.get(pos).size){
             validateItem(multiframe_items.get(pos)[current_size_list[pos]],pos)
@@ -1337,6 +1367,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     override fun onPause() {
         super.onPause()
         play_activate = false
+        fullScreen = false
+        setVolume()
 
         checkVersionHandler.removeCallbacks(versionTask)
         timeScehdulerHandler.removeCallbacks(timeSchedularTask)
@@ -1356,39 +1388,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 }
     }
 
-/*
-    private fun checkDeviceVersion() {
-        if(packageManager.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,getPackageName())==PackageManager.PERMISSION_GRANTED)
-            if(packageManager.checkPermission(Manifest.permission.READ_PHONE_STATE,getPackageName())==PackageManager.PERMISSION_GRANTED){
-                if(isConnected)
-                    if(downloading==0){
-                        freeMemory()
-                        viewModel.isDeviceRegistered(this,DeviceInfo.getDeviceId(this,pref))
-                    }
-            }
-    }
-*/
-
-
     // dialog
     fun showNotRegisterDialog() {
-
         DialogView.showNotRegisterDialog(this,this,binding.mainLayout)
         loadWaiting()
-
     }
 
     fun hideDialog() {
         DialogView.hideDialog()
-    }
-
-    // toast & snack bar
-    fun showSnackBar(msg: Int) {
-        Snackbar.make(
-            findViewById<View>(android.R.id.content),
-            getString(msg),
-            Snackbar.LENGTH_LONG
-        ).show()
     }
 
     fun showSnackBar(msg: String) {
@@ -1414,10 +1421,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 ) {
                     checkDeviceVersion()
                 }
-            }
-            101 ->{
-            }
-            100 ->{
             }
         }
     }
@@ -1470,7 +1473,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
-
     fun freeMemory() {
         System.runFinalization()
         Runtime.getRuntime().gc()
@@ -1500,28 +1502,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         savedInstanceState.getBundle("newBundy")
-    }
-
-    fun getHeight(view: View): Int {
-        var hi = -1
-        view.post(Runnable() {
-            var width = view.getWidth()
-            var height = view.getHeight()
-            hi = height
-            Log.d(TAG, "getHeight: cal - $height")
-        })
-        return hi
-    }
-
-    fun getHeightDes(view: View): Int {
-        var hi = -1
-        view.post(Runnable() {
-            var width = view.getWidth()
-            var height = view.getHeight()
-            hi = height
-            Log.d(TAG, "getHeight: desc cal - $height")
-        })
-        return hi
     }
 
     override fun onDataReceived(data: ByteArray?) {

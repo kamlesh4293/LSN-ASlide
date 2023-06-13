@@ -21,6 +21,7 @@ import com.androidnetworking.interfaces.DownloadListener
 import com.androidnetworking.interfaces.DownloadProgressListener
 import com.androidnetworking.interfaces.JSONObjectRequestListener
 import com.androidnetworking.interfaces.StringRequestListener
+import com.app.lsquared.model.Device
 import com.app.lsquared.model.Downloadable
 import com.app.lsquared.model.Item
 import com.app.lsquared.pasring.DataParsingSetting
@@ -102,6 +103,10 @@ class MainViewModel @Inject constructor(
     // 6. Wather -  data
     private val weather_data = MutableLiveData<ApiResponse>()
     val weather_api_result : LiveData<ApiResponse> get() = weather_data
+
+    // 7. meeting -  data
+    private val meeting_data = MutableLiveData<ApiResponse>()
+    val meeting_api_result : LiveData<ApiResponse> get() = meeting_data
 
 
     // 5. file downloading
@@ -464,6 +469,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // 6. Weather widget
     fun getWeather(item: Item,pos: Int) {
         Log.d("TAG", "getWeather: pos - $pos")
         var lang = DataParsingSetting.getLang(item.settings)
@@ -482,6 +488,27 @@ class MainViewModel @Inject constructor(
                     }
                     override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
                         weather_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+    // 7. Meeting widget
+    fun getMeetingData(device:Device?, widget_id: String,pos: Int,item: Item) {
+        var url = Constant.getMeetingEventApi(device?.mac!!,device?.id.toString(),widget_id)
+        Log.d("TAG", "getMeetingData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        Log.d("TAG", "onResponse: obser weather data")
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            meeting_data.value = ApiResponse(Status.SUCCESS,res,"success",pos,item)
+                        }else meeting_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        meeting_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
                     }
                 })
         }

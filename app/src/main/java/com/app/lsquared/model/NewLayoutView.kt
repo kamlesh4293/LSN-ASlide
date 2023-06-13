@@ -16,7 +16,6 @@ data class NewLayoutView (
     var active_widget :String,
     var job: Job?,
     var rotate_job: Job?,
-    var myMediaMetadataRetriever: MediaMetadataRetriever?
-){
-
-}
+    var myMediaMetadataRetriever: MediaMetadataRetriever?,
+    var sound: String = ""
+)

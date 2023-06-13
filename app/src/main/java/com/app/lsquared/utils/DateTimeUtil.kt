@@ -24,6 +24,13 @@ class DateTimeUtil {
         fun getDate():String{
             val cal = Calendar.getInstance()
             val month_date = SimpleDateFormat("dd")
+            var date = month_date.format(cal.time)
+            return if(date.toInt()<10) date.replace("0","") else date
+        }
+
+        fun getDateTemp8():String{
+            val cal = Calendar.getInstance()
+            val month_date = SimpleDateFormat("dd")
             return month_date.format(cal.time)
         }
 
