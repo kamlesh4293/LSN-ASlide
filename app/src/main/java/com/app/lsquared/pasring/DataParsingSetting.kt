@@ -23,6 +23,8 @@ class DataParsingSetting {
         const val KEY_HEADER_FONT = "headerFont"
         const val KEY_TITLE_FONT = "titleFont"
         const val KEY_TIME_FONT = "timeFont"
+        const val KEY_ROOM_FONT = "roomFont"
+        const val KEY_FLOOR_FONT = "floorFont"
         const val KEY_SUBTITLE_FONT = "subtitleFont"
         const val KEY_HEADER_LABEL = "label"
         const val KEY_COLUMN1 = "column1"
@@ -108,6 +110,10 @@ class DataParsingSetting {
 
         fun getFontTimeLabel(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_TIME_FONT).getString(KEY_HEADER_LABEL)
 
+        fun getFontRoomLabel(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_ROOM_FONT).getString(KEY_HEADER_LABEL)
+
+        fun getFontFloorLabel(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_FLOOR_FONT).getString(KEY_HEADER_LABEL)
+
         fun getFontSubTitleLabel(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_SUBTITLE_FONT).getString(KEY_HEADER_LABEL)
 
         fun getMeetingTitleText1(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_HEADER).getString(KEY_COLUMN1)
@@ -138,6 +144,18 @@ class DataParsingSetting {
 
         // ROTATE
         fun getRotate(setting_obj:JSONObject) = setting_obj.getInt(KEY_ROTATE)
+
+        // logo option
+        fun getLogoOption(setting_obj:JSONObject) = setting_obj.getBoolean("logoOpt")
+
+        // logo option
+        fun isRoomVisible(setting_obj:JSONObject) = setting_obj.getBoolean("isRoom")
+        fun isFloorVisible(setting_obj:JSONObject) = setting_obj.getBoolean("isFloor")
+        fun isRFVisible(setting_obj:JSONObject) = setting_obj.getBoolean("isRF")
+        fun isTimeVisible(setting_obj:JSONObject) = setting_obj.getBoolean("isTime")
+
+        // header visibility
+        fun getheaderVisibility(setting_obj:JSONObject) = setting_obj.getJSONObject(KEY_HEADER).getBoolean("active")
 
     }
 

@@ -13,7 +13,6 @@
         android:text="February 4"
         android:gravity="center|bottom"
         android:layout_width="match_parent"
-        android:textSize="70dp"
         android:layout_height="wrap_content"/>
 
     <LinearLayout
@@ -30,7 +29,6 @@
             android:gravity="center|bottom"
             android:layout_width="wrap_content"
             android:textStyle="bold"
-            android:textSize="80dp"
             android:layout_height="match_parent"/>
 
         <TextView
@@ -41,7 +39,6 @@
             android:gravity="center|bottom"
             android:layout_width="wrap_content"
             android:textStyle="bold"
-            android:textSize="80dp"
             android:layout_height="match_parent"/>
 
         <TextView
@@ -52,7 +49,6 @@
             android:gravity="center|bottom"
             android:layout_width="wrap_content"
             android:textStyle="bold"
-            android:textSize="80dp"
             android:layout_height="match_parent"/>
 
     </LinearLayout>

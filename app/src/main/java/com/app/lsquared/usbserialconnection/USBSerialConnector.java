@@ -86,7 +86,12 @@ public class USBSerialConnector implements SerialInputOutputManager.Listener {
             }
         };
 
-        PendingIntent mPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
+        PendingIntent mPermissionIntent = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            mPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE);
+        }else{
+            mPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
+        }
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         context.registerReceiver(usbReceiver, filter);
 

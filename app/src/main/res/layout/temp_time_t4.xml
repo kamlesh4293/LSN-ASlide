@@ -8,7 +8,6 @@
     <TextView
         android:id="@+id/tv_timetemp4_time_start"
         android:singleLine="true"
-        android:layout_marginBottom="10dp"
         android:textColor="@color/white"
         android:text="2 "
         android:gravity="center"
@@ -20,7 +19,6 @@
     <TextView
         android:id="@+id/tv_timetemp4_time_colon"
         android:singleLine="true"
-        android:layout_marginBottom="10dp"
         android:textColor="@color/white"
         android:text=":"
         android:gravity="center"
@@ -32,7 +30,6 @@
     <TextView
         android:id="@+id/tv_timetemp4_time_end"
         android:singleLine="true"
-        android:layout_marginBottom="10dp"
         android:textColor="@color/white"
         android:text=" 20 PM"
         android:gravity="center"

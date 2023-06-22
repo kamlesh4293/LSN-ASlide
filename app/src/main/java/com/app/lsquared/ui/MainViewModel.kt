@@ -108,6 +108,14 @@ class MainViewModel @Inject constructor(
     private val meeting_data = MutableLiveData<ApiResponse>()
     val meeting_api_result : LiveData<ApiResponse> get() = meeting_data
 
+    // 8. calendar -  data
+    private val Google_cal_data = MutableLiveData<ApiResponse>()
+    val google_cal_api_result : LiveData<ApiResponse> get() = Google_cal_data
+
+    // 9 . Outlook -  data
+    private val Outlook_data = MutableLiveData<ApiResponse>()
+    val outlook_api_result : LiveData<ApiResponse> get() = Outlook_data
+
 
     // 5. file downloading
     private val _downloadfile_data = MutableLiveData<ApiResponse>()
@@ -514,6 +522,51 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // 7. Google Calendar widget
+    fun getGoogleCalData(device:Device?, widget_id: String,pos: Int,item: Item) {
+        var url = if(item.dType.equals(Constant.CALENDAR_BOARD_ALL))
+            Constant.getGoogleCalAllEventApi(device?.mac!!,device?.id.toString(),widget_id)
+        else Constant.getGoogleCalEventApi(device?.mac!!,device?.id.toString(),widget_id)
+
+        Log.d("TAG", "getGoogleCalData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            Google_cal_data.value = ApiResponse(Status.SUCCESS,res,"success",pos,item)
+                        }else Google_cal_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Google_cal_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
+
+    // 8. outlook widget
+    fun getOutlookData(device:Device?, widget_id: String,pos: Int,item: Item) {
+        var url = Constant.getOutlookEventApi(device?.mac!!,device?.id.toString(),widget_id)
+
+        Log.d("TAG", "getOutlookData: $url")
+        viewModelScope.launch(Dispatchers.IO) {
+            ApiInterface.create().checkIsDeviceRegister(url)
+                .enqueue( object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                        if(response?.body() != null){
+                            var res = response?.body()!!.string()
+                            Outlook_data.value = ApiResponse(Status.SUCCESS,res,"success",pos,item)
+                        }else Outlook_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                    override fun onFailure(call: Call<ResponseBody>?, t: Throwable?) {
+                        Outlook_data.postValue(ApiResponse(Status.ERROR,null,"error",pos))
+                    }
+                })
+        }
+    }
+
 
     // 6. file downloading
     fun downloadFile(downloadable: Downloadable) {
@@ -605,7 +658,7 @@ class MainViewModel @Inject constructor(
 
     // identify request acknowledge
     fun getIdentifyAcknowledge(pref: MySharePrefernce) {
-        var device = DataParsing.getDevice(pref)
+        var device = dataParsing.getDevice()
         if(device == null) return
         var url = Constant.getApiIdentifyAcknowledge(device!!.mac,device!!.id.toString())
         viewModelScope.launch(Dispatchers.IO) {

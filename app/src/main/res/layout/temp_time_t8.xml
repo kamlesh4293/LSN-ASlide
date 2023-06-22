@@ -68,9 +68,7 @@
             android:textSize="60dp"
             android:layout_height="wrap_content"/>
 
-
     </LinearLayout>
 
-
-
 </LinearLayout>
+

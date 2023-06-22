@@ -6,7 +6,6 @@
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:layout_margin="20dp"
         android:orientation="horizontal"
         android:gravity="center"
         android:layout_width="match_parent"
@@ -15,15 +14,11 @@
         <TextView
             android:singleLine="true"
             android:id="@+id/tv_timetemp5_datetime"
-            android:textSize="35dp"
             android:textColor="@color/white"
             android:text="Tuessday Feb. 4, 20202"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
     </LinearLayout>
-
-
-
 
 </LinearLayout>

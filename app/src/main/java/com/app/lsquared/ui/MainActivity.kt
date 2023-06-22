@@ -30,8 +30,8 @@ import com.app.lsquared.databinding.ActivityMainMultifameBinding
 import com.app.lsquared.model.*
 import com.app.lsquared.model.news_setting.BeingNewsData
 import com.app.lsquared.model.news_setting.News
-import com.app.lsquared.model.widget.MeetingRoomBoardResponseData
-import com.app.lsquared.model.widget.MeetingWallBoardResponseData
+import com.app.lsquared.model.widget.CalendarResponseData
+import com.app.lsquared.model.widget.MeetingCalendarResponseData
 import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.network.NetworkConnectivity
 import com.app.lsquared.network.Status
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     var TAG = "MainActivity"
 
     // view list
-    var layout_list : MutableList<NewLayoutView> = mutableListOf()
+    var layout_list : MutableList<LayoutFrames> = mutableListOf()
     var screen_layout_list : MutableList<LinearLayout> = mutableListOf()
 
     var multiframe_items: MutableList<MutableList<Item>> = mutableListOf()
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         override fun run() {
             var running_signature_lay = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE)
             var running_signature_over = pref?.getStringData(MySharePrefernce.KEY_TIME_SIGNATURE_OVERRIDE)
-            var is_override = DataParsing.isOverrideAvailable(pref)
+            var is_override = dataParsing.isOverrideAvailable(pref)
 
             var ovr_current_signature = DataParsing.getTimeSignatureOverride(pref)
             var lay_current_signature = DataParsing.getTimeSignature(pref)
@@ -181,7 +181,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
     fun captureScreen(type:String){
         var is_frames = dataParsing.isFrameAvailable()
-        var is_override = DataParsing.isOverrideAvailable(pref)
+        var is_override = dataParsing.isOverrideAvailable(pref)
         var isVideo = DataParsing.isVideoPlaying(layout_list)
         if(!is_frames && !is_override){
             val file = ImageUtil.screenshot(binding.mainLayout,"Screen_final_"+Utility.getCurrentdate())
@@ -198,7 +198,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     val bmFrame = layout_list[i].myMediaMetadataRetriever?.getFrameAtTime(pos!!.toLong())
 //                    screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,bmFrame!!))
                 }else{
-                    val file = ImageUtil.screenshot(layout_list[i].relative_layout!!,"Screen_final_"+Utility.getCurrentdate())
+                    val file = ImageUtil.screenshot(layout_list[i].frame_view_ll!!,"Screen_final_"+Utility.getCurrentdate())
                     if(file!=null)
                         screen_layout_list[i].addView(ImageWidget.getSSImageWidget(this@MainActivity,BitmapFactory.decodeFile(file?.absolutePath)))
                 }
@@ -233,8 +233,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             report_handler.postDelayed(this, viewModel.report_delay.toLong())
         }
     }
-
-
 
     private val broadcastreceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -392,9 +390,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 try {
                     pref?.setLocalStorage(response.data!!)
                     changeContent()
-                } catch (ex: Exception) {
-
-                }
+                } catch (ex: Exception) { }
             }
         })
 
@@ -415,8 +411,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
-                layout_list[pos].relative_layout?.removeAllViews()
-                layout_list[pos].relative_layout?.
+                layout_list[pos].frame_view_ll?.removeAllViews()
+                layout_list[pos].frame_view_ll?.
                     addView(WidgetQuotes.getWidgetQuotes(this,item,response.data),item.frame_w,item.frame_h)
                 setQuoteRotation(pos,item)
             }
@@ -452,8 +448,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                             }
                         }
                     }
-                    layout_list[pos].relative_layout?.removeAllViews()
-                    layout_list[pos].relative_layout?.
+                    layout_list[pos].frame_view_ll?.removeAllViews()
+                    layout_list[pos].frame_view_ll?.
                     addView(WidgetNewsCrowling.getWidgetNewsCrowling(this,item,builder.toString(), list_title),item.frame_w,item.frame_h)
                 }else{
                     // listview
@@ -502,8 +498,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                             }
                         }
                     }
-                    layout_list[pos].relative_layout?.removeAllViews()
-                    layout_list[pos].relative_layout?.
+                    layout_list[pos].frame_view_ll?.removeAllViews()
+                    layout_list[pos].frame_view_ll?.
                     addView(WidgetNewsCrowling.getWidgetNewsCrowling(this,item,builder.toString(), list_title),item.frame_w,item.frame_h)
                 }else{
                     // listview
@@ -525,12 +521,31 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         // Meeting
         viewModel.meeting_api_result.observe(this){ response->
             if(response.status==Status.SUCCESS){
-                if(response.item?.dType.equals(Constant.MEETING_BOARD_WALL)){
-                    var meeting_obj = Gson().fromJson(response.data,MeetingWallBoardResponseData::class.java)
-                    setMeetingWallBoardView(response.pos,response.item!!,meeting_obj)
-                }else{
-                    var meeting_obj = Gson().fromJson(response.data,MeetingRoomBoardResponseData::class.java)
-                    setMeetingRoomBoardView(response.pos,response.item!!,meeting_obj)
+                if(layout_list!=null && layout_list.size>0){
+                    var meeting_obj = Gson().fromJson(response.data,MeetingCalendarResponseData::class.java)
+                    setMeetingView(response.pos,response.item!!,meeting_obj)
+                }
+            }
+        }
+
+        // google calendar
+        viewModel.google_cal_api_result.observe(this){ response->
+            if(response.status==Status.SUCCESS){
+                if(layout_list!=null && layout_list.size>0){
+                    Log.d(TAG, "initObserver google_cal_api_result : ${response.data}")
+                    var cal_obj = Gson().fromJson(response.data, CalendarResponseData::class.java)
+                    setCalendarView(response.pos,response.item!!,cal_obj)
+                }
+            }
+        }
+
+        // Outlook
+        viewModel.outlook_api_result.observe(this){ response->
+            if(response.status==Status.SUCCESS){
+                if(layout_list!=null && layout_list.size>0){
+                    Log.d(TAG, "initObserver google_cal_api_result : ${response.data}")
+                    var cal_obj = Gson().fromJson(response.data, CalendarResponseData::class.java)
+                    setCalendarView(response.pos,response.item!!,cal_obj)
                 }
             }
         }
@@ -543,7 +558,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
                 var item = multiframe_items[pos].get(current_size_list[pos])
-                var layout = layout_list[pos].relative_layout
+                var layout = layout_list[pos].frame_view_ll
                 layout?.removeAllViews()
                 if(item.dType.equals(Constant.TEXT_CROWLING))
                     layout?.addView(WidgetText.getWidgetTextCrowling(this,item,response.data),item.frame_w,item.frame_h)
@@ -566,7 +581,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             if(response.status==Status.SUCCESS){
                 if(multiframe_items.size==0) return@Observer
                 var pos = response.pos
-                var layout = layout_list[pos].relative_layout
+                var layout = layout_list[pos].frame_view_ll
                 var item = multiframe_items[pos].get(current_size_list[pos])
                 var item_ids  = item.id.split("-")
                 layout?.removeAllViews()
@@ -599,7 +614,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         // vimeo
         vimeoViewModel.vimeo_api_result.observe(this){ response->
             val mediaItem = MediaItem.fromUri(response?.url!!)
-            layout_list[response.pos].relative_layout?.addView(VimeoWidget.getVimeoWidget(this,layout_list[response.pos].exoPlayer!!,fullScreen))
+            layout_list[response.pos].frame_view_ll?.addView(VimeoWidget.getVimeoWidget(this,layout_list[response.pos].exoPlayer!!,fullScreen))
 //            binding.rlCodContent?.addView()
             layout_list[response.pos].exoPlayer!!.setMediaItem(mediaItem)
             layout_list[response.pos].exoPlayer?.play()
@@ -616,7 +631,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     fun setQuoteRotation(pos: Int, item: Item) {
-        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+        layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
             delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
             withContext(Dispatchers.Main) {
                 if(play_activate){
@@ -629,8 +644,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     private fun setWaterMark() {
-        if(DataParsing.isWatermarkAvailable(pref)){
-            WaterMarkWidget.getWaterMark(binding,DataParsing.getWatermark(pref))
+        if(dataParsing.isWatermarkAvailable(pref)){
+            WaterMarkWidget.getWaterMark(binding,dataParsing.getWatermark())
         }else binding.llWatermark.visibility = View.GONE
     }
 
@@ -640,8 +655,9 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             return
         }
         if(!pref.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals("false")
-            && !pref.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals(""))
+            && !pref.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals("")) {
             viewModel.getRelaunchAcknowledge()
+        }
         var list = dataParsing.getDownloableList(pref)
         if(list.size>0 && isConnected){
             downloading = 1
@@ -661,11 +677,355 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             isEmergencyMessage()
             pref.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,dataParsing.checkDemandSs())
             var is_frames = dataParsing.isFrameAvailable()
-            var is_override = DataParsing.isOverrideAvailable(pref)
-            if(is_frames || is_override) contentPlaying(is_frames,is_override) else loadWaiting()
+            var is_override = dataParsing.isOverrideAvailable(pref)
 
+            if(is_override || is_frames) contentPlaying(is_override) else loadWaiting()
         }
     }
+
+    private fun contentPlaying(is_override: Boolean) {
+
+        if(is_override){
+            // create single frame for override
+            var frame = DataParsing.getOverrideFrame(ctx!!,100)
+            var ss_frame = DataParsing.getOverrideFrame(ctx!!,1000)
+
+            var videoView = VideoView(this)
+            var exoPlayerView  = StyledPlayerView(ctx)
+            var player = SimpleExoPlayer.Builder(ctx).build()
+            var myMediaMetadataRetriever = MediaMetadataRetriever()
+
+            // add frame in layout list
+            layout_list.add(LayoutFrames(frame,videoView,exoPlayerView,player,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
+            screen_layout_list.add(ss_frame)    // add frame in list
+
+            binding.rootLayout.addView(frame)   // attach frame in root
+            binding.screenRootLayout.addView(ss_frame)   // attach frame in root
+
+            var all_frames = DataParsing.getOverrideFrames(pref)
+            // add multi-fame items
+            if (all_frames?.get(0)?.item != null && all_frames.get(0).item.size > 0) {
+
+                var child_items: MutableList<Item> = mutableListOf()
+                var items_array = all_frames.get(0).item
+                for (j in 0..items_array.size - 1) {
+                    var item = items_array[j]
+                    item.frame_h = DeviceInfo.getScreenHeight(this)
+                    item.frame_w = DeviceInfo.getScreenWidth(this)
+                    item.frame_setting = all_frames.get(0).settings
+                    items.add(item)
+                    items.get(items.size-1).pos = 0
+                    if(Validation.isItemDownloaded(item)) child_items.add(item)
+                }
+                multiframe_items?.add(child_items)
+                current_size_list.add(0)
+            }else {
+                multiframe_items?.add(mutableListOf())
+                current_size_list.add(0)
+            }
+            // start playing
+            startPlayingContent()
+        }else {
+
+            var all_frames = DataParsing.getFilterdFrames(pref)
+            var is_items = DataParsing.isItemvailable(all_frames)
+
+            if(!is_items){
+                loadWaiting()
+                return
+            }
+
+            for (i in 0..all_frames!!.size-1) {
+                // create availble frames with bg
+                var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,10)
+                var ss_frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,1000)
+
+                var videoView = VideoView(this)
+                var exoPlayerView  = StyledPlayerView(ctx)
+                var md_Retriever = MediaMetadataRetriever()
+
+                // add frame in layout list
+                var layout_frame  = LayoutFrames(
+                    frame_view_ll = frame,videoView = videoView, exoPlayerView = exoPlayerView,
+                    myMediaMetadataRetriever = md_Retriever, frame_items = all_frames.get(i).item
+                )
+
+                layout_list.add(layout_frame)    // add frame in list
+                binding.rootLayout.addView(frame)   // attach frame in root
+
+                screen_layout_list.add(ss_frame)    // add frame in list
+                binding.screenRootLayout.addView(ss_frame)
+
+                binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+                binding.screenRootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
+
+                // add multi-fame items
+                if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
+                    var child_items: MutableList<Item> = mutableListOf()
+                    var items_array = all_frames.get(i).item
+                    for (j in 0..items_array.size - 1) {
+                        var item = items_array[j]
+                        item.frame_h = all_frames.get(i).h
+                        item.frame_w = all_frames.get(i).w
+                        item.frame_setting = all_frames.get(i).settings
+                        items.add(item)
+                        items.get(items.size-1).pos = i
+                        if(Validation.isItemDownloaded(item)) child_items.add(item)
+                    }
+                    multiframe_items?.add(child_items)
+                    current_size_list.add(0)
+                }else {
+                    multiframe_items?.add(mutableListOf())
+                    current_size_list.add(0)
+                }
+            }
+            startPlayingContent()
+        }
+    }
+
+
+    private fun startPlayingContent() {
+        if(multiframe_items != null && multiframe_items.size>0){
+            for (i in 0..multiframe_items.size-1){
+                if(multiframe_items.get(i) != null && multiframe_items.get(i).size>0){
+                    if(current_size_list[i] < multiframe_items.get(i).size){
+                        binding.rootLayout.visibility = View.VISIBLE
+                        validateItem(multiframe_items[i].get(current_size_list[i]),i)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun validateItem(item: Item, position: Int) {
+
+        val path = DataManager.getDirectory()+File.separator+ item.fileName
+        if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
+            if(!File(path).exists()){
+                current_size_list[position] = current_size_list[position]+1
+                nextPlay(position)
+                return
+            }
+        }
+        setWidget(position,item)
+    }
+
+    private fun setWidget(pos: Int, item: Item){
+
+        var start_time = pref?.getStartTime()
+        play_activate = true
+        binding.rlBackground.visibility = View.GONE
+        var layout = layout_list[pos].frame_view_ll
+        var video = layout_list[pos].videoView
+        var media_data = layout_list[pos].myMediaMetadataRetriever
+        var exoPlayerView = layout_list[pos].exoPlayerView
+        var exoPlayer = layout_list[pos].exoPlayer
+        layout?.visibility = View.VISIBLE
+        var widget_type = item.type
+
+        if(!play_activate || !pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) return
+        layout_list[pos].active_widget = widget_type
+
+        // image
+        if(widget_type.equals(Constant.CONTENT_IMAGE) ||
+            widget_type.equals(Constant.CONTENT_VECTOR) ||
+            widget_type.equals(Constant.CONTENT_POWERPOINT) ||
+            widget_type.equals(Constant.CONTENT_WORD) ) {
+            if(item.fs.equals("yes")){
+                fullScreen = true
+                binding.llFullScreen.visibility = View.VISIBLE
+                binding.llFullScreen.removeAllViews()
+                binding.llFullScreen.addView(ImageWidget.getImageWidget(this,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.filesize,item.frame_setting))
+            }else{
+                layout?.removeAllViews()
+                layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
+            }
+        }
+        // QR-Code
+        else if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
+            layout?.removeAllViews()
+            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
+        }
+        // video
+        else if(widget_type.equals(Constant.CONTENT_VIDEO)){
+            if(item.fs.equals("yes")){
+                fullScreen = true
+                binding.llFullScreen.visibility = View.VISIBLE
+                binding.llFullScreen.removeAllViews()
+                video?.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+                binding.llFullScreen.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.sound))
+            }else{
+                layout?.removeAllViews()
+                layout_list[pos].sound = item.sound
+//                layout_list[pos].myMediaMetadataRetriever = WidgetVideo.getMediaData(this,item.fileName,media_data!!)
+//                layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,item.frame_w,item.frame_h,item.fileName,item.sound))
+                layout_list[pos].exoPlayer = WidgetExoPlayer.getExoPlayer(ctx,Constant.PLAYER_SLIDE,item.sound)
+                var video_new = layout_list[pos].exoPlayerView
+                layout_list[pos].exoPlayerView = WidgetExoPlayer.getExoPlayerView(ctx)
+                video_new?.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
+                layout?.addView(WidgetVideo.playVideo(layout_list[pos].exoPlayerView!!,layout_list[pos].exoPlayer,item,fullScreen))
+            }
+        }
+        // webview , Google SLide
+        else if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
+            setWebViewWithReload(pos,item)
+        }
+        // iFrame
+        else if(widget_type == Constant.CONTENT_WIDGET_IFRAME){
+            layout?.removeAllViews()
+            layout?.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!))
+        }
+        // youtube
+        else if(widget_type == Constant.CONTENT_WIDGET_YOUTUBE) {
+            layout?.removeAllViews()
+            layout?.addView(YouTubeWidget.getYouTubeWidget(this,item),item.frame_w,item.frame_h)
+        }
+        // vimeo
+        else if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
+            layout?.removeAllViews()
+            var player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_SLIDE,item?.sound!!)
+            layout_list[pos].exoPlayer = player
+            exoPlayer = player
+            vimeoViewModel.getVimeoUrl(item.src,item,pos,vimeo_retro)
+        }
+        // power BI
+        else if(widget_type == Constant.CONTENT_WIDGET_POWER){
+            layout?.removeAllViews()
+            layout?.addView(WidgetPowerBI.getWidgetPowerBI(this,item),item.frame_w,item.frame_h)
+        }
+        // traffic
+        else if(widget_type == Constant.CONTENT_WIDGET_TRAFFIC){
+            layout?.removeAllViews()
+            layout?.addView(WidgetTraffic.getWidgetTrafic(this,item.id),item.frame_w,item.frame_h)
+        }
+        // date time
+        else if(widget_type == Constant.CONTENT_WIDGET_DATE_TIME){
+            layout?.removeAllViews()
+            var date_time = WidgetDateTime()
+            layout?.addView(date_time.getDateTimeWidget(this,item),item.frame_w,item.frame_h)
+            var view = layout?.getChildAt(0)
+            date_time.setData(view!!,item)
+        }
+        // quotes
+        else if(widget_type == Constant.CONTENT_WIDGET_QUOTES){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_QUOTES,pos,item.id))
+                viewModel.getQuoteText(item.id.split("-")[2],pos,item.id)
+        }
+        // text
+        else if(widget_type == Constant.CONTENT_WIDGET_TEXT){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_TEXT,pos,item.id))
+                viewModel.getText(item.id.split("-")[2],pos,item.id)
+        }
+        // stock
+        else if(widget_type == Constant.CONTENT_WIDGET_STOCK){
+            if(item.dType.equals("m") && UtilitySetting.getTemplate(item.settings).equals("t2")){
+                var item_ids = item.id.split("-")
+                setStockWebView(pos,item,Constant.API_STOCK_TABLE_HTML+item_ids[2])
+            }else if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_STOCK,pos,item.id))
+                viewModel.getStockData(item.id.split("-")[2],pos,item.id)
+        }
+        // news
+        else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos,item.id)){
+                if(item.src.equals(""))
+                    viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
+                else
+                    viewModel.getNews(item.src,pos,item.id)
+            }
+        }
+        // RSS
+        else if(widget_type == Constant.CONTENT_WIDGET_RSS){
+            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_RSS,pos,item.id))
+                if(item.src.equals(""))
+                    viewModel.getRss(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
+                else
+                    viewModel.getRss(item.src,pos,item.id)
+        }
+        // live streaming
+        else if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
+            layout?.removeAllViews()
+            if(item?.dType.equals("yt"))
+                layout?.addView(YouTubeWidget.getYouTubeWidgetLiveStream(this,item),item.frame_w,item.frame_h)
+            else
+                layout?.addView(WidgetExoPlayer.setExoPLayer(this,item,exoPlayerView!!),item.frame_w,item.frame_h)
+        }
+        // COD BUTTON
+        else if(widget_type == Constant.CONTENT_WIDGET_COD){
+            layout?.removeAllViews()
+            var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
+            layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)),item.frame_setting)
+            layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
+            layout?.setOnClickListener { WidgetCodButton.openCod(this,pref) }
+        }
+        // MESSAGE
+        else if(widget_type == Constant.WIDGET_MESSAGE){
+            layout?.removeAllViews()
+            var image = dataParsing.getImageName(WidgetMessage.getData(item.data).contentid)
+            layout?.addView(WidgetMessage.getMessageWidget(this,item,image))
+        }
+        // MEETING
+        else if(widget_type == Constant.CONTENT_WIDGET_MEETING)
+            viewModel.getMeetingData(dataParsing.getDevice(),item.id.split("-")[2],pos,item)
+        // Google Calendar
+        else if(widget_type == Constant.CONTENT_WIDGET_GOOGLE_CAL)
+            viewModel.getGoogleCalData(dataParsing.getDevice(),item.id.split("-")[2],pos,item)
+        // Outlook Calendar
+        else if(widget_type == Constant.CONTENT_WIDGET_OUTLOOK_CAL)
+            viewModel.getOutlookData(dataParsing.getDevice(),item.id.split("-")[2],pos,item)
+        // weather
+        else if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
+            viewModel.getWeather(item,pos)
+
+        // not implemetated
+        else {
+            layout?.removeAllViews()
+            layout?.addView(WidgetText.getBlankView(this),item.frame_w,item.frame_h)
+        }
+        if(multiframe_items[pos].size>1 || multiframe_items[pos].size==1 && item.type.equals(Constant.CONTENT_WIDGET_MEETING)){
+            setVolume()
+            var time = if(multiframe_items[pos].size==1 && item.type.equals(Constant.CONTENT_WIDGET_MEETING))
+                300 else item.duration
+            var job = CoroutineScope(Dispatchers.IO).launch {
+                delay(TimeUnit.SECONDS.toMillis(time.toLong()))
+                withContext(Dispatchers.Main) {
+                    layout_list[pos].sound = ""
+
+                    if(layout_list[pos].active_widget.equals(Constant.CONTENT_VIDEO)){
+                        if(layout_list[pos].exoPlayer != null && layout_list[pos].exoPlayer!!.isPlaying){
+                            layout_list[pos].exoPlayer!!.release()
+                        }
+                    }
+
+                    if(exoPlayerView != null && exoPlayerView?.player != null && exoPlayerView?.player!!.isPlaying){
+                        exoPlayerView?.player!!.release()
+                        exoPlayerView?.player = null
+                    }
+
+                    if(play_activate){
+                        pref?.createReport(item.id,item.duration,start_time!!)
+                        current_size_list[pos] = current_size_list[pos]+1
+                        if(item.fs.equals("yes") ){
+                            fullScreen = false
+                            setVolume()
+                            binding.llFullScreen.visibility = View.GONE
+                            binding.llFullScreen.removeAllViews()
+                        }
+                        nextPlay(pos)
+                    }
+                }
+            }
+            if(layout_list[pos].frame_job == null){
+                layout_list[pos].frame_job = job
+            }else{
+                layout_list[pos].frame_job?.cancel()
+                if(layout_list[pos].item_job != null)layout_list[pos].item_job?.cancel()
+                layout_list[pos].frame_job = job
+            }
+        }
+
+    }
+
+
 
     private fun checkDemandScreenShot() {
         if(pref.getBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE)){
@@ -689,7 +1049,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     private fun isEmergencyMessage(){
-        var device = DataParsing.getDevice(pref)
+        var device = dataParsing.getDevice()
         if(device?.em ==1)
             if(!viewModel.isDataStoredForCurrentVersion(Constant.WIDGET_EMERGENCY_MESSAGE,0,""))
                 viewModel.getEmergencyMessagedata(DeviceInfo.getDeviceIdFromDevice(this))
@@ -749,8 +1109,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(layout_list[i].exoPlayerView?.player!=null && layout_list[i].exoPlayerView?.player!!.isPlaying){
                     layout_list[i].exoPlayerView?.player?.stop()
                 }
-                if(layout_list[i].job != null) layout_list[i].job?.cancel()
-                if(layout_list[i].rotate_job != null) layout_list[i].rotate_job?.cancel()
+                if(layout_list[i].frame_job != null) layout_list[i].frame_job?.cancel()
+                if(layout_list[i].item_job != null) layout_list[i].item_job?.cancel()
             }
         }
         layout_list = mutableListOf()
@@ -773,108 +1133,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
       return downloading
     }
 
-    private fun contentPlaying(is_frames: Boolean, is_override: Boolean) {
-
-        if(is_override){
-            // create single frame for override
-            var frame = DataParsing.getOverrideFrame(ctx!!,100)
-            var ss_frame = DataParsing.getOverrideFrame(ctx!!,1000)
-            var videoView = VideoView(this)
-            var exoPlayerView  = StyledPlayerView(ctx)
-            var player = SimpleExoPlayer.Builder(ctx).build()
-            var myMediaMetadataRetriever = MediaMetadataRetriever()
-
-            // add frame in layout list
-            layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,player,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
-            screen_layout_list.add(ss_frame)    // add frame in list
-
-            binding.rootLayout.addView(frame)   // attach frame in root
-            binding.screenRootLayout.addView(ss_frame)   // attach frame in root
-
-            var all_frames = DataParsing.getOverrideFrames(pref)
-            // add multi-fame items
-            if (all_frames?.get(0)?.item != null && all_frames.get(0).item.size > 0) {
-
-                var child_items: MutableList<Item> = mutableListOf()
-                var items_array = all_frames.get(0).item
-                for (j in 0..items_array.size - 1) {
-                    var item = items_array[j]
-                    item.frame_h = DeviceInfo.getScreenHeight(this)
-                    item.frame_w = DeviceInfo.getScreenWidth(this)
-                    item.frame_setting = all_frames.get(0).settings
-                    items.add(item)
-                    items.get(items.size-1).pos = 0
-                    if(Validation.isItemDownloaded(item)) child_items.add(item)
-                }
-                multiframe_items?.add(child_items)
-                current_size_list.add(0)
-            }else {
-                multiframe_items?.add(mutableListOf())
-                current_size_list.add(0)
-            }
-            // start playing
-            startPlayingContent()
-        }else if(is_frames){
-
-            var all_frames = DataParsing.getFilterdFrames(pref)
-            var is_items = DataParsing.isItemvailable(all_frames)
-            if(!is_items){
-                loadWaiting()
-                return
-            }
-            for (i in 0..all_frames!!.size-1) {
-                // create availble frames with bg
-                var frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,10)
-                var ss_frame = DataParsing.getLayoutFrame(ctx!!,all_frames.get(i),i,1000)
-
-                var videoView = VideoView(this)
-                var exoPlayerView  = StyledPlayerView(ctx)
-                var myMediaMetadataRetriever = MediaMetadataRetriever()
-
-                // add frame in layout list
-                layout_list.add(NewLayoutView(frame,videoView,exoPlayerView,null,false,"",null,null,myMediaMetadataRetriever))    // add frame in list
-                binding.rootLayout.addView(frame)   // attach frame in root
-
-                screen_layout_list.add(ss_frame)    // add frame in list
-                binding.screenRootLayout.addView(ss_frame)
-
-                binding.rootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
-                binding.screenRootLayout.setBackgroundColor(Color.parseColor(DataParsing.getRootBackground(pref)))    // set bg for root
-
-                // add multi-fame items
-                if (all_frames.get(i).item != null && all_frames.get(i).item.size > 0) {
-                    var child_items: MutableList<Item> = mutableListOf()
-                    var items_array = all_frames.get(i).item
-                    for (j in 0..items_array.size - 1) {
-                        var item = items_array[j]
-                        item.frame_h = all_frames.get(i).h
-                        item.frame_w = all_frames.get(i).w
-                        item.frame_setting = all_frames.get(i).settings
-                        items.add(item)
-                        items.get(items.size-1).pos = i
-                        if(Validation.isItemDownloaded(item)) child_items.add(item)
-                    }
-                    multiframe_items?.add(child_items)
-                    current_size_list.add(0)
-                }else {
-                    multiframe_items?.add(mutableListOf())
-                    current_size_list.add(0)
-                }
-            }
-            startPlayingContent()
-        }
-    }
-
-
 
     private fun setAllNewsListRotation(pos: Int, list: List<RssItem>,all_list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
         if(list!=null && list.size>0){
 
-            layout_list[pos].relative_layout?.removeAllViews()
-            layout_list[pos].relative_layout?.addView(getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
+            layout_list[pos].frame_view_ll?.removeAllViews()
+            layout_list[pos].frame_view_ll?.addView(getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
 
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
@@ -890,8 +1157,6 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
-
-
     private fun getNextList(list: List<RssItem>, all_list: List<RssItem>, pos: Int): List<RssItem> {
 //        if(list.size==0 && all_list.size>0) return all_list
         var nextlist = mutableListOf<RssItem>()
@@ -901,15 +1166,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         return nextlist
     }
 
-
     private fun setBeingNewsListRotation(pos: Int,list : ArrayList<News>,all_list : ArrayList<News>, item: Item,start_pos:Int) {
 
         if(list!=null && list.size>0){
-            layout_list[pos].relative_layout?.removeAllViews()
-            layout_list[pos].relative_layout?.
+            layout_list[pos].frame_view_ll?.removeAllViews()
+            layout_list[pos].frame_view_ll?.
             addView(WidgetNewsList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos,item.fileName),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
@@ -932,12 +1196,12 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     private fun setAllNewsListRotationRSS(pos: Int, list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
         if(list!=null && list.size>0){
 
-            layout_list[pos].relative_layout?.removeAllViews()
-            layout_list[pos].relative_layout?.addView(
+            layout_list[pos].frame_view_ll?.removeAllViews()
+            layout_list[pos].frame_view_ll?.addView(
                 WidgetRssList.getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
 
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
@@ -953,11 +1217,11 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
     private fun setBeingNewsListRotationRSS(pos: Int,list : ArrayList<News>, item: Item,start_pos:Int) {
         if(list!=null && list.size>0){
-            layout_list[pos].relative_layout?.removeAllViews()
-            layout_list[pos].relative_layout?.
+            layout_list[pos].frame_view_ll?.removeAllViews()
+            layout_list[pos].frame_view_ll?.
             addView(WidgetRssList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
@@ -974,10 +1238,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     fun loadWaiting() {
         if(layout_list!=null &&layout_list.size>0){
             for (i in 0..layout_list.size-1)
-                layout_list[i].relative_layout?.visibility = View.GONE
+                layout_list[i].frame_view_ll?.visibility = View.GONE
         }
         binding.rlBackground.visibility = View.VISIBLE
-        var fileName = DataParsing.isDefaultImageAvailable(pref)
+        var fileName = dataParsing.isDefaultImageAvailable()
         if(!fileName.equals("")){
             val path = DataManager.getDirectory()+ File.separator+fileName
             binding.ivMainDefaultimg.visibility = View.VISIBLE
@@ -989,244 +1253,11 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
-    private fun startPlayingContent() {
-        if(multiframe_items != null && multiframe_items.size>0){
-            for (i in 0..multiframe_items.size-1){
-                if(multiframe_items.get(i) != null && multiframe_items.get(i).size>0){
-                    if(current_size_list[i] < multiframe_items.get(i).size){
-                        binding.rootLayout.visibility = View.VISIBLE
-                        validateItem(multiframe_items[i].get(current_size_list[i]),i)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun validateItem(item: Item, position: Int) {
-
-        val path = DataManager.getDirectory()+File.separator+ item.fileName
-        if(item.type == Constant.CONTENT_IMAGE ||item.type == Constant.CONTENT_VIDEO){
-            if(!File(path).exists()){
-                current_size_list[position] = current_size_list[position]+1
-                nextPlay(position)
-                return
-            }
-        }
-        setWidget(position,item)
-    }
-
-
-    private fun setWidget(pos: Int, item: Item){
-
-        var start_time = pref?.getStartTime()
-        play_activate = true
-        binding.rlBackground.visibility = View.GONE
-        var layout = layout_list[pos].relative_layout
-        var video = layout_list[pos].videoView
-        var media_data = layout_list[pos].myMediaMetadataRetriever
-        var exoPlayerView = layout_list[pos].exoPlayerView
-        var exoPlayer = layout_list[pos].exoPlayer
-        layout?.visibility = View.VISIBLE
-        var widget_type = item.type
-
-        if(!play_activate || !pref!!.getBooleanData(MySharePrefernce.KEY_DEVICE_REGISTERED)) return
-        layout_list[pos].active_widget = widget_type
-
-        // image
-        if(widget_type.equals(Constant.CONTENT_IMAGE) ||
-            widget_type.equals(Constant.CONTENT_VECTOR) ||
-            widget_type.equals(Constant.CONTENT_POWERPOINT) ||
-            widget_type.equals(Constant.CONTENT_WORD) ) {
-            if(item.fs.equals("yes")){
-                fullScreen = true
-                binding.llFullScreen.visibility = View.VISIBLE
-                binding.llFullScreen.removeAllViews()
-                binding.llFullScreen.addView(ImageWidget.getImageWidget(this,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.filesize,item.frame_setting))
-            }else{
-                layout?.removeAllViews()
-                layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
-            }
-        }
-        // QR-Code
-        else if(widget_type.equals(Constant.CONTENT_WIDGET_QRCODE)){
-            layout?.removeAllViews()
-            layout?.addView(ImageWidget.getImageWidget(this,item.frame_w,item.frame_h,item.fileName,item.filesize,item.frame_setting))
-        }
-        // video
-        else if(widget_type.equals(Constant.CONTENT_VIDEO)){
-            if(item.fs.equals("yes")){
-                fullScreen = true
-                binding.llFullScreen.visibility = View.VISIBLE
-                binding.llFullScreen.removeAllViews()
-                video?.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
-                binding.llFullScreen.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT,item.fileName,item.sound))
-            }else{
-                layout?.removeAllViews()
-                layout_list[pos].sound = item.sound
-//                layout_list[pos].myMediaMetadataRetriever = WidgetVideo.getMediaData(this,item.fileName,media_data!!)
-//                layout?.addView(WidgetVideo.getWidgetVideo(this,video!!,media_data!!,item.frame_w,item.frame_h,item.fileName,item.sound))
-                layout_list[pos].exoPlayer = WidgetExoPlayer.getExoPlayer(ctx,Constant.PLAYER_SLIDE,item.sound)
-                var video_new = layout_list[pos].exoPlayerView
-                layout_list[pos].exoPlayerView = WidgetExoPlayer.getExoPlayerView(ctx)
-                video_new.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
-                layout?.addView(WidgetVideo.playVideo(layout_list[pos].exoPlayerView,layout_list[pos].exoPlayer,item,fullScreen))
-            }
-        }
-        // webview
-        else if(widget_type == Constant.CONTENT_WEB || widget_type == Constant.CONTENT_WIDGET_GOOGLE){
-            setWebViewWithReload(pos,item)
-        }
-        // iFrame
-        else if(widget_type == Constant.CONTENT_WIDGET_IFRAME){
-            layout?.removeAllViews()
-            layout?.addView(WebViewWidget.getiFrameWidget(this,item?.ifr!!))
-        }
-        // youtube
-        else if(widget_type == Constant.CONTENT_WIDGET_YOUTUBE) {
-            layout?.removeAllViews()
-            layout?.addView(YouTubeWidget.getYouTubeWidget(this,item),item.frame_w,item.frame_h)
-        }
-        // vimeo
-        else if(widget_type == Constant.CONTENT_WIDGET_VIMEO){
-            layout?.removeAllViews()
-            var player = WidgetExoPlayer.getExoPlayer(this,Constant.PLAYER_SLIDE,item?.sound!!)
-            layout_list[pos].exoPlayer = player
-            exoPlayer = player
-            vimeoViewModel.getVimeoUrl(item.src,item,pos,vimeo_retro)
-        }
-        // power BI
-        else if(widget_type == Constant.CONTENT_WIDGET_POWER){
-            layout?.removeAllViews()
-            layout?.addView(WidgetPowerBI.getWidgetPowerBI(this,item),item.frame_w,item.frame_h)
-        }
-        // traffic
-        else if(widget_type == Constant.CONTENT_WIDGET_TRAFFIC){
-            layout?.removeAllViews()
-            layout?.addView(WidgetTraffic.getWidgetTrafic(this,item.id),item.frame_w,item.frame_h)
-        }
-        // date time
-        else if(widget_type == Constant.CONTENT_WIDGET_DATE_TIME){
-            layout?.removeAllViews()
-            layout?.addView(DateTimeWidget.getDateTimeWidget(this,item),item.frame_w,item.frame_h)
-            var view = layout?.getChildAt(0)
-            DateTimeWidget.setData(view!!,item)
-        }
-        // quotes
-        else if(widget_type == Constant.CONTENT_WIDGET_QUOTES){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_QUOTES,pos,item.id))
-                viewModel.getQuoteText(item.id.split("-")[2],pos,item.id)
-        }
-        // text
-        else if(widget_type == Constant.CONTENT_WIDGET_TEXT){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_TEXT,pos,item.id))
-                viewModel.getText(item.id.split("-")[2],pos,item.id)
-        }
-        // stock
-        else if(widget_type == Constant.CONTENT_WIDGET_STOCK){
-            if(item.dType.equals("m") && UtilitySetting.getTemplate(item.settings).equals("t2")){
-                var item_ids = item.id.split("-")
-                setStockWebView(pos,item,Constant.API_STOCK_TABLE_HTML+item_ids[2])
-            }else if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_STOCK,pos,item.id))
-                viewModel.getStockData(item.id.split("-")[2],pos,item.id)
-        }
-        // news
-        else if(widget_type == Constant.CONTENT_WIDGET_NEWS){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_NEWS,pos,item.id)){
-                if(item.src.equals(""))
-                    viewModel.getNews(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
-                else
-                    viewModel.getNews(item.src,pos,item.id)
-            }
-        }
-        // RSS
-        else if(widget_type == Constant.CONTENT_WIDGET_RSS){
-            if(!viewModel.isDataStoredForCurrentVersion(Constant.CONTENT_WIDGET_RSS,pos,item.id))
-                if(item.src.equals(""))
-                    viewModel.getRss(Constant.API_WIDGET_BEING_NEWS +item.id.split("-")[2],pos,item.id)
-                else
-                    viewModel.getRss(item.src,pos,item.id)
-        }
-        // live streaming
-        else if(item?.type.equals(Constant.CONTENT_WIDGET_LIVESTREAM)){
-            layout?.removeAllViews()
-            if(item?.dType.equals("yt"))
-                layout?.addView(YouTubeWidget.getYouTubeWidgetLiveStream(this,item),item.frame_w,item.frame_h)
-            else
-                layout?.addView(WidgetExoPlayer.setExoPLayer(this,item,exoPlayerView),item.frame_w,item.frame_h)
-        }
-        // COD BUTTON
-        else if(widget_type == Constant.CONTENT_WIDGET_COD){
-            layout?.removeAllViews()
-            var settings = Gson().fromJson(item.settings, com.app.lsquared.model.cod.Settings::class.java)
-            layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity(settings?.bg!!,settings?.bga!!)),item.frame_setting)
-            layout?.addView(WidgetCodButton.getWidgetCodButton(this,item,pref))
-            layout?.setOnClickListener { WidgetCodButton.openCod(this,pref) }
-        }
-        // MESSAGE
-        else if(widget_type == Constant.WIDGET_MESSAGE){
-            layout?.removeAllViews()
-            var image = dataParsing.getImageName(WidgetMessage.getData(item.data).contentid)
-            layout?.addView(WidgetMessage.getMessageWidget(this,item,image))
-        }
-        // MEETING
-        else if(widget_type == Constant.CONTENT_WIDGET_MEETING)
-            viewModel.getMeetingData(dataParsing.getDevice(),item.id.split("-")[2],pos,item)
-
-        // weather
-        else if(widget_type == Constant.CONTENT_WIDGET_WEATHER)
-            viewModel.getWeather(item,pos)
-
-        // not implemetated
-        else {
-            layout?.removeAllViews()
-            layout?.addView(WidgetText.getBlankView(this),item.frame_w,item.frame_h)
-        }
-        if(multiframe_items[pos].size>1){
-            setVolume()
-            var job = CoroutineScope(Dispatchers.IO).launch {
-                delay(TimeUnit.SECONDS.toMillis(item.duration.toLong()))
-                withContext(Dispatchers.Main) {
-                    layout_list[pos].sound = ""
-
-                    if(layout_list[pos].active_widget.equals(Constant.CONTENT_VIDEO)){
-                        if(layout_list[pos].exoPlayer != null && layout_list[pos].exoPlayer!!.isPlaying){
-                            layout_list[pos].exoPlayer!!.release()
-                        }
-                    }
-
-                    if(exoPlayerView != null && exoPlayerView?.player != null && exoPlayerView?.player!!.isPlaying){
-                        exoPlayerView?.player!!.release()
-                        exoPlayerView?.player = null
-                    }
-
-                    if(play_activate){
-                        pref?.createReport(item.id,item.duration,start_time!!)
-                        current_size_list[pos] = current_size_list[pos]+1
-                        if(item.fs.equals("yes") ){
-                            fullScreen = false
-                            setVolume()
-                            binding.llFullScreen.visibility = View.GONE
-                            binding.llFullScreen.removeAllViews()
-                        }
-                        nextPlay(pos)
-                    }
-                }
-            }
-            if(layout_list[pos].job == null){
-                layout_list[pos].job = job
-            }else{
-                layout_list[pos].job?.cancel()
-                if(layout_list[pos].rotate_job != null)layout_list[pos].rotate_job?.cancel()
-                layout_list[pos].job = job
-            }
-        }
-
-    }
 
     // stock table view with webview
     private fun setStockWebView(pos: Int, item: Item,url:String) {
 
-        var layout = layout_list[pos].relative_layout
+        var layout = layout_list[pos].frame_view_ll
         layout?.removeAllViews()
         layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
         layout?.addView(WebViewWidget.getWebViewWidget(this,url),item.frame_w,item.frame_h)
@@ -1235,20 +1266,22 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     // web view with reloading
     private fun setWebViewWithReload(pos: Int, item: Item) {
 
-        var layout = layout_list[pos].relative_layout
-        if(layout_list[pos].active_widget.equals(Constant.CONTENT_WEB)){
+        var layout = layout_list[pos].frame_view_ll
+        var active_widget = layout_list[pos].active_widget
+        if(active_widget.equals(Constant.CONTENT_WEB) || active_widget.equals(Constant.CONTENT_WIDGET_GOOGLE) ){
             layout?.removeAllViews()
             layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                Log.d(TAG, "setWebViewWithReload: ${item.src}")
                 var shape = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
                 layout?.background = shape
                 layout?.addView(WebViewChromium.getWebChromeWidget(this,item.src,shape,item.settings),item.frame_w,item.frame_h)
-            } else
-                layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
+            } else layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
+
 
             if(DataParsing.getWebInterval(item) !=0 && DataParsing.getWebInterval(item) < item.duration){
-                layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getWebInterval(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
@@ -1263,7 +1296,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     // text-static with rotation
     private fun setStaticTextWithRotate(pos: Int, item: Item, data: String?,text_pos:Int) {
 
-        var layout = layout_list[pos].relative_layout
+        var layout = layout_list[pos].frame_view_ll
         if(layout_list[pos].active_widget.equals(Constant.CONTENT_WIDGET_TEXT)){
 
             layout?.removeAllViews()
@@ -1279,7 +1312,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(list.size>0){
                     layout?.addView(WidgetText.getWidgetTextStatic(this,item,list[text_pos]),item.frame_w,item.frame_h)
                     if (item.dType.equals(Constant.TEXT_STATIC)){
-                        layout_list[pos].rotate_job = CoroutineScope(Dispatchers.IO).launch {
+                        layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                             delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                             withContext(Dispatchers.Main) {
                                 if(play_activate){
@@ -1301,49 +1334,69 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
-
     private fun setWatherFragment(pos: Int, item: Item, weather_data: WeatherFive) {
         var setting_obj = JSONObject(item.settings)
         var template = setting_obj.getString("template")
         var orientation = setting_obj.getString("orientation")
         var forecast = item.forecast
+        var widgetWeather = WidgetWeather()
 
-        var layout = layout_list[pos].relative_layout
+        var layout = layout_list[pos].frame_view_ll
 
         layout?.removeAllViews()
 
         if(forecast == Constant.TEMPLATE_WEATHER_CURRENT_DATE){
             if(template.equals(Constant.TEMPLATE_TIME_T1))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp1(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp1(this,item,weather_data),item.frame_w,item.frame_h)
             if(template.equals(Constant.TEMPLATE_TIME_T2))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp2(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp2(this,item,weather_data),item.frame_w,item.frame_h)
             if(template.equals(Constant.TEMPLATE_TIME_T3))
-                layout?.addView(WidgetWeather.getWidgetWeatherCurremtTemp3(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp3(this,item,weather_data),item.frame_w,item.frame_h)
         }
         if(forecast == Constant.TEMPLATE_WEATHER_FIVE_DAY){
             if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL))
-                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherFiveDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
             else
-                layout?.addView(WidgetWeather.getWidgetWeatherFiveDayHori(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherFiveDayHori(this,item,weather_data),item.frame_w,item.frame_h)
         }
         if(forecast == Constant.TEMPLATE_WEATHER_FOUR_DAY){
             if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL))
-                layout?.addView(WidgetWeather.getWidgetWeatherFourDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherFourDayVerti(this,item,weather_data),item.frame_w,item.frame_h)
             else
-                layout?.addView(WidgetWeather.getWidgetWeatherFourDayHori(this,item,weather_data),item.frame_w,item.frame_h)
+                layout?.addView(widgetWeather.getWidgetWeatherFourDayHori(this,item,weather_data),item.frame_w,item.frame_h)
         }
     }
 
-    fun setMeetingWallBoardView(pos: Int, item: Item, meeting_obj: MeetingWallBoardResponseData) {
-        var layout = layout_list[pos].relative_layout
+    // set Meeting View
+    fun setMeetingView(pos: Int, item: Item, meeting_obj: MeetingCalendarResponseData) {
+        var layout = layout_list[pos].frame_view_ll
         layout?.removeAllViews()
         var meeting = WidgetMeeting()
-        if(meeting_obj.events.size>0) layout?.addView(meeting.getMeetingWallBoardWidget(ctx,item,meeting_obj,layout))
-        else meeting.getMeetingWallBoardWidget(ctx,item,meeting_obj,layout)
+
+        if(item.dType.equals(Constant.MEETING_BOARD_WALL) && meeting_obj.events.size>0)
+            layout?.addView(meeting.getMeetingWallBoardWidget(ctx,item,meeting_obj,layout))
+        else if(item.dType.equals(Constant.MEETING_BOARD_ROOM) && meeting_obj.event !=null && meeting_obj?.event?.starttime !=null)
+            layout?.addView(meeting.getMeetingRoomBoardWidget(ctx,item,meeting_obj,layout))
+        else if(meeting_obj.ss!=null && meeting_obj.ss.size>0)
+            meeting.loadScreenSaver(meeting_obj.ss,0,layout,ctx)
     }
 
-    fun setMeetingRoomBoardView(pos: Int, item: Item, meeting_obj: MeetingRoomBoardResponseData) {
-        var layout = layout_list[pos].relative_layout
+    // set Calendar View
+    fun setCalendarView(pos: Int, item: Item, cal_obj: CalendarResponseData) {
+        var layout = layout_list[pos].frame_view_ll
+        layout?.removeAllViews()
+        var calendar = WidgetCalendar()
+        Log.d(TAG, "setCalendarView: ${cal_obj.events.size}")
+        if(item.dType.equals(Constant.CALENDAR_BOARD_ALL) || item.dType.equals(Constant.CALENDAR_BOARD_WALL) && cal_obj.events.size>0)
+            layout?.addView(calendar.getCalendarAllEvents(ctx,item,cal_obj))
+        else if(item.dType.equals(Constant.CALENDAR_BOARD_ROOM) && cal_obj.event !=null && cal_obj?.event?.starttime !=null)
+            layout?.addView(calendar.getCalendarRoomBoardWidget(ctx,item,cal_obj))
+        else if(cal_obj.ss!=null && cal_obj.ss.size>0)
+            calendar.loadScreenSaver(cal_obj.ss,0,layout,ctx)
+    }
+
+    fun setMeetingRoomBoardView(pos: Int, item: Item, meeting_obj: MeetingCalendarResponseData) {
+        var layout = layout_list[pos].frame_view_ll
         layout?.removeAllViews()
         var meeting = WidgetMeeting()
         if(meeting_obj.event !=null) layout?.addView(meeting.getMeetingRoomBoardWidget(ctx,item,meeting_obj,layout))

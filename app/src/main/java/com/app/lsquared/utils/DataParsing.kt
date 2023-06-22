@@ -57,7 +57,6 @@ class DataParsing @Inject constructor(
         return null
     }
 
-
     // check frames available
     fun isFrameAvailable(): Boolean{
         var data_obj = getContent()
@@ -154,7 +153,6 @@ class DataParsing @Inject constructor(
         return ""
     }
 
-
     // check identify request
     fun isIdentityRequest():Boolean{
         if(getDevice()!=null)
@@ -231,40 +229,62 @@ class DataParsing @Inject constructor(
         return getDevice()?.odss!!
     }
 
+    // check frames available
+    fun isOverrideAvailable(prefernce: MySharePrefernce?): Boolean{
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
+                var frames = data_obj.ovr.get(0).frame
+                var list = ArrayList<String>()
+                var list_frame = ArrayList<Frame>()
+                for(frame in frames){
+                    if(!list.contains(frame.name)) {
+                        if(DateTimeUtil.isValidWithTime(frame)){
+                            list.add(frame.name)
+                            list_frame.add(frame)
+                        }
+                    }
+                }
+                return if(list_frame.size>0) true else false
+            }
+        }
+        return false
+    }
+
+    // check watermark available
+    fun isWatermarkAvailable(prefernce: MySharePrefernce?): Boolean{
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            return if (!data_obj.device[0].wm.equals("false") &&!data_obj.device[0].wm.equals("")) true else false
+        }
+        return false
+    }
+
+    // check watermark available
+    fun isDefaultImageAvailable(): String{
+        var data = prefernce?.getContentData()
+        if(data!=null && !data.equals("")){
+            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+            var image_name = data_obj.device[0].defaultImageName
+            Log.d("TAG", "isDefaultImageAvailable: $image_name")
+            return if (!image_name.equals("false") &&!image_name.equals("")) image_name else ""
+        }
+        Log.d("TAG", "isDefaultImageAvailable: no")
+        return ""
+    }
+
+    // get watermark
+    fun getWatermark(): DeviceWaterMark {
+        var data = prefernce?.getContentData()
+        var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
+        var watermark_obj = Gson().fromJson(data_obj.device[0].wm, DeviceWaterMark::class.java)
+        return watermark_obj
+    }
+
 
     companion object{
-
-
-        // check watermark available
-        fun isWatermarkAvailable(prefernce: MySharePrefernce?): Boolean{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                return if (!data_obj.device[0].wm.equals("false") &&!data_obj.device[0].wm.equals("")) true else false
-            }
-            return false
-        }
-
-        // check watermark available
-        fun isDefaultImageAvailable(prefernce: MySharePrefernce?): String{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                var image_name = data_obj.device[0].defaultImageName
-                Log.d("TAG", "isDefaultImageAvailable: $image_name")
-                return if (!image_name.equals("false") &&!image_name.equals("")) image_name else ""
-            }
-            Log.d("TAG", "isDefaultImageAvailable: no")
-            return ""
-        }
-
-        // get watermark
-        fun getWatermark(prefernce: MySharePrefernce?): DeviceWaterMark {
-            var data = prefernce?.getContentData()
-            var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-            var watermark_obj = Gson().fromJson(data_obj.device[0].wm, DeviceWaterMark::class.java)
-            return watermark_obj
-        }
 
         // get device
         fun getDevice(prefernce: MySharePrefernce?): Device? {
@@ -289,28 +309,6 @@ class DataParsing @Inject constructor(
         }
 
 
-        // check frames available
-        fun isOverrideAvailable(prefernce: MySharePrefernce?): Boolean{
-            var data = prefernce?.getContentData()
-            if(data!=null && !data.equals("")){
-                var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
-                if (data_obj.ovr!=null && data_obj.ovr.size>0 && data_obj.ovr.get(0).frame!=null && data_obj.ovr.get(0).frame.size>0 ){
-                    var frames = data_obj.ovr.get(0).frame
-                    var list = ArrayList<String>()
-                    var list_frame = ArrayList<Frame>()
-                    for(frame in frames){
-                        if(!list.contains(frame.name)) {
-                            if(DateTimeUtil.isValidWithTime(frame)){
-                                list.add(frame.name)
-                                list_frame.add(frame)
-                            }
-                        }
-                    }
-                    return if(list_frame.size>0) true else false
-                }
-            }
-            return false
-        }
 
 
         // get frames
@@ -557,7 +555,6 @@ class DataParsing @Inject constructor(
 
         // override frame
         fun getOverrideFrame(ctx: Context,id:Int):LinearLayout{
-//            var id = 10
             var ll_frame = LinearLayout(ctx)
             ll_frame.id = id
             val params = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)
@@ -566,7 +563,7 @@ class DataParsing @Inject constructor(
             return ll_frame
         }
 
-        // create frame
+        // dynamic frame
         fun getLayoutFrame(ctx: Context, frame: Frame, position: Int, id: Int):LinearLayout{
             var ll_frame = LinearLayout(ctx)
             ll_frame.id = position+id
@@ -603,9 +600,10 @@ class DataParsing @Inject constructor(
             return ll_frame
         }
 
-         fun getFrameSetting(frame_setting:String) = Gson().fromJson(frame_setting,FrameSetting::class.java)
 
-         fun getShape(color: Int, settings: String): GradientDrawable {
+        fun getFrameSetting(frame_setting:String) = Gson().fromJson(frame_setting,FrameSetting::class.java)
+
+        fun getShape(color: Int, settings: String): GradientDrawable {
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.RECTANGLE
             var frame_setting = Gson().fromJson(settings,FrameSetting::class.java)
@@ -622,10 +620,11 @@ class DataParsing @Inject constructor(
             return shape
         }
 
-         fun getDateTimeShape(color: Int): GradientDrawable {
+        fun getDateTimeShape(color: Int,hight :Int): GradientDrawable {
+            var hi = (hight/20).toFloat()
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.RECTANGLE
-             shape.cornerRadii = floatArrayOf(20f, 20f,20f,20f, 20f,20f, 20f,20f)
+             shape.cornerRadii = floatArrayOf(hi, hi,hi, hi,hi, hi,hi, hi)
              shape.setColor(color)
             return shape
         }
@@ -766,7 +765,7 @@ class DataParsing @Inject constructor(
             return items
         }
 
-        fun isVideoPlaying(layoutList: MutableList<NewLayoutView>): Boolean {
+        fun isVideoPlaying(layoutList: MutableList<LayoutFrames>): Boolean {
             if(layoutList!=null && layoutList.size>0){
                 for (layout in layoutList){
                     if(layout.active_widget.equals(Constant.CONTENT_VIDEO)){

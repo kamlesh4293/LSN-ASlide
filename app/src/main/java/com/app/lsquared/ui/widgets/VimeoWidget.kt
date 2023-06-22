@@ -24,7 +24,9 @@ class VimeoWidget {
             val webSettings: WebSettings = web.getSettings()
             webSettings.javaScriptEnabled = true
             webSettings.allowFileAccess = true
-            webSettings.setAppCacheEnabled(true)
+//            webSettings.setAppCacheEnabled(true)  - deprecated
+            webSettings.cacheMode=WebSettings.LOAD_CACHE_ONLY
+
             webSettings.mediaPlaybackRequiresUserGesture = false
 
             var mute = "0"

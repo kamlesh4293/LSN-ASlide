@@ -9,6 +9,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Bundle
 import android.os.SystemClock
+import android.support.v4.media.session.MediaSessionCompat.PENDING_INTENT_FLAG_MUTABLE
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.app.lsquared.databinding.ActivitySplashBinding
@@ -69,7 +70,14 @@ class SplashActivity : AppCompatActivity(){
         registerReceiver(usbReceiver, filter)
 
         usbManager = getSystemService(USB_SERVICE) as UsbManager
-        val permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), 0)
+        var permissionIntent : PendingIntent? = null
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION),
+                PendingIntent.FLAG_MUTABLE)
+        }else{
+            permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), 0)
+        }
+
         SystemClock.sleep(1000)
         val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
         if (availableDrivers != null && !availableDrivers.isEmpty()) {

@@ -49,12 +49,12 @@ class UiUtils {
                 .build()
         }
 
-        fun getRoundedBorderwithFilled(color: String): Drawable {
+        fun getMeetingLogoDrawable(color: String): Drawable {
             return DrawableBuilder()
                 .rectangle()
-                .solidColor(Color.parseColor("#EBF5FB"))
-                .bottomLeftRadius(15) // in pixels
-                .bottomRightRadius(15) // in pixels
+                .solidColor(Color.parseColor("#ffffff"))
+                .strokeColor(Color.parseColor(color))
+                .strokeWidth(5)
                 .build()
         }
 

@@ -27,12 +27,22 @@ class Constant {
         const val API_CONTENT = BASE_FILE_URL+"feed/json/"
         const val API_SUBMIT_INFO = BASE_URL+"api/v1/feed/setDeviceInfo"
 
-        const val API_WIDGET_TEXT = BASE_URL+"api/v1/feed/crawlingtext/"
-        const val API_WIDGET_WEATHER = BASE_URL+"api/v1/feed/azureweather/"
-        const val API_WIDGET_QUOTE = BASE_URL+"api/v1/feed/quotes/"
-        const val API_WIDGET_BEING_NEWS = BASE_URL+"api/v1/feed/bingnews/"
-        const val API_WIDGET_STOCKS = BASE_FILE_FEED_URL+"/stock_wtd/"
-        const val API_STOCK_TABLE_HTML = BASE_FILE_FEED_URL+"/stockListHtml/"
+        // Widgets Apis
+
+        const val API_WIDGET_TEXT = BASE_URL+"api/v1/feed/crawlingtext/"        // text
+        const val API_WIDGET_WEATHER = BASE_URL+"api/v1/feed/azureweather/"     // weather
+        const val API_WIDGET_QUOTE = BASE_URL+"api/v1/feed/quotes/"             // quotes
+        const val API_WIDGET_BEING_NEWS = BASE_URL+"api/v1/feed/bingnews/"      // Being News
+        const val API_WIDGET_STOCKS = BASE_FILE_FEED_URL+"/stock_wtd/"          // Stocks
+        const val API_STOCK_TABLE_HTML = BASE_FILE_FEED_URL+"/stockListHtml/"   // Multi-stock Html
+        // meeting event
+        fun getMeetingEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/meeting/$widget_id/$mac?did=$did&format=json"
+        // calendar all event
+        fun getGoogleCalAllEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/googleCalendar/$widget_id/$mac/all?did=$did&format=json"
+        // calendar wall and room board event
+        fun getGoogleCalEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/googleCalendar/$widget_id/$mac?did=$did&format=json"
+        // Outlook event
+        fun getOutlookEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/outlookCalendar/$widget_id/$mac?did=$did&format=json"
 
 
         // api for device register
@@ -53,8 +63,6 @@ class Constant {
         // api for relaunch acknowledge
         fun getApiRelaunchAcknowledge(mac:String) = "$BASE_FILE_FEED_URL/acknowledgements/relaunch/$mac"
 
-        // api for meeting event
-        fun getMeetingEventApi(mac:String,did:String,widget_id:String) = "$BASE_FILE_FEED_URL/meeting/$widget_id/$mac?did=$did&format=json"
 
         // device register response
         const val DEVICE_REGISTERED = 22001
@@ -95,6 +103,8 @@ class Constant {
         const val WIDGET_EMERGENCY_MESSAGE = "emergency_message"
         const val CONTENT_WIDGET_WEATHER = "weather"
         const val CONTENT_WIDGET_MEETING = "meeting"
+        const val CONTENT_WIDGET_GOOGLE_CAL = "googleCalendar"
+        const val CONTENT_WIDGET_OUTLOOK_CAL = "outlookCalendar"
 
 
         // base url for other apis
@@ -156,6 +166,13 @@ class Constant {
         // meeting board type
         const val MEETING_BOARD_ROOM = "rb"
         const val MEETING_BOARD_WALL = "wb"
+        // meeting board type
+        const val CALENDAR_BOARD_ROOM = "r"
+        const val CALENDAR_BOARD_WALL = "wc"
+        const val CALENDAR_BOARD_ALL = "ae"
+
+        // device screen validation
+        const val device_resolution = 1920
 
 
     }

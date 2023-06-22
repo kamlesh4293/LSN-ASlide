@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_PRECISE_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
     <uses-feature android:name="android.hardware.usb.host" />
 
@@ -47,7 +48,7 @@
         <activity
             android:name=".ui.activity.CODActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="false">
+            android:exported="true">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
@@ -55,7 +56,7 @@
         <activity
             android:name=".ui.activity.CodContentActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="false">
+            android:exported="true">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
@@ -63,7 +64,7 @@
         <activity
             android:name=".ui.MainActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="false">
+            android:exported="true">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />

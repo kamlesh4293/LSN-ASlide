@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -15,10 +17,10 @@ import android.widget.VideoView
 import androidx.core.view.setMargins
 import com.app.lsquared.R
 import com.app.lsquared.model.Item
-import com.app.lsquared.model.widget.MeetingRoomBoardResponseData
-import com.app.lsquared.model.widget.MeetingWallBoardResponseData
+import com.app.lsquared.model.widget.MeetingCalendarResponseData
 import com.app.lsquared.model.widget.Ss
 import com.app.lsquared.pasring.DataParsingSetting
+import com.app.lsquared.ui.UiUtils
 import com.app.lsquared.utils.Constant
 import com.app.lsquared.utils.FontUtil
 import com.app.lsquared.utils.ImageUtil
@@ -37,13 +39,47 @@ class WidgetMeeting {
     var ctx : Context? = null
     var item :Item? = null
     var position = 0
-    var meeting_obj :MeetingWallBoardResponseData? = null
+    var meeting_obj :MeetingCalendarResponseData? = null
     var view:View? = null
+    var visible_room = true
+
+    // set screen saver
+    fun loadScreenSaver(ss_list: ArrayList<Ss>, position: Int,
+                        layout: LinearLayout?, ctx: Context) {
+
+        var pos = position
+        if(pos>=ss_list.size) pos = 0
+
+
+        var ss_item = ss_list[pos]
+        if(ss_item.type.equals(Constant.CONTENT_IMAGE) ||
+            ss_item.type.equals(Constant.CONTENT_VECTOR) ||
+            ss_item.type.equals(Constant.CONTENT_POWERPOINT) ||
+            ss_item.type.equals(Constant.CONTENT_WORD)){
+            layout?.removeAllViews()
+            layout?.addView(ImageWidget.getMeetingSsImageWidget(ctx,ss_item.src!!))
+        }
+        if(ss_item.type.equals(Constant.CONTENT_VIDEO)){
+            var videoView = VideoView(ctx)
+            videoView.setVideoURI(Uri.parse(Constant.BASE_FILE_URL+"cl/videos/processed/"+ss_item.src))
+            videoView.requestFocus()
+            videoView.start()
+            layout?.removeAllViews()
+            layout?.addView(videoView)
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(TimeUnit.SECONDS.toMillis(ss_item.d!!.toLong()))
+            withContext(Dispatchers.Main) {
+                loadScreenSaver(ss_list,pos+1,layout,ctx)
+            }
+        }
+    }
 
     // Meeting - WALLBOARD
-    fun getMeetingWallBoardWidget(ctx: Context, item: Item, meeting_obj: MeetingWallBoardResponseData, layout: LinearLayout?):View? {
+    fun getMeetingWallBoardWidget(ctx: Context, item: Item, meeting_obj: MeetingCalendarResponseData, layout: LinearLayout?):View? {
 
         var view = (ctx as Activity).layoutInflater.inflate(R.layout.widget_meeting_wallboard,null)
+        var main_bg_ll = view?.findViewById<LinearLayout>(R.id.ll_main_meeting_bg)
         main_ll = view?.findViewById<LinearLayout>(R.id.ll_main_meeeting)
         title_main_ll = view?.findViewById<LinearLayout>(R.id.ll_main_meeetingtitle)
         cal_ll = view?.findViewById<LinearLayout>(R.id.ll_cal_meeeting)
@@ -53,10 +89,15 @@ class WidgetMeeting {
         this.item = item
         this.meeting_obj = meeting_obj
 
-        if(meeting_obj.events.size>0){
-            getTitleRow(ctx,item)
-        }else if (meeting_obj.ss.size>0)
-            loadScreenSaver(meeting_obj.ss,0,layout!!,ctx)
+        var sett_obj = JSONObject(item.settings)
+        var header_active = DataParsingSetting.getheaderVisibility(JSONObject(item.settings))
+
+        var bg = DataParsingSetting.getBgWithOpacity(sett_obj)
+        main_bg_ll?.setBackgroundColor(Color.parseColor(bg))
+
+        title_main_ll?.visibility = if(header_active) View.VISIBLE else View.GONE
+        if(header_active) getTitleRow(ctx,item) else getMeetingRow()
+
         return view
     }
 
@@ -86,19 +127,40 @@ class WidgetMeeting {
         room_tv.layoutParams = room_lp
         room_tv.gravity = Gravity.CENTER
 
+        // floor
+        var floor_tv = TextView(ctx)
+        floor_tv.layoutParams = room_lp
+        floor_tv.gravity = Gravity.CENTER
+
         var image = ImageView(ctx)
         image.layoutParams = LayoutParams(100,LayoutParams.MATCH_PARENT)
 
+        // visibility
+        var obj = JSONObject(item.settings)
+        var logo_opt = DataParsingSetting.getLogoOption(obj)
+        var isRoom = DataParsingSetting.isRoomVisible(obj)
+        var isFloor = DataParsingSetting.isFloorVisible(obj)
+        var isTime = DataParsingSetting.isTimeVisible(obj)
+        var isRF = DataParsingSetting.isRFVisible(obj)
+
 
         layout.addView(title_tv)
-        layout.addView(image)
-        layout.addView(getVerticalLine(ctx))
-        layout.addView(time_tv)
-        layout.addView(getVerticalLine(ctx))
-        layout.addView(room_tv)
+        if(logo_opt) layout.addView(image)
+        if(isTime){
+            layout.addView(getVerticalLine(ctx))
+            layout.addView(time_tv)
+        }
+        if(isRoom){
+            layout.addView(getVerticalLine(ctx))
+            layout.addView(room_tv)
+        }
+        if(isFloor && !isRF){
+            layout.addView(getVerticalLine(ctx))
+            layout.addView(floor_tv)
+        }
+
 
         // setting
-        var obj = JSONObject(item.settings)
         var size = DataParsingSetting.meetingHeaderTextSize(obj).toFloat()
         var color = Color.parseColor(DataParsingSetting.meetingHeaderTextColor(obj))
         var font = DataParsingSetting.getFontLabel(obj)
@@ -111,18 +173,22 @@ class WidgetMeeting {
         title_tv.textSize = size
         time_tv.textSize = size
         room_tv.textSize = size
+        floor_tv.textSize = size
         // color
         title_tv.setTextColor(color)
         time_tv.setTextColor(color)
         room_tv.setTextColor(color)
+        floor_tv.setTextColor(color)
         // font
         FontUtil.setFonts(ctx,title_tv,font)
         FontUtil.setFonts(ctx,time_tv,font)
         FontUtil.setFonts(ctx,room_tv,font)
+        FontUtil.setFonts(ctx,floor_tv,font)
         //text
         title_tv.text = DataParsingSetting.getMeetingTitleText1(obj)
         time_tv.text = DataParsingSetting.getMeetingTitleText2(obj)
         room_tv.text = DataParsingSetting.getMeetingTitleText3(obj)
+        floor_tv.text = DataParsingSetting.getMeetingTitleText4(obj)
         title_main_ll?.addView(layout)
 
         title_main_ll?.post(Runnable() {
@@ -136,9 +202,6 @@ class WidgetMeeting {
 
     // Meeting Row
     fun getMeetingRow(){
-
-        Log.d("TAG", "getMeetingRow: frameHi - $frame_height , pos - $position")
-
         // add previous
         if(lastView!=null){
             cal_ll?.removeAllViews()
@@ -150,8 +213,9 @@ class WidgetMeeting {
 
             // new
             var layout = LinearLayout(ctx)
-            layout.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT)
+            layout.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT)
             layout.orientation = LinearLayout.HORIZONTAL
+            layout.gravity = Gravity.CENTER_VERTICAL
 
             val title_lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.6f)
             val time_lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.35f)
@@ -161,25 +225,18 @@ class WidgetMeeting {
 
             var title_size = DataParsingSetting.getTitleSize(obj).toFloat()
 
-            // icon
-            var image = ImageView(ctx)
-            var image_lp = LayoutParams((title_size*3).toInt(),(title_size*3).toInt())
-            image_lp.setMargins(10)
-            image.layoutParams = image_lp
-            image.setPadding(10,10,10,10)
-            if(!meeting.logo.equals("")){
-                image.setBackgroundColor(Color.parseColor("#CBCDCC"))
-                ImageUtil.loadImage(ctx!!,meeting.logo!!,image)
-            } else{
-                image.setBackgroundResource(R.drawable.bg_meeting_icon)
-                image.setImageResource(R.drawable.ic_calendar)
-            }
+            var title_font = DataParsingSetting.getFontTitleLabel(obj)
+            var time_font = DataParsingSetting.getFontTimeLabel(obj)
+            var room_font = DataParsingSetting.getFontRoomLabel(obj)
+            var floor_font = DataParsingSetting.getFontFloorLabel(obj)
 
             // title
             var title_tv = TextView(ctx)
             title_tv.text = "${meeting.title}"
             title_tv.layoutParams = title_lp
-            title_tv.setPadding(0,10,0,5)
+            title_tv.setPadding(10,10,0,5)
+            title_tv.gravity = Gravity.TOP
+            FontUtil.setFonts(ctx!!,title_tv,title_font)
 
             var layout_time = LinearLayout(ctx)
             layout_time.orientation = LinearLayout.VERTICAL
@@ -190,6 +247,7 @@ class WidgetMeeting {
             time_tv1.text = "${meeting.starttime}"
             time_tv1.gravity = Gravity.CENTER
             time_tv1.setPadding(0,10,0,5)
+            FontUtil.setFonts(ctx!!,time_tv1,time_font)
 
             // time row
             var time_sep_tv = TextView(ctx)
@@ -204,6 +262,7 @@ class WidgetMeeting {
             time_tv2.text = "${meeting.endtime}"
             time_tv2.gravity = Gravity.CENTER
             time_tv2.setPadding(0,5,0,10)
+            FontUtil.setFonts(ctx!!,time_tv2,time_font)
 
             layout_time.addView(time_tv1)
             layout_time.addView(time_sep_tv)
@@ -215,6 +274,15 @@ class WidgetMeeting {
             room_tv.layoutParams = room_lp
             room_tv.gravity = Gravity.CENTER
             room_tv.setPadding(0,5,0,5)
+            FontUtil.setFonts(ctx!!,room_tv,room_font)
+
+            // floor
+            var floor_tv = TextView(ctx)
+            floor_tv.text = "${meeting.floor}"
+            floor_tv.layoutParams = room_lp
+            floor_tv.gravity = Gravity.CENTER
+            floor_tv.setPadding(0,5,0,5)
+            FontUtil.setFonts(ctx!!,floor_tv,floor_font)
 
 
             // setting
@@ -227,6 +295,34 @@ class WidgetMeeting {
             var time_size = DataParsingSetting.getTimeSize(obj).toFloat()
             var room_size = DataParsingSetting.getRoomSize(obj).toFloat()
             var floor_size = DataParsingSetting.getFloorSize(obj).toFloat()
+            var img_size = getImageSize(time_size,room_size,floor_size)
+            Log.d("TAG", "getMeetingRow: $img_size")
+
+            // visibility
+            var logo_opt = DataParsingSetting.getLogoOption(obj)
+            var isRoom = DataParsingSetting.isRoomVisible(obj)
+            var isFloor = DataParsingSetting.isFloorVisible(obj)
+            var isTime = DataParsingSetting.isTimeVisible(obj)
+            var isRF = DataParsingSetting.isRFVisible(obj)
+
+            if(logo_opt){
+                // icon
+                var image = ImageView(ctx)
+                var image_lp = LayoutParams((img_size*3).toInt(),(img_size*3).toInt())
+                image_lp.setMargins(10)
+                image.layoutParams = image_lp
+                image.setPadding(10,10,10,10)
+                if(!meeting.logo.equals("")){
+                    image.setBackgroundColor(Color.parseColor(UiUtils.getColorWithOpacity("#000000","0.1")))
+//                    image.setBackgroundColor(Color.parseColor("#CBCDCC"))
+                    ImageUtil.loadImage(ctx!!,meeting.logo!!,image)
+                } else{
+//                    image.setBackgroundResource(R.drawable.bg_meeting_icon)
+                    image.background = UiUtils.getMeetingLogoDrawable("#1A000000")
+                    image.setImageResource(R.drawable.ic_calendar)
+                }
+                layout.addView(image)
+            }
 
             if(position%2==0){
                 bg_color = Color.parseColor(DataParsingSetting.getRowBgWithOpacity(obj))
@@ -246,19 +342,31 @@ class WidgetMeeting {
             time_tv1.setTextColor(Color.parseColor(text_color_time))
             time_tv2.setTextColor(Color.parseColor(text_color_time))
             room_tv.setTextColor(Color.parseColor(text_color_room))
+            floor_tv.setTextColor(Color.parseColor(text_color_floor))
 
             title_tv.textSize = title_size
             time_tv1.textSize = time_size
             time_tv2.textSize = time_size
             room_tv.textSize = room_size
+            floor_tv.textSize = floor_size
 
-            layout.addView(image)
             layout.addView(title_tv)
-            layout.addView(getVerticalLine(ctx!!))
-            layout.addView(layout_time)
-            layout.addView(getVerticalLine(ctx!!))
-            layout.addView(room_tv)
 
+            if(isTime){
+                layout.addView(getVerticalLine(ctx!!))
+                layout.addView(layout_time)
+            }
+            if(isRoom){
+                layout.addView(getVerticalLine(ctx!!))
+                layout.addView(room_tv)
+            }
+            if(isFloor && !isRF){
+                layout.addView(getVerticalLine(ctx!!))
+                layout.addView(floor_tv)
+            }
+            if(isFloor && isRF){
+                rotateRoomFloor(room_tv,meeting.location,meeting.floor)
+            }
             cal_ll?.addView(layout)
             lastView = layout
 
@@ -268,13 +376,32 @@ class WidgetMeeting {
                     if(frame_height< item?.frame_h!!){
                         position = position+1
                         getMeetingRow()
-                    }else rotateItems(obj, meeting_obj)
+                    }else {
+                        rotateItems(obj, meeting_obj)
+                    }
                 }
             })
-        } else rotateItems(obj, meeting_obj)
+        } else {
+            rotateItems(obj, meeting_obj)
+            visible_room = true
+        }
     }
 
-    fun rotateItems(obj: JSONObject,meeting_obj: MeetingWallBoardResponseData?) {
+    private fun getImageSize(timeSize: Float, roomSize: Float, floorSize: Float): Float {
+        return if(timeSize>roomSize && timeSize>floorSize) timeSize
+        else if(roomSize>timeSize && roomSize>floorSize) roomSize
+        else floorSize
+    }
+
+    private fun rotateRoomFloor(room_tv: TextView, location: String?, floor: String?) {
+        Handler(Looper.getMainLooper()).postDelayed(Runnable {
+            visible_room = !visible_room
+            room_tv.text = if(visible_room) location else floor
+            rotateRoomFloor(room_tv,location,floor)
+        },6000)
+    }
+
+    fun rotateItems(obj: JSONObject,meeting_obj: MeetingCalendarResponseData?) {
         var rotate = DataParsingSetting.getRotate(obj)
         CoroutineScope(Dispatchers.IO).launch {
             delay(TimeUnit.SECONDS.toMillis(rotate.toLong()))
@@ -287,6 +414,7 @@ class WidgetMeeting {
         }
     }
 
+
     // vertical Divider
     fun getVerticalLine(ctx:Context): View {
         var vertical_line = View(ctx)
@@ -295,60 +423,29 @@ class WidgetMeeting {
         return vertical_line
     }
 
-    // set screen saver
-    private fun loadScreenSaver(ss_list: ArrayList<Ss>, position: Int,
-                                layout: LinearLayout?, ctx: Activity) {
-
-        var pos = position
-        if(pos>=ss_list.size) pos = 0
-
-        var ss_item = ss_list[pos]
-        if(ss_item.type.equals(Constant.CONTENT_IMAGE) ||
-            ss_item.type.equals(Constant.CONTENT_VECTOR) ||
-            ss_item.type.equals(Constant.CONTENT_POWERPOINT) ||
-            ss_item.type.equals(Constant.CONTENT_WORD)){
-            layout?.removeAllViews()
-            layout?.addView(ImageWidget.getMeetingSsImageWidget(ctx,ss_item.src!!))
-        }
-        if(ss_item.type.equals(Constant.CONTENT_VIDEO)){
-            var videoView = VideoView(ctx)
-            videoView.setVideoURI(Uri.parse(Constant.BASE_FILE_URL+"cl/videos/processed/"+ss_item.src))
-            videoView.requestFocus()
-            videoView.start()
-            layout?.removeAllViews()
-            layout?.addView(videoView)
-        }
-        CoroutineScope(Dispatchers.IO).launch {
-            delay(TimeUnit.SECONDS.toMillis(ss_item.d!!.toLong()))
-            withContext(Dispatchers.Main) {
-                loadScreenSaver(ss_list,pos+1,layout,ctx)
-            }
-        }
-    }
 
     // Meeting - Room Board
-    fun getMeetingRoomBoardWidget(ctx: Context, item: Item, meeting_obj: MeetingRoomBoardResponseData, layout: LinearLayout?):View? {
+    fun getMeetingRoomBoardWidget(ctx: Context, item: Item, meeting_obj: MeetingCalendarResponseData, layout: LinearLayout?):View? {
 
         var view = (ctx as Activity).layoutInflater.inflate(R.layout.widget_meeting_roomboard,null)
         var room_main_ll = view.findViewById<LinearLayout>(R.id.ll_meeting_roommain)
         var image = view.findViewById<ImageView>(R.id.iv_meetingroom_image)
         var title_tv = view.findViewById<TextView>(R.id.tv_meetingroom_title)
         var time_tv = view.findViewById<TextView>(R.id.tv_meetingroom_time)
-        if(meeting_obj.event !=null ){
-
-            ImageUtil.loadImage(ctx,meeting_obj?.event?.logo!!,image)
-            title_tv.text = meeting_obj?.event?.title
-            time_tv.text = "${meeting_obj?.event?.starttime} - ${meeting_obj?.event?.endtime}"
+        if(meeting_obj.event !=null && meeting_obj?.event?.starttime !=null ){
 
             // setting
             var obj = JSONObject(item.settings)
             var bg_color = Color.parseColor(DataParsingSetting.getBgWithOpacity(obj))
             var title_size = DataParsingSetting.getTitleSize(obj).toFloat()
             var time_size = DataParsingSetting.getTimeSize(obj).toFloat()
+
             var title_font = DataParsingSetting.getFontTitleLabel(obj)
             var time_font = DataParsingSetting.getFontTimeLabel(obj)
+
             var title_color = DataParsingSetting.getRowTitleTextColor(obj)
             var time_color = DataParsingSetting.getRowTimeTextColor(obj)
+            var logo_opt = DataParsingSetting.getLogoOption(obj)
 
             // main ll size
             var main_ll_lp = LayoutParams(item.frame_w,item.frame_h)
@@ -358,6 +455,12 @@ class WidgetMeeting {
             image.layoutParams = iv_lp
             image.setPadding(5,5,5,5)
             image.setBackgroundResource(R.drawable.bg_meeting_icon)
+
+            image.visibility = if(logo_opt) View.VISIBLE else View.GONE
+            if (logo_opt)ImageUtil.loadImage(ctx,meeting_obj?.event?.logo!!,image)
+            title_tv.text = meeting_obj?.event?.title
+            time_tv.text = "${meeting_obj?.event?.starttime} - ${meeting_obj?.event?.endtime}"
+
 
             //bg
             room_main_ll.setBackgroundColor(bg_color)
@@ -371,8 +474,7 @@ class WidgetMeeting {
             FontUtil.setFonts(ctx,title_tv,title_font)
             FontUtil.setFonts(ctx,time_tv,time_font)
 
-        }else if (meeting_obj.ss.size>0)
-            loadScreenSaver(meeting_obj.ss,0,layout!!,ctx)
+        }
         return view
     }
 

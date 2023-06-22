@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.RequiresApi;
 
+import com.app.lsquared.model.LayoutFrames;
 import com.app.lsquared.model.cod.Settings;
 import com.app.lsquared.ui.UiUtils;
 import com.app.lsquared.utils.DataParsing;
@@ -26,26 +27,25 @@ import org.json.JSONObject;
 
 public class WebViewChromium {
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+   @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public static LinearLayout getWebChromeWidget(Context ctx, String src, GradientDrawable shape,String settings){
 
         LinearLayout layout = new LinearLayout(ctx);
-
         try {
             JSONObject obj = new JSONObject(settings);
             int x = obj.getInt("x");
             int y = obj.getInt("y");
             layout.setX(-1*x);
             layout.setY(-1*y);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        } catch (JSONException e) { e.printStackTrace(); }
 
         WebView webView = new WebView(ctx);
         setUpWebViewDefaults(webView);
         webView.loadUrl(src);
 
-        Log.d("TAG", "getWebChromeWidget: loading 1");
+        LinearLayout.LayoutParams wv_lp = new LinearLayout.LayoutParams
+                (LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
+        webView.setLayoutParams(wv_lp);
 
         webView.setBackgroundColor(0);
         webView.getSettings().setUseWideViewPort(true);
@@ -56,7 +56,6 @@ public class WebViewChromium {
 
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
-                Log.d("TAG", "onPermissionRequest");
                 Activity activity = (Activity) ctx;
                 activity.runOnUiThread(new Runnable() {
                     @Override
