@@ -133,7 +133,7 @@ class FontUtil {
         const val FONT_Dogica_Pixel = "Dogica-Pixel"
 
 
-        fun setFonts(ctx:Context, textView: TextView, font_label:String){
+        fun setFonts(ctx:Context, textView: TextView, font_label:String) : Typeface?{
             var typeface: Typeface? = null
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -342,7 +342,7 @@ class FontUtil {
             }else{
 
             }
-
+            return typeface
         }
     }
 

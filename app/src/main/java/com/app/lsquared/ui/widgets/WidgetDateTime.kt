@@ -196,8 +196,13 @@ class WidgetDateTime {
         timestart_tv.setText("${DateTimeUtil.getHour(setting_obj.format!!)}")
         timeend_tv.setText("${DateTimeUtil.getMinutes()} $format")
 
-        var text_size = (getBoxHight(item) /3).toFloat()
-        var text_size_s = (getBoxHight(item) /3.7).toFloat()
+//        var text_size = (getBoxHight(item) /3).toFloat()
+//        var text_size_s = (getBoxHight(item) /3.7).toFloat()
+
+        var text_size = (TextSize().getDesizeSize("  ${month_tv.text.toString()}  ",item.frame_w,(item.frame_h.toFloat()/3.2).toInt()) /2).toFloat()
+        var text_size_s = (TextSize().getDesizeSize("  ${timestart_tv.text.toString()} " +
+                "${timeend_tv.text.toString()}  ",item.frame_w,(item.frame_h.toFloat()/3.2).toInt()) /2.5).toFloat()
+
         month_tv.textSize = text_size_s
         timestart_tv.textSize = text_size
         colon_tv.textSize = text_size
@@ -421,8 +426,11 @@ class WidgetDateTime {
         timestart_tv.setText("${DateTimeUtil.getHour(setting_obj.format!!)}")
         timeend_tv.setText("${DateTimeUtil.getMinutes()} $format")
 
-        var text_size = (getBoxHight(item) /3).toFloat()
-        var text_size_s = (getBoxHight(item) /3.7).toFloat()
+//        var text_size = (getBoxHight(item) /3).toFloat()
+//        var text_size_s = (getBoxHight(item) /3.7).toFloat()
+        var text_size = (TextSize().getDesizeSize("  $text  ",item.frame_w,(item.frame_h.toFloat()/3.2).toInt()) /2).toFloat()
+        var text_size_s = (TextSize().getDesizeSize("  ${timestart_tv.text.toString()} " +
+                "${timeend_tv.text.toString()}  ",item.frame_w,(item.frame_h.toFloat()/3.2).toInt()) /2.5).toFloat()
 
         month_tv.textSize = text_size_s
         timestart_tv.textSize = text_size
@@ -468,7 +476,7 @@ class WidgetDateTime {
         endtime_tv.setText("${DateTimeUtil.getMinutes()} $format")
         month_tv.setText(DateTimeUtil.getMonth())
 
-        var text_size = (TextSize().getDesizeSize("  $day  ",item.frame_w,item.frame_h/5)/2.3).toFloat()
+        var text_size = (TextSize().getDesizeSize("  $day  ",item.frame_w,item.frame_h/5,)/2.3).toFloat()
 
         day_tv.textSize = text_size
         starttime_tv.textSize = text_size

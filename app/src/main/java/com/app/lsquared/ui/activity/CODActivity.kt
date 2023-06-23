@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.*
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
 import android.view.Window
@@ -110,6 +111,7 @@ class CODActivity : AppCompatActivity() {
     }
 
     private fun initObserver() {
+
         // device registred observer
         viewModel.device_register_api_result.observe(this, Observer { response ->
             if (response.status == Status.SUCCESS) {
