@@ -25,6 +25,7 @@ data class Item (
     @SerializedName("actualDuration") val actualDuration : Float = -1.0f,
     @SerializedName("forecast") val forecast : Int = 0,
     @SerializedName("params") val params : String = "",
+    @SerializedName("template") val template : String = "",
     @SerializedName("content"  ) var content  : ArrayList<ItemContent> = arrayListOf(),
     var frame_h : Int = 0,
     var frame_w : Int = 0,

@@ -9,4 +9,6 @@
 
     <string name="youtube_api_key">AIzaSyD28_xn58Vi2wYX7NRyem7ZLj9ZWxMulOo</string>
 
+    <string name="text_waiting_content" translatable="false">Waiting for content</string>
+
 </resources>

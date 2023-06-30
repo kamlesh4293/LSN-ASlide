@@ -6,6 +6,8 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.View
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -187,6 +189,16 @@ class UiUtils {
             v.setBackground(shape)
         }
 
+        fun setDrawableView(v: View, backgroundColor: Int, borderColor: Int, margin: Int) {
+            var round = (margin*2).toFloat()
+            val shape = GradientDrawable()
+            shape.shape = GradientDrawable.RECTANGLE
+            shape.cornerRadii = floatArrayOf(round,round,round,round,round,round,round,round)
+            shape.setColor(backgroundColor)
+            shape.setStroke(margin, borderColor)
+            v.setBackground(shape)
+        }
+
         fun setDrawableViewDay(v: View, backgroundColor: Int) {
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.RECTANGLE
@@ -210,5 +222,54 @@ class UiUtils {
             shape.setColor(backgroundColor)
             v.setBackground(shape)
         }
+
+        fun TextView.setTextAnimation(text: String, completion: (() -> Unit)? = null) {
+            fadOutAnimation() {
+                this.text = text
+                fadInAnimation() {
+                    completion?.let {
+                        it()
+                    }
+                }
+            }
+        }
+
+        // ViewExtensions
+
+        fun View.fadOutAnimation(visibility: Int = View.INVISIBLE, completion: (() -> Unit)? = null) {
+            animate()
+                .alpha(0f)
+                .setDuration(600)
+                .withEndAction {
+                    this.visibility = visibility
+                    completion?.let {
+                        it()
+                    }
+                }
+        }
+
+        fun View.fadInAnimation( completion: (() -> Unit)? = null) {
+            alpha = 0f
+            visibility = View.VISIBLE
+            animate()
+                .alpha(1f)
+                .setDuration(600)
+                .withEndAction {
+                    completion?.let {
+                        it()
+                    }
+                }
+        }
+
+        fun setBlinking(textview: TextView?) {
+            val anim: Animation = AlphaAnimation(0.0f, 1.0f)
+            anim.duration = 2000 //You can manage the blinking time with this parameter
+            anim.startOffset = 20
+            anim.repeatMode = Animation.REVERSE
+            anim.repeatCount = Animation.INFINITE
+            textview?.startAnimation(anim)
+
+        }
+
     }
 }

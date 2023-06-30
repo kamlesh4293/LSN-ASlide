@@ -344,7 +344,6 @@ class MainViewModel @Inject constructor(
                             getEmergencyAcknowldge(device_id)
                             emergenncy_req_data.postValue(ApiResponse(Status.SUCCESS,res,"success"))
                         }else{
-                            var error = response?.errorBody()!!.toString()
                             emergenncy_req_data.postValue(ApiResponse(Status.ERROR,null,"error"))
                         }
                     }
@@ -522,7 +521,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // 7. Google Calendar widget
+    // 8. Google Calendar widget
     fun getGoogleCalData(device:Device?, widget_id: String,pos: Int,item: Item) {
         var url = if(item.dType.equals(Constant.CALENDAR_BOARD_ALL))
             Constant.getGoogleCalAllEventApi(device?.mac!!,device?.id.toString(),widget_id)
@@ -545,8 +544,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-
-    // 8. outlook widget
+    // 9. outlook widget
     fun getOutlookData(device:Device?, widget_id: String,pos: Int,item: Item) {
         var url = Constant.getOutlookEventApi(device?.mac!!,device?.id.toString(),widget_id)
 
@@ -567,8 +565,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-
-    // 6. file downloading
+    // 10. file downloading
     fun downloadFile(downloadable: Downloadable) {
 
         var url = if(downloadable.type.equals(Constant.CONTENT_THUMB)) downloadable.src else Constant.BASE_FILE_URL + downloadable.src
@@ -599,7 +596,6 @@ class MainViewModel @Inject constructor(
                 }
             })
     }
-
 
     // not notifying apis
 

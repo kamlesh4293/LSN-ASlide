@@ -19,10 +19,8 @@ class IdentifyRequestWidget {
         , internet:Boolean,temp:String, device_reg:Boolean) {
 
             var device = DataParsing.getDevice(pref)
-
             if(device_reg){
                 binding.tvMainIdentifyName.text = "Name:  ${device?.name}"
-
                 Log.d("TAG", "setIdentifyRequest: ${device?.server}")
                 if(device?.server!!.contains("-")){
                     var string_arry = device?.server?.split("-")

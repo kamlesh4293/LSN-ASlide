@@ -30,67 +30,81 @@
 
             <RelativeLayout
                 android:id="@+id/rl_background"
-                android:orientation="horizontal"
                 android:background="@color/bg_color"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <RelativeLayout
+                    android:layout_width="720dp"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="horizontal">
+                    android:layout_centerInParent="true"
+                    android:background="@color/bg_color">
 
-                    <ImageView
-                        android:layout_width="0dp"
-                        android:layout_height="150dp"
-                        android:layout_weight="1"
-                        android:src="@drawable/ic_screen" />
-
-                    <ImageView
-                        android:layout_width="0dp"
-                        android:layout_height="150dp"
-                        android:layout_marginHorizontal="20dp"
-                        android:layout_weight="0.6"
-                        android:src="@drawable/ic_arrow" />
-
-                    <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:id="@+id/ll_images"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_centerInParent="true"
+                        android:gravity="center"
+                        android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="match_parent"
+                            android:layout_width="240dp"
+                            android:layout_height="240dp"
+                            android:layout_marginTop="10dp"
+                            android:padding="50dp"
+                            android:src="@drawable/ic_screen" />
+
+                        <ImageView
+                            android:id="@+id/iv_arrow"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:paddingRight="5dp"
+                            android:paddingRight="40dp"
+                            android:src="@drawable/ic_arrow" />
+
+                        <ImageView
+                            android:id="@+id/iv_frame"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:src="@drawable/ic_frame1" />
 
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBottom="@+id/ll_images"
+                        android:gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="440dp"
+                            android:layout_height="wrap_content" />
+
                         <TextView
-                            android:layout_width="match_parent"
+                            android:id="@+id/tv_main_waiting"
+                            android:layout_width="300dp"
                             android:layout_height="wrap_content"
-                            android:layout_below="@+id/img_conn"
                             android:layout_centerInParent="true"
                             android:gravity="center"
-                            android:paddingRight="5dp"
-                            android:text="Waiting for content"
+                            android:text="@string/text_waiting_content"
                             android:textColor="@color/white" />
 
+                    </LinearLayout>
 
-                    </androidx.appcompat.widget.LinearLayoutCompat>
 
-
-                </LinearLayout>
+                </RelativeLayout>
 
                 <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="180dp"
+                    android:layout_height="60dp"
                     android:layout_alignParentRight="true"
                     android:layout_alignParentBottom="true"
                     android:layout_marginRight="30dp"
                     android:layout_gravity="bottom"
                     android:padding="10dp"
-                    android:src="@drawable/logo" />
+                    android:src="@drawable/lsn_bottom_logo" />
 
                 <LinearLayout
                     android:visibility="gone"
@@ -207,42 +221,58 @@
 
         <!--identify request-->
         <LinearLayout
-            android:layout_margin="20dp"
-            android:id="@+id/ll_identify_request"
             android:visibility="gone"
+            android:layout_margin="10dp"
+            android:id="@+id/ll_identify_request"
             android:layout_alignParentBottom="true"
             android:background="@color/black_trans"
             android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
-            <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
-                android:padding="10dp"
-                android:drawablePadding="10dp"
+            <LinearLayout
+                android:paddingLeft="10dp"
+                android:paddingRight="20dp"
                 android:gravity="center"
-                android:textSize="20dp"
-                android:drawableLeft="@drawable/logo_lsn"
-                android:textColor="@color/white"
-                android:text="L Squared Digital Signage"
+                android:orientation="horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="50dp">
+
+                <ImageView
+                    android:layout_gravity="center"
+                    android:src="@drawable/lsn_logo"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"/>
+
+                <TextView
+                    android:paddingLeft="10px"
+                    android:fontFamily="@font/myriad_pro_condensed"
+                    android:gravity="center"
+                    android:textSize="16dp"
+                    android:paddingRight="15dp"
+                    android:textColor="@color/white"
+                    android:text="L Squared Digital Signage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+
+
+            </LinearLayout>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_name"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:textColor="@color/white"
                 android:text="Name: Health Dashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_id"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -251,9 +281,9 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_server"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -262,11 +292,11 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_env"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:textColor="@color/white"
                 android:text="Environment: LS-AZUSUS-1001"
                 android:layout_width="match_parent"
@@ -274,10 +304,10 @@
 
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_type"
-                android:layout_marginTop="25dp"
-                android:textSize="20px"
+                android:layout_marginTop="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -286,8 +316,8 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
-                android:textSize="20px"
+                android:fontFamily="@font/myriad_pro_condensed"
+                android:textSize="19px"
                 android:id="@+id/tv_main_identify_model"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
@@ -297,8 +327,8 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
-                android:textSize="20px"
+                android:fontFamily="@font/myriad_pro_condensed"
+                android:textSize="19px"
                 android:id="@+id/tv_main_identify_tizen"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
@@ -308,10 +338,10 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_serial"
                 android:paddingVertical="2dp"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
                 android:text="Serial: 0643j5h34j554wd"
@@ -320,10 +350,10 @@
 
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_lss"
                 android:paddingVertical="2dp"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
                 android:text="L Squared Slide: 2.1.52"
@@ -331,10 +361,10 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_ip"
                 android:paddingVertical="2dp"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
                 android:text="IP: 11.12.68|192.34.66.788"
@@ -343,10 +373,10 @@
 
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_storage"
-                android:layout_marginTop="25dp"
-                android:textSize="20px"
+                android:layout_marginTop="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -355,9 +385,9 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_time"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -366,8 +396,8 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
-                android:textSize="20px"
+                android:fontFamily="@font/myriad_pro_condensed"
+                android:textSize="19px"
                 android:id="@+id/tv_main_identify_temp"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
@@ -378,10 +408,10 @@
 
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_conn_type"
-                android:layout_marginTop="25dp"
-                android:textSize="20px"
+                android:layout_marginTop="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -390,8 +420,8 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
-                android:textSize="20px"
+                android:fontFamily="@font/myriad_pro_condensed"
+                android:textSize="19px"
                 android:id="@+id/tv_main_identify_wifi"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
@@ -402,9 +432,9 @@
 
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_gateway"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
@@ -413,37 +443,41 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:fontFamily="@font/myriad_pro_bold_condensed"
+                android:fontFamily="@font/myriad_pro_condensed"
                 android:id="@+id/tv_main_identify_internet"
                 android:paddingVertical="2dp"
                 android:paddingHorizontal="10dp"
                 android:textColor="@color/white"
                 android:text="Internet: 2.1.52"
-                android:textSize="20px"
+                android:textSize="19px"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
 
             <LinearLayout
+                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:fontFamily="@font/myriad_pro_bold_condensed"
+                    android:fontFamily="@font/myriad_pro_condensed"
                     android:id="@+id/tv_main_identify_status"
-                    android:drawableRight="@drawable/checked"
                     android:paddingVertical="2dp"
                     android:paddingHorizontal="10dp"
                     android:textColor="@color/white"
                     android:text="Status: online"
                     android:drawablePadding="20dp"
-                    android:textSize="20px"
+                    android:textSize="19px"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
+                <ImageView
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_baseline_check_24"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
             </LinearLayout>
-
 
 
         </LinearLayout>

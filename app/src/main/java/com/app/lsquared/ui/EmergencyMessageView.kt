@@ -54,7 +54,8 @@ class EmergencyMessageView {
             layout_header.setBackgroundColor(Color.parseColor(setting_obj.mBgColor))
             FontUtil.setFonts(ctx,msg_tv,setting_obj.mFont?.label!!)
 
-            ImageUtil.loadImage(ctx,msg_obj.messages.get(0).img!!,imageview)
+            if(msg_obj.messages.get(0).img!!.equals(""))imageview.visibility =  View.GONE
+            else ImageUtil.loadImage(ctx,msg_obj.messages.get(0).img!!,imageview)
 
 //            layout_title.post {
 //                var hi = layout_title.height

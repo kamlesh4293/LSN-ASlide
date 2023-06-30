@@ -22,7 +22,6 @@ import java.io.IOException
 import java.io.InputStream
 import javax.inject.Inject
 
-
 class DataParsing @Inject constructor(
     private val prefernce: MySharePrefernce?
 ) {
@@ -281,6 +280,15 @@ class DataParsing @Inject constructor(
         var data_obj = Gson().fromJson(data, ResponseJsonData::class.java)
         var watermark_obj = Gson().fromJson(data_obj.device[0].wm, DeviceWaterMark::class.java)
         return watermark_obj
+    }
+
+    fun getLanguage(): String {
+        try {
+            return JSONObject(getDevice()?.weboss).getJSONObject("gs")
+                .getJSONObject("l").getJSONObject("menu").getString("languageCode")
+        }catch (ex:Exception) {
+            return "en"
+        }
     }
 
 

@@ -2,16 +2,20 @@ package com.app.lsquared.ui.widgets
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Color
 import android.os.Build
 import android.util.Log
 import android.webkit.*
 import androidx.annotation.RequiresApi
+import com.app.lsquared.pasring.DataParsingSetting.Companion.getBgWithOpacity
+import org.json.JSONException
+import org.json.JSONObject
 
 class WebViewWidget {
 
     companion object{
 
-        fun getWebViewWidget(ctx:Context, src: String):WebView{
+        fun getWebViewWidget(ctx:Context, src: String, setting: String):WebView{
             var web = WebView(ctx)
             web.setWebChromeClient(WebChromeClient())
             web.settings.javaScriptEnabled = true
@@ -23,6 +27,8 @@ class WebViewWidget {
             } catch (e: java.lang.Exception) {
                 Log.d("TAG", "Exception : ", e)
             }
+            val bg = getBgWithOpacity(JSONObject(setting))
+            web.setBackgroundColor(Color.parseColor(bg))
 
             web.setWebChromeClient(object : WebChromeClient() {
                 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

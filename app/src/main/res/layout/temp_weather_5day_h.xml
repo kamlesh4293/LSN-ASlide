@@ -8,7 +8,7 @@
 
     <LinearLayout
         android:id="@+id/ll_5day_hori1"
-        android:layout_margin="2dp"
+        android:layout_margin="2px"
         android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="wrap_content">
@@ -18,7 +18,6 @@
             android:layout_marginHorizontal="2dp"
             android:id="@+id/tv_weat5h_desc1"
             android:background="@drawable/bg_rounded_text_grey"
-            android:padding="5sp"
             android:gravity="center"
             android:text="Jeudi"
             android:layout_width="match_parent"
@@ -34,7 +33,6 @@
 
         <TextView
             android:id="@+id/tv_weat5h_day1"
-            android:padding="5dp"
             android:gravity="center"
             android:text="-7°C/-7°C"
             android:layout_width="match_parent"
@@ -45,7 +43,7 @@
 
     <LinearLayout
         android:id="@+id/ll_5day_hori2"
-        android:layout_margin="2dp"
+        android:layout_margin="2px"
         android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="wrap_content">
@@ -55,7 +53,6 @@
             android:layout_marginHorizontal="2dp"
             android:id="@+id/tv_weat5h_desc2"
             android:background="@drawable/bg_rounded_text_grey"
-            android:padding="5sp"
             android:gravity="center"
             android:text="Jeudi"
             android:layout_width="match_parent"
@@ -71,7 +68,6 @@
 
         <TextView
             android:id="@+id/tv_weat5h_day2"
-            android:padding="5dp"
             android:gravity="center"
             android:text="-7°C/-7°C"
             android:layout_width="match_parent"
@@ -82,7 +78,7 @@
 
     <LinearLayout
         android:id="@+id/ll_5day_hori3"
-        android:layout_margin="2dp"
+        android:layout_margin="2px"
         android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="wrap_content">
@@ -92,7 +88,6 @@
             android:layout_marginHorizontal="2dp"
             android:id="@+id/tv_weat5h_desc3"
             android:background="@drawable/bg_rounded_text_grey"
-            android:padding="5sp"
             android:gravity="center"
             android:text="Jeudi"
             android:layout_width="match_parent"
@@ -108,7 +103,6 @@
 
         <TextView
             android:id="@+id/tv_weat5h_day3"
-            android:padding="5dp"
             android:gravity="center"
             android:text="-7°C/-7°C"
             android:layout_width="match_parent"
@@ -119,7 +113,7 @@
 
     <LinearLayout
         android:id="@+id/ll_5day_hori4"
-        android:layout_margin="2dp"
+        android:layout_margin="2px"
         android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="wrap_content">
@@ -129,7 +123,6 @@
             android:layout_marginHorizontal="2dp"
             android:id="@+id/tv_weat5h_desc4"
             android:background="@drawable/bg_rounded_text_grey"
-            android:padding="5sp"
             android:gravity="center"
             android:text="Jeudi"
             android:layout_width="match_parent"
@@ -145,7 +138,6 @@
 
         <TextView
             android:id="@+id/tv_weat5h_day4"
-            android:padding="5sp"
             android:gravity="center"
             android:text="-7°C/-7°C"
             android:layout_width="match_parent"
@@ -156,7 +148,7 @@
 
     <LinearLayout
         android:id="@+id/ll_5day_hori5"
-        android:layout_margin="2dp"
+        android:layout_margin="2px"
         android:layout_width="wrap_content"
         android:orientation="vertical"
         android:layout_height="wrap_content">
@@ -166,7 +158,6 @@
             android:layout_marginHorizontal="2dp"
             android:id="@+id/tv_weat5h_desc5"
             android:background="@drawable/bg_rounded_text_grey"
-            android:padding="5dp"
             android:gravity="center"
             android:text="Jeudi"
             android:layout_width="match_parent"
@@ -182,7 +173,6 @@
 
         <TextView
             android:id="@+id/tv_weat5h_day5"
-            android:padding="5dp"
             android:gravity="center"
             android:text="-7°C/-7°C"
             android:layout_width="match_parent"

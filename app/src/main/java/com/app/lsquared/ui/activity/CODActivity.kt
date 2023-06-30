@@ -65,6 +65,7 @@ class CODActivity : AppCompatActivity() {
     var screenshot_runnable: Runnable? = null
 
 
+
     private val versionTask = object : Runnable {
         override fun run() {
             checkDeviceVersion()
@@ -110,6 +111,13 @@ class CODActivity : AppCompatActivity() {
         initObserver()
     }
 
+    fun reLaunchApp(){
+        if(!myPerf.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals("false")
+            && !myPerf.getStringData(MySharePrefernce.KEY_RELAUNCH_ONDEMAND).equals("")) {
+            viewModel.getRelaunchAcknowledge()
+        }
+    }
+
     private fun initObserver() {
 
         // device registred observer
@@ -137,6 +145,15 @@ class CODActivity : AppCompatActivity() {
                 Log.d("TAG", "initObserver: COD ${dataParsing.checkDemandSs()}")
                 myPerf?.setLocalStorage(response.data!!)
                 myPerf.putBooleanData(MySharePrefernce.KEY_ODSS_ACTIVE,dataParsing.checkDemandSs())
+                reLaunchApp()
+            }
+        })
+
+        // re-launch observer
+        viewModel.relaunch_result.observe(this, Observer { response ->
+            if(response.status == Status.SUCCESS){
+                finishAffinity()
+                startActivity(Intent(this,SplashActivity::class.java))
             }
         })
 

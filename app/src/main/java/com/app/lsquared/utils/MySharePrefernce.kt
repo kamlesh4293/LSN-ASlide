@@ -30,6 +30,7 @@ class MySharePrefernce(ctx: Context) {
         const val KEY_FEED_RESTRICTION = "feed_restriction"
         const val KEY_RELAUNCH_ONDEMAND = "relaunch_ondemand"
         const val KEY_ODSS_ACTIVE = "odss_active"
+        const val KEY_IDENTIFY_REQUEST_TIME = "identify_req_time"
 
         // local storage api response
         const val KEY_JSON_DATA = "json_data"
@@ -102,6 +103,13 @@ class MySharePrefernce(ctx: Context) {
     fun getContentData():String{
         return pref?.getString(KEY_JSON_DATA,"")!!
     }
+
+
+    fun setIdentifyRequestTime(time : Int){
+        editor?.putInt(KEY_IDENTIFY_REQUEST_TIME,time)
+        editor?.commit()
+    }
+
 
 
     // version api version

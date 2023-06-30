@@ -36,10 +36,10 @@ import com.app.lsquared.model.widget.RssItem
 import com.app.lsquared.network.NetworkConnectivity
 import com.app.lsquared.network.Status
 import com.app.lsquared.network.isConnected
+import com.app.lsquared.ui.UiUtils.Companion.setTextAnimation
 import com.app.lsquared.ui.device.WaterMarkWidget
 import com.app.lsquared.ui.viewmodel.CodViewModel
 import com.app.lsquared.ui.widgets.*
-import com.app.lsquared.ui.widgets.WidgetNewsList.Companion.getWidgetNewsListAllFixContent
 import com.app.lsquared.usbserialconnection.ResponseStatus
 import com.app.lsquared.usbserialconnection.USBSerialConnector
 import com.app.lsquared.usbserialconnection.USBSerialListener
@@ -84,6 +84,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     @Inject
     lateinit var dataParsing: DataParsing
 
+    var wating_text_pos = 0
+
     // view  binding
     private lateinit var binding: ActivityMainMultifameBinding
     private lateinit var viewModel: MainViewModel
@@ -106,6 +108,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     lateinit var od_screenshot_handler: Handler
     lateinit var temp_handler: Handler
     lateinit var report_handler: Handler
+    lateinit var waiting_handler: Handler
 
     var time = 0
     var fullScreen = false
@@ -183,14 +186,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         var is_frames = dataParsing.isFrameAvailable()
         var is_override = dataParsing.isOverrideAvailable(pref)
         var isVideo = DataParsing.isVideoPlaying(layout_list)
-        if(!is_frames && !is_override){
-            val file = ImageUtil.screenshot(binding.mainLayout,"Screen_final_"+Utility.getCurrentdate())
-            if(file!=null)
-                viewModel.submitScreenShot(
-                    Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath),type),
-                    type
-                )
-        }else if(isVideo){
+        if(isVideo){
             for(i in 0..layout_list.size-1){
                 if(layout_list[i].active_widget.equals(Constant.CONTENT_VIDEO)){
                     val currentPosition: Int? = layout_list[i].videoView?.getCurrentPosition() //in millisecond
@@ -210,7 +206,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                     type
                 )
         }else{
-            val file = ImageUtil.screenshot(binding.rootLayout,"Screen_final_"+Utility.getCurrentdate())
+            val file = ImageUtil.screenshot(binding.mainLayout,"Screen_final_"+Utility.getCurrentdate())
             if(file!=null)
                 viewModel.submitScreenShot(
                     Utility.getScreenshotJson(DeviceInfo.getDeviceId(ctx,pref),Utility.getFileToByte(file?.absolutePath),type),
@@ -231,6 +227,20 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         override fun run() {
             viewModel.submitRecords(DeviceInfo.getDeviceId(ctx,pref))
             report_handler.postDelayed(this, viewModel.report_delay.toLong())
+        }
+    }
+
+    private val waiting_task = object : Runnable {
+        override fun run() {
+            if(wating_text_pos==0) binding.tvMainWaiting.setTextAnimation("Esperando contenido")
+            if(wating_text_pos==1) binding.tvMainWaiting.setTextAnimation( "En attente de contenu")
+            if(wating_text_pos==3) {
+                binding.tvMainWaiting.setTextAnimation("Waiting for content")
+                wating_text_pos = 0
+            }else{
+                wating_text_pos = wating_text_pos+1
+            }
+            waiting_handler.postDelayed(this,2000)
         }
     }
 
@@ -261,8 +271,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         od_screenshot_handler = Handler(Looper.getMainLooper())
         temp_handler = Handler(Looper.getMainLooper())
         report_handler = Handler(Looper.getMainLooper())
+        waiting_handler = Handler(Looper.getMainLooper())
     }
-
 
     override fun onStop() {
         super.onStop()
@@ -298,6 +308,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         window.decorView.systemUiVisibility = flags
         // screen always on mode
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         binding = ActivityMainMultifameBinding.inflate(layoutInflater)
 
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
@@ -511,6 +522,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                         setAllNewsListRotation(pos,list,list,item,title,0)
                     }else{
                         // being news
+                        Log.d(TAG, "initObserver: being news - ${response.data}")
                         var being_news = Gson().fromJson(response.data,BeingNewsData::class.java)
                         setBeingNewsListRotation(pos,being_news.news,being_news.news,item,0)
                     }
@@ -545,7 +557,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 if(layout_list!=null && layout_list.size>0){
                     Log.d(TAG, "initObserver google_cal_api_result : ${response.data}")
                     var cal_obj = Gson().fromJson(response.data, CalendarResponseData::class.java)
-                    setCalendarView(response.pos,response.item!!,cal_obj)
+                    setOutlookCalendarView(response.pos,response.item!!,cal_obj)
                 }
             }
         }
@@ -572,6 +584,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 response ->
             if(response.status == Status.SUCCESS){
                 var data = response.data
+                Log.d(TAG, "initObserver: em res - $data")
                 setEmergencyMessage(data)
             }
         })
@@ -1038,13 +1051,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     private fun setIdentifyRequest() {
         var content_version = pref?.getVersionOfConytentAPI()
         var set_version = pref.getIntData(MySharePrefernce.KEY_IDENTIFY_SIGNATURE)
+
+        if(dataParsing.getDevice()!=null && dataParsing.getDevice()!!.identify==true ) pref.setIdentifyRequestTime(dataParsing.getDevice()!!.identifyDuration)
+
+        time = pref.getIntData(MySharePrefernce.KEY_IDENTIFY_REQUEST_TIME)
         if(time!=0 && !viewModel.is_device_registered){
             IdentifyRequestWidget.setIdentifyRequest(binding,pref,this,isConnected,temp.toString(),viewModel.is_device_registered)
+            startRequestIdentifyTimer()
         }else if(DataParsing.isIdentifyRequestAvailable(pref) && set_version != content_version){
             viewModel.getIdentifyAcknowledge(pref!!)
             binding.llIdentifyRequest.visibility = View.VISIBLE
             IdentifyRequestWidget.setIdentifyRequest(binding,pref,this,isConnected,temp.toString(),viewModel.is_device_registered)
-            startRequestIdentifyTimer((DataParsing.getIdentifyRequestDuration(pref)*1000).toLong())
+            startRequestIdentifyTimer()
         }else binding.llIdentifyRequest.visibility = View.GONE
     }
 
@@ -1063,14 +1081,15 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         }
     }
 
-    fun startRequestIdentifyTimer(seconds: Long) {
-        time = (seconds/1000).toInt()
-        object : CountDownTimer(seconds, 1000) {
+
+    fun startRequestIdentifyTimer() {
+        object : CountDownTimer((time*1000).toLong(), 1000) {
             override fun onTick(duration: Long) {}
             override fun onFinish() {
                 time = 0
                 binding.llIdentifyRequest.visibility = View.GONE
                 pref.putIntData(MySharePrefernce.KEY_IDENTIFY_SIGNATURE,pref?.getVersionOfDeviceAPI()!!)
+                pref.putIntData(MySharePrefernce.KEY_IDENTIFY_REQUEST_TIME,0)
             }
         }.start()
     }
@@ -1137,16 +1156,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     private fun setAllNewsListRotation(pos: Int, list: List<RssItem>,all_list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
         if(list!=null && list.size>0){
 
+            var widgetNews = WidgetNewsList()
+
             layout_list[pos].frame_view_ll?.removeAllViews()
-            layout_list[pos].frame_view_ll?.addView(getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
+            layout_list[pos].frame_view_ll?.addView(widgetNews.getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
 
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            WidgetNewsList.lastView = null
-                            var position = WidgetNewsList.getLastPosition()
+                            widgetNews.lastView = null
+                            var position = widgetNews.getLastPosition()
                             var nextlist = getNextList(list,all_list,position)
                             if(nextlist.size==0) setAllNewsListRotation(pos, all_list, all_list, item,title,0)
                             else setAllNewsListRotation(pos, getNextList(list,all_list,position),all_list, item,title,0)
@@ -1168,16 +1189,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
     private fun setBeingNewsListRotation(pos: Int,list : ArrayList<News>,all_list : ArrayList<News>, item: Item,start_pos:Int) {
 
+        var widgetNews = WidgetNewsList()
+
         if(list!=null && list.size>0){
             layout_list[pos].frame_view_ll?.removeAllViews()
             layout_list[pos].frame_view_ll?.
-            addView(WidgetNewsList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos,item.fileName),item.frame_w,item.frame_h)
+            addView(widgetNews.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos,item.fileName),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            var position = WidgetNewsList.getLastPositionBeing()
+                            var position = widgetNews.getLastPositionBeing()
                             if(position == list.size) setBeingNewsListRotation(pos, all_list,all_list, item,0)
                             else setBeingNewsListRotation(pos, getNextBeingList(list,position),all_list, item,0)
                         }
@@ -1196,16 +1219,18 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     private fun setAllNewsListRotationRSS(pos: Int, list: List<RssItem>, item: Item, title: String?,start_pos:Int) {
         if(list!=null && list.size>0){
 
+            var newsWidget = WidgetRssList()
+
             layout_list[pos].frame_view_ll?.removeAllViews()
             layout_list[pos].frame_view_ll?.addView(
-                WidgetRssList.getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
+                newsWidget.getWidgetNewsListAllFixContent(this,item,list,title,start_pos),item.frame_w,item.frame_h)
 
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            var position = WidgetRssList.getLastPosition()
+                            var position = newsWidget.getLastPosition()
                             if(position == list.size) setAllNewsListRotationRSS(pos, list, item,title,0)
                             else setAllNewsListRotationRSS(pos, list, item,title,position)
                         }
@@ -1217,15 +1242,17 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
 
     private fun setBeingNewsListRotationRSS(pos: Int,list : ArrayList<News>, item: Item,start_pos:Int) {
         if(list!=null && list.size>0){
+            var newsWidget = WidgetRssList()
+
             layout_list[pos].frame_view_ll?.removeAllViews()
             layout_list[pos].frame_view_ll?.
-            addView(WidgetRssList.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos),item.frame_w,item.frame_h)
+            addView(newsWidget.getWidgetNewsListAllFixContentBeing(this,item,list,start_pos),item.frame_w,item.frame_h)
             if(DataParsing.getSettingRotate(item)!=null && DataParsing.getSettingRotate(item) != 0){
                 layout_list[pos].item_job = CoroutineScope(Dispatchers.IO).launch {
                     delay(TimeUnit.SECONDS.toMillis(DataParsing.getSettingRotate(item).toLong()))
                     withContext(Dispatchers.Main) {
                         if(play_activate){
-                            var position = WidgetNewsList.getLastPositionBeing()
+                            var position = newsWidget.getLastPositionBeing()
                             if(position == list.size) setBeingNewsListRotationRSS(pos, list, item,0)
                             else setBeingNewsListRotationRSS(pos, list, item,position-1)
                         }
@@ -1236,6 +1263,10 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
     fun loadWaiting() {
+
+//        UiUtils.setBlinking(binding.tvMainWaiting)
+        waiting_handler.post(waiting_task)
+
         if(layout_list!=null &&layout_list.size>0){
             for (i in 0..layout_list.size-1)
                 layout_list[i].frame_view_ll?.visibility = View.GONE
@@ -1254,13 +1285,14 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
     }
 
 
+
     // stock table view with webview
     private fun setStockWebView(pos: Int, item: Item,url:String) {
 
         var layout = layout_list[pos].frame_view_ll
         layout?.removeAllViews()
         layout?.background = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
-        layout?.addView(WebViewWidget.getWebViewWidget(this,url),item.frame_w,item.frame_h)
+        layout?.addView(WebViewWidget.getWebViewWidget(this,url,item.settings),item.frame_w,item.frame_h)
     }
 
     // web view with reloading
@@ -1277,7 +1309,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 var shape = DataParsing.getShape(Color.parseColor(UiUtils.getColorWithOpacity()),item.frame_setting)
                 layout?.background = shape
                 layout?.addView(WebViewChromium.getWebChromeWidget(this,item.src,shape,item.settings),item.frame_w,item.frame_h)
-            } else layout?.addView(WebViewWidget.getWebViewWidget(this,item.src),item.frame_w,item.frame_h)
+            } else layout?.addView(WebViewWidget.getWebViewWidget(this,item.src,item.settings),item.frame_w,item.frame_h)
 
 
             if(DataParsing.getWebInterval(item) !=0 && DataParsing.getWebInterval(item) < item.duration){
@@ -1352,6 +1384,8 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
                 layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp2(this,item,weather_data),item.frame_w,item.frame_h)
             if(template.equals(Constant.TEMPLATE_TIME_T3))
                 layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp3(this,item,weather_data),item.frame_w,item.frame_h)
+            if(template.equals(Constant.TEMPLATE_TIME_T4))
+                layout?.addView(widgetWeather.getWidgetWeatherCurremtTemp4(this,item,weather_data),item.frame_w,item.frame_h)
         }
         if(forecast == Constant.TEMPLATE_WEATHER_FIVE_DAY){
             if(orientation.equals(Constant.TEMPLATE_WEATHER_ORIENTATION_VERTICAL))
@@ -1395,6 +1429,24 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
             calendar.loadScreenSaver(cal_obj.ss,0,layout,ctx)
     }
 
+    // set Outlook Calendar View
+    fun setOutlookCalendarView(pos: Int, item: Item, cal_obj: CalendarResponseData) {
+        var layout = layout_list[pos].frame_view_ll
+        layout?.removeAllViews()
+        var calendar = WidgetCalendar()
+        if(item.dType.equals(Constant.CALENDAR_BOARD_ALL) || item.dType.equals(Constant.CALENDAR_BOARD_WALL) && cal_obj.events.size>0)
+            if(item.template.equals("t1")){
+                layout?.addView(calendar.getCalendarAllEvents(ctx,item,cal_obj))
+            }else{
+//                layout?.addView(calendar.getOutlookCalendarTemp2(ctx,item,cal_obj,layout?))
+                calendar.getOutlookCalendarTemp2(ctx,item,cal_obj,layout)
+            }
+        else if(item.dType.equals(Constant.CALENDAR_BOARD_ROOM) && cal_obj.event !=null && cal_obj?.event?.starttime !=null)
+            layout?.addView(calendar.getCalendarRoomBoardWidget(ctx,item,cal_obj))
+        else if(cal_obj.ss!=null && cal_obj.ss.size>0)
+            calendar.loadScreenSaver(cal_obj.ss,0,layout,ctx)
+    }
+
     fun setMeetingRoomBoardView(pos: Int, item: Item, meeting_obj: MeetingCalendarResponseData) {
         var layout = layout_list[pos].frame_view_ll
         layout?.removeAllViews()
@@ -1429,6 +1481,7 @@ class MainActivity : AppCompatActivity(), NotRegisterDalogListener , USBSerialLi
         od_screenshot_handler.removeCallbacks(odssTask)
         temp_handler.removeCallbacks(tempTask)
         report_handler.removeCallbacks(reportTask)
+        waiting_handler.removeCallbacks(waiting_task)
         removeData()
     }
 

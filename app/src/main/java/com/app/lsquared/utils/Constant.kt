@@ -126,6 +126,7 @@ class Constant {
         const val TEMPLATE_TIME_T6 = "t6"
         const val TEMPLATE_TIME_T7 = "t7"
         const val TEMPLATE_TIME_T8 = "t8"
+        const val TEMPLATE_TIME_T9 = "t9"
 
         // weather template
         const val TEMPLATE_WEATHER_CURRENT_DATE = 0

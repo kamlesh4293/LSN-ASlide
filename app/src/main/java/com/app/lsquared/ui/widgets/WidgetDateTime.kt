@@ -50,6 +50,8 @@ class WidgetDateTime {
             view = (ctx as Activity).layoutInflater.inflate(R.layout.temp_time_t7, null)
         if(template.equals(Constant.TEMPLATE_TIME_T8))
             view = (ctx as Activity).layoutInflater.inflate(R.layout.temp_time_t8, null)
+        if(template.equals(Constant.TEMPLATE_TIME_T9))
+            view = (ctx as Activity).layoutInflater.inflate(R.layout.temp_time_t9, null)
 
         return view!!
     }
@@ -73,6 +75,8 @@ class WidgetDateTime {
         if(template.equals(Constant.TEMPLATE_TIME_T7))setTemplateData7(view!!,item)
         // set temlpate 8
         if(template.equals(Constant.TEMPLATE_TIME_T8))setTemplateData8(view!!,item)
+        // set temlpate 9
+        if(template.equals(Constant.TEMPLATE_TIME_T9))setTemplateData9(view!!,item)
 
     }
 
@@ -91,10 +95,11 @@ class WidgetDateTime {
         var setting_obj = Gson().fromJson(item.settings,DateTimeSettingTemp1::class.java)
 
         var width = getBoxWidthTemp01(item).toInt()
+        var min_width = getMinuteBoxWidthTemp01(item).toInt()
         var hight = getBoxHightTemp01(item).toInt()
 
         hh_tv?.layoutParams = LinearLayout.LayoutParams(width,hight)
-        rl_mm?.layoutParams = LinearLayout.LayoutParams(width,hight)
+        rl_mm?.layoutParams = LinearLayout.LayoutParams(min_width,hight)
 
 
         var dmy_ll = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT)
@@ -165,6 +170,12 @@ class WidgetDateTime {
         return  if(width>hight) (hight/100)*60  else (width/100)*40
     }
 
+    fun getMinuteBoxWidthTemp01(item: Item) :Float{
+        var width = item.frame_w.toFloat()
+        var hight = item.frame_h.toFloat()
+        return  if(width>hight) (hight/100)*70  else (width/100)*45
+    }
+
     fun getBoxHightTemp01(item: Item) :Float{
         var width = item.frame_w.toFloat()
         var hight = item.frame_h.toFloat()
@@ -174,7 +185,6 @@ class WidgetDateTime {
     fun getDMDHightTemp01(item: Item) :Float{
         return (item.frame_h.toFloat()/100)*30
     }
-
 
     // template 2
     private fun setTemplateData2(view: View, item: Item) {
@@ -512,7 +522,62 @@ class WidgetDateTime {
         )
     }
 
-    private fun setBlinking(colon_tv: TextView?) {
+    // template 9
+    private fun setTemplateData9(view: View, item: Item) {
+
+        var day_tv = view.findViewById<TextView>(R.id.tv_timetemp9_day)
+        var starttime_tv = view.findViewById<TextView>(R.id.tv_timetemp9_time_start)
+        var colon_tv = view.findViewById<TextView>(R.id.tv_timetemp9_time_colon)
+        var endtime_tv = view.findViewById<TextView>(R.id.tv_timetemp9_time_end)
+        var date_tv = view.findViewById<TextView>(R.id.tv_timetemp9_date)
+
+        var setting_obj = Gson().fromJson(item.settings,DateTimeSettingTemp8::class.java)
+
+        var timezone = Calendar.getInstance().timeZone.id
+        DateTimeUtil.setTimeZone(item.src)
+
+        var format = "AM"
+        if(DateTimeUtil.getHour().toInt() >= 12)format = "PM"
+        if(setting_obj.format.equals("24"))format = ""
+
+        var day = DateTimeUtil.getDayName()
+        date_tv.setText(DateTimeUtil.getDateTemp9())
+        day_tv.setText(day)
+        starttime_tv.setText("${DateTimeUtil.getHour(setting_obj.format!!)}")
+        endtime_tv.setText("${DateTimeUtil.getMinutes()} $format")
+
+        var text_size = (TextSize().getDesizeSize("  ${DateTimeUtil.getDateTemp9()}  ",item.frame_w,item.frame_h/4,)/2.3).toFloat()
+
+        day_tv.textSize = text_size
+        starttime_tv.textSize = text_size
+        colon_tv.textSize = text_size
+        endtime_tv.textSize = text_size
+        date_tv.textSize = text_size
+
+        day_tv.setTextColor(UiUtils.getColor(setting_obj.dayText!!))
+        starttime_tv.setTextColor(UiUtils.getColor(setting_obj.timeText!!))
+        colon_tv.setTextColor(UiUtils.getColor(setting_obj.timeText!!))
+        endtime_tv.setTextColor(UiUtils.getColor(setting_obj.timeText!!))
+        date_tv.setTextColor(UiUtils.getColor(setting_obj.dateText!!))
+
+        setBlinking(colon_tv)
+        // font
+        FontUtil.setFonts(view!!.context,day_tv!!,setting_obj?.dayFont?.label!!)
+        FontUtil.setFonts(view!!.context,starttime_tv!!,setting_obj?.timeFont?.label!!)
+        FontUtil.setFonts(view!!.context,colon_tv!!,setting_obj?.timeFont?.label!!)
+        FontUtil.setFonts(view!!.context,endtime_tv!!,setting_obj?.timeFont?.label!!)
+        FontUtil.setFonts(view!!.context,date_tv!!,setting_obj?.dateFont?.label!!)
+
+        DateTimeUtil.setTimeZone(timezone)
+
+        Handler(Looper.getMainLooper()).postDelayed(
+            kotlinx.coroutines.Runnable {
+                if(view!=null) setTemplateData9(view, item)
+            },60000
+        )
+    }
+
+    fun setBlinking(colon_tv: TextView?) {
         val anim: Animation = AlphaAnimation(0.0f, 1.0f)
         anim.duration = 500 //You can manage the blinking time with this parameter
         anim.startOffset = 20
@@ -521,20 +586,9 @@ class WidgetDateTime {
         colon_tv?.startAnimation(anim)
     }
 
-
-    fun getBoxHight(item: Item): Int {
-        if(item.frame_h<item.frame_w/3) return (item.frame_h/1.2).toInt()
-        else return (item.frame_w/3).toInt()
-    }
-
     fun getTextSizeTemp6(item: Item,text:String): Int {
         var length = text.length+2
         return item.frame_w/length
-    }
-
-    fun getTextSizeTemp8(item: Item): Int {
-        var size = item.frame_h/10
-        return size
     }
 
     fun setTextSize(textView: TextView, desiredWidth: Int) {

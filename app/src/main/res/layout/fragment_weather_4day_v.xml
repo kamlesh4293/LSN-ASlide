@@ -7,7 +7,6 @@
 
     <LinearLayout
         android:id="@+id/ll_waether4day_main_v"
-        android:layout_marginTop="10dp"
         android:layout_width="match_parent"
         android:layout_weight="4"
         android:orientation="vertical"
@@ -37,7 +36,6 @@
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4v_main_temp"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="35dp"
                         android:text="-7 °C"
@@ -46,7 +44,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_main_desc"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="25dp"
                         android:text="Plutot nuagex"
@@ -55,7 +52,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_main_tempminmax"
-                        android:paddingLeft="20dp"
                         android:textColor="@color/white"
                         android:textSize="18dp"
                         android:text="-2 °C /-2 °C"
@@ -75,10 +71,8 @@
             <TextView
                 android:id="@+id/tv_weat4v_main_city"
                 android:textColor="@color/white"
-                android:layout_marginHorizontal="10sp"
-                android:layout_marginVertical="2sp"
-                android:padding="5dp"
                 android:text="Indore, IN"
+                android:gravity="center_vertical"
                 android:background="@color/bg_color"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
@@ -153,7 +147,6 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_marginTop="2dp"
         android:gravity="center"
         android:layout_width="match_parent"
         android:orientation="vertical"
@@ -164,7 +157,6 @@
             android:background="@drawable/bg_rounded_white_bor_blue"
             android:layout_width="match_parent"
             android:layout_weight="1"
-            android:layout_marginBottom="5dp"
             android:orientation="vertical"
             android:layout_height="0dp">
 
@@ -182,8 +174,6 @@
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4v_day1_minmax"
-                        android:paddingHorizontal="10dp"
-                        android:paddingTop="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="-7 °C / -7 °C"
@@ -192,7 +182,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_day1_desc"
-                        android:paddingHorizontal="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="Plue et neige"
@@ -211,10 +200,8 @@
 
             <TextView
                 android:id="@+id/tv_weat4v_day1_date"
-                android:paddingLeft="10dp"
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
-                android:layout_margin="2dp"
                 android:background="@drawable/bg_bot_rounded_filled_grey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -227,7 +214,6 @@
             android:layout_width="match_parent"
             android:layout_weight="1"
             android:id="@+id/ll_waether4day_day2_v"
-            android:layout_marginTop="5dp"
             android:orientation="vertical"
             android:layout_height="0dp">
 
@@ -245,8 +231,6 @@
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4v_day2_minmax"
-                        android:paddingHorizontal="10dp"
-                        android:paddingTop="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="-7 °C / -7 °C"
@@ -255,7 +239,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_day2_desc"
-                        android:paddingHorizontal="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="Plue et neige"
@@ -274,10 +257,8 @@
 
             <TextView
                 android:id="@+id/tv_weat4v_day2_date"
-                android:paddingLeft="10dp"
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
-                android:layout_margin="2dp"
                 android:background="@drawable/bg_bot_rounded_filled_grey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -290,7 +271,6 @@
             android:background="@drawable/bg_rounded_white_bor_blue"
             android:layout_width="match_parent"
             android:layout_weight="1"
-            android:layout_marginBottom="5dp"
             android:orientation="vertical"
             android:layout_height="0dp">
 
@@ -308,8 +288,6 @@
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4v_day3_minmax"
-                        android:paddingHorizontal="10dp"
-                        android:paddingTop="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="-7 °C / -7 °C"
@@ -318,7 +296,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_day3_desc"
-                        android:paddingHorizontal="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="Plue et neige"
@@ -337,10 +314,8 @@
 
             <TextView
                 android:id="@+id/tv_weat4v_day3_date"
-                android:paddingLeft="10dp"
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
-                android:layout_margin="2dp"
                 android:background="@drawable/bg_bot_rounded_filled_grey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -353,7 +328,6 @@
             android:background="@drawable/bg_rounded_white_bor_blue"
             android:layout_width="match_parent"
             android:layout_weight="1"
-            android:layout_marginTop="5dp"
             android:orientation="vertical"
             android:layout_height="0dp">
 
@@ -371,8 +345,6 @@
                     <TextView
                         android:textStyle="bold"
                         android:id="@+id/tv_weat4v_day4_minmax"
-                        android:paddingHorizontal="10dp"
-                        android:paddingTop="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="-7 °C / -7 °C"
@@ -381,7 +353,6 @@
 
                     <TextView
                         android:id="@+id/tv_weat4v_day4_desc"
-                        android:paddingHorizontal="10sp"
                         android:textColor="@color/bg_color"
                         android:textSize="15dp"
                         android:text="Plue et neige"
@@ -400,10 +371,8 @@
 
             <TextView
                 android:id="@+id/tv_weat4v_day4_date"
-                android:paddingLeft="10dp"
                 android:gravity="center_vertical"
                 android:text="Mer. 2 mars 2021"
-                android:layout_margin="2dp"
                 android:background="@drawable/bg_bot_rounded_filled_grey"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"

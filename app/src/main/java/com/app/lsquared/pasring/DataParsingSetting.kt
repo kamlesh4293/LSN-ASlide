@@ -92,6 +92,7 @@ class DataParsingSetting {
         }
 
         // meeting setting
+        @JvmStatic
         fun getBgWithOpacity(setting_obj:JSONObject) = UiUtils.getColorWithOpacity(setting_obj.getString(KEY_BG),setting_obj.getString(KEY_BGA))
 
         fun getRowBgWithOpacity(setting_obj:JSONObject) = UiUtils.getColorWithOpacity(setting_obj.getString(KEY_ROW_BG),setting_obj.getString(KEY_ROW_BGA))

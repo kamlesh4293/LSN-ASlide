@@ -32,6 +32,7 @@ class WidgetMeeting {
 
     var frame_height = 0
     var title_height = 0
+    var last_height = 0
     var lastView : View? = null
     var main_ll : LinearLayout? = null
     var title_main_ll : LinearLayout? = null
@@ -193,8 +194,8 @@ class WidgetMeeting {
 
         title_main_ll?.post(Runnable() {
             kotlin.run {
-                title_height = layout.getHeight()
-                frame_height = frame_height + layout.getHeight()
+                title_height = title_main_ll!!.height
+                frame_height = frame_height + title_height
                 getMeetingRow()
             }
         })
@@ -204,9 +205,11 @@ class WidgetMeeting {
     fun getMeetingRow(){
         // add previous
         if(lastView!=null){
+            Log.d("TAG", "getMeetingRow: no lastview")
             cal_ll?.removeAllViews()
             main_ll?.addView(lastView)
             lastView = null
+            frame_height = frame_height + last_height
         }
         var obj = JSONObject(item!!.settings)
         if(meeting_obj?.events?.size!! > position) {
@@ -215,32 +218,57 @@ class WidgetMeeting {
             var layout = LinearLayout(ctx)
             layout.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT)
             layout.orientation = LinearLayout.HORIZONTAL
-            layout.gravity = Gravity.CENTER_VERTICAL
+            layout.gravity = Gravity.TOP
 
             val title_lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.6f)
+            val title_text_lp = LayoutParams( LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
             val time_lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.35f)
             val room_lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.4f)
+            val room_text = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
 
             var meeting = meeting_obj!!.events[position]
 
-            var title_size = DataParsingSetting.getTitleSize(obj).toFloat()
+            var duration_type = obj.getString("wdmOpt")
 
+            var title_size = DataParsingSetting.getTitleSize(obj).toFloat()
             var title_font = DataParsingSetting.getFontTitleLabel(obj)
             var time_font = DataParsingSetting.getFontTimeLabel(obj)
             var room_font = DataParsingSetting.getFontRoomLabel(obj)
             var floor_font = DataParsingSetting.getFontFloorLabel(obj)
 
+            var layout_title = LinearLayout(ctx)
+            layout_title.orientation = LinearLayout.VERTICAL
+            layout_title.layoutParams = title_lp
+
             // title
             var title_tv = TextView(ctx)
             title_tv.text = "${meeting.title}"
-            title_tv.layoutParams = title_lp
+            title_tv.setLines(1)
+            title_lp.gravity = Gravity.TOP
+            title_tv.layoutParams = title_text_lp
             title_tv.setPadding(10,10,0,5)
             title_tv.gravity = Gravity.TOP
             FontUtil.setFonts(ctx!!,title_tv,title_font)
 
+            // title time
+            var title_duration_tv = TextView(ctx)
+            title_duration_tv.text = "${meeting.startdate} - ${meeting.enddate}"
+            title_duration_tv.gravity = Gravity.TOP
+            title_duration_tv.layoutParams = title_text_lp
+            title_duration_tv.setPadding(10,10,0,5)
+            FontUtil.setFonts(ctx!!,title_duration_tv,time_font)
+
+
+            layout_title.addView(title_tv)
+            if(duration_type.equals("w") ||duration_type.equals("m")) layout_title.addView(title_duration_tv)
+
             var layout_time = LinearLayout(ctx)
             layout_time.orientation = LinearLayout.VERTICAL
             layout_time.layoutParams = time_lp
+
+            var layout_room = LinearLayout(ctx)
+            layout_room.orientation = LinearLayout.VERTICAL
+            layout_room.layoutParams = room_lp
 
             // time  1
             var time_tv1 = TextView(ctx)
@@ -271,19 +299,16 @@ class WidgetMeeting {
             // room
             var room_tv = TextView(ctx)
             room_tv.text = "${meeting.location}"
-            room_tv.layoutParams = room_lp
             room_tv.gravity = Gravity.CENTER
-            room_tv.setPadding(0,5,0,5)
+            room_tv.layoutParams = room_text
             FontUtil.setFonts(ctx!!,room_tv,room_font)
 
             // floor
             var floor_tv = TextView(ctx)
-            floor_tv.text = "${meeting.floor}"
             floor_tv.layoutParams = room_lp
-            floor_tv.gravity = Gravity.CENTER
+            floor_tv.text = "${meeting.floor}"
             floor_tv.setPadding(0,5,0,5)
             FontUtil.setFonts(ctx!!,floor_tv,floor_font)
-
 
             // setting
             var bg_color = Color.parseColor("#ffffff")
@@ -339,18 +364,20 @@ class WidgetMeeting {
             }
             layout.setBackgroundColor(bg_color)
             title_tv.setTextColor(Color.parseColor(text_color_title))
+            title_duration_tv.setTextColor(Color.parseColor(text_color_time))
             time_tv1.setTextColor(Color.parseColor(text_color_time))
             time_tv2.setTextColor(Color.parseColor(text_color_time))
             room_tv.setTextColor(Color.parseColor(text_color_room))
             floor_tv.setTextColor(Color.parseColor(text_color_floor))
 
             title_tv.textSize = title_size
+            title_duration_tv.textSize = (time_size/1.5).toFloat()
             time_tv1.textSize = time_size
             time_tv2.textSize = time_size
             room_tv.textSize = room_size
             floor_tv.textSize = floor_size
 
-            layout.addView(title_tv)
+            layout.addView(layout_title)
 
             if(isTime){
                 layout.addView(getVerticalLine(ctx!!))
@@ -358,25 +385,31 @@ class WidgetMeeting {
             }
             if(isRoom){
                 layout.addView(getVerticalLine(ctx!!))
-                layout.addView(room_tv)
+                layout_room.addView(room_tv)
+                layout.addView(layout_room)
             }
             if(isFloor && !isRF){
                 layout.addView(getVerticalLine(ctx!!))
                 layout.addView(floor_tv)
             }
             if(isFloor && isRF){
-                rotateRoomFloor(room_tv,meeting.location,meeting.floor)
+                RotateText().rotateRoomFloor(room_tv,meeting.location,meeting.floor)
             }
             cal_ll?.addView(layout)
             lastView = layout
 
             layout?.post(Runnable() {
                 kotlin.run {
-                    frame_height = frame_height + layout.getHeight()
+                    last_height = layout.getHeight()
+                    frame_height = frame_height + last_height
                     if(frame_height< item?.frame_h!!){
+                        Log.d("TAG", "getMeetingRow: added new row - $frame_height- $last_height- ${item?.frame_h}")
                         position = position+1
                         getMeetingRow()
+//                        frame_height = frame_height-last_height
                     }else {
+                        lastView = null
+                        position = position-1
                         rotateItems(obj, meeting_obj)
                     }
                 }
@@ -393,22 +426,17 @@ class WidgetMeeting {
         else floorSize
     }
 
-    private fun rotateRoomFloor(room_tv: TextView, location: String?, floor: String?) {
-        Handler(Looper.getMainLooper()).postDelayed(Runnable {
-            visible_room = !visible_room
-            room_tv.text = if(visible_room) location else floor
-            rotateRoomFloor(room_tv,location,floor)
-        },6000)
-    }
 
     fun rotateItems(obj: JSONObject,meeting_obj: MeetingCalendarResponseData?) {
         var rotate = DataParsingSetting.getRotate(obj)
         CoroutineScope(Dispatchers.IO).launch {
             delay(TimeUnit.SECONDS.toMillis(rotate.toLong()))
             withContext(Dispatchers.Main) {
+                if(main_ll!=null) main_ll?.removeAllViews()
                 frame_height = title_height
                 main_ll?.removeAllViews()
                 position = if(position== meeting_obj?.events?.size!!) 0 else position+1
+                visible_room = true
                 getMeetingRow()
             }
         }
@@ -476,6 +504,20 @@ class WidgetMeeting {
 
         }
         return view
+    }
+
+}
+
+class RotateText{
+
+    fun rotateRoomFloor(room_tv: TextView, location: String?, floor: String?) {
+        var meeting = WidgetMeeting()
+        var visible = meeting.visible_room
+        Handler(Looper.getMainLooper()).postDelayed(Runnable {
+            meeting.visible_room = !visible
+            room_tv.text = if(meeting.visible_room) location else floor
+            rotateRoomFloor(room_tv,location,floor)
+        },6000)
     }
 
 }

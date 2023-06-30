@@ -34,6 +34,13 @@ class DateTimeUtil {
             return month_date.format(cal.time)
         }
 
+        fun getDateTemp9():String{
+            val cal = Calendar.getInstance()
+            val month_date = SimpleDateFormat("MMMM dd, YYYY")
+            return month_date.format(cal.time)
+        }
+
+
         fun getDayName():String{
             var f = SimpleDateFormat("EEEE")
             return f.format(Date())
@@ -136,6 +143,18 @@ class DateTimeUtil {
             val current_time = createDateForCustomTime()
             Log.d("TAG", "isValidWithTime current ${df.format(current_time)}")
             var check = if(current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
+            return check
+        }
+
+        fun isValidTimeForMeeting(start: String,end: String,time: String): Boolean {
+
+            Log.d("TAG", "isValidTimeForMeeting - $start, $end, $time")
+            val df = SimpleDateFormat("hh:mm a", Locale.US)
+            val start_time = df.parse(start)
+            val end_time = df.parse(end)
+            val current_time = df.parse(time)
+            Log.d("TAG", "isValidTimeForMeeting current ${df.format(current_time)}")
+            var check = if(current_time.compareTo(start_time) == 0 || current_time.compareTo(start_time) > 0 && current_time.compareTo(end_time) < 0) true else false
             return check
         }
 

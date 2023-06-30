@@ -18,6 +18,7 @@ import androidx.annotation.RequiresApi;
 
 import com.app.lsquared.model.LayoutFrames;
 import com.app.lsquared.model.cod.Settings;
+import com.app.lsquared.pasring.DataParsingSetting;
 import com.app.lsquared.ui.UiUtils;
 import com.app.lsquared.utils.DataParsing;
 import com.google.gson.Gson;
@@ -47,7 +48,12 @@ public class WebViewChromium {
                 (LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
         webView.setLayoutParams(wv_lp);
 
-        webView.setBackgroundColor(0);
+       try {
+           String bg = DataParsingSetting.getBgWithOpacity(new JSONObject(settings));
+           webView.setBackgroundColor(Color.parseColor(bg));
+       } catch (JSONException e) {
+           e.printStackTrace();
+       }
         webView.getSettings().setUseWideViewPort(true);
         webView.setBackground(shape);
         webView.setVerticalScrollBarEnabled(true);
